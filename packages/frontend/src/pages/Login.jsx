@@ -9,6 +9,7 @@ import { useMediator } from '../contexts/MediatorContext';
 import { EventTypes } from '../../../mediator/src/index';
 import { githubLoginUrl } from '../services/api';
 import { GitHubOAuthHint } from '../components/GitHubOAuthHint';
+import { redirectToCanonicalPath } from '../utils/frontendCanonical';
 import '../styles/brutalism.css';
 
 export function Login() {
@@ -46,7 +47,7 @@ export function Login() {
         message: 'Успішний вхід'
       }, 'Login');
 
-      navigate('/');
+      if (!redirectToCanonicalPath('/')) navigate('/');
     } catch (err) {
       console.error('Помилка входу:', err);
       setError(err.response?.data?.message || 'Невірний email/ім\'я або пароль');

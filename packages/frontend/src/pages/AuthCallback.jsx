@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { auth as authApi } from '../services/api';
+import { redirectToCanonicalPath } from '../utils/frontendCanonical';
 
 export function AuthCallback() {
   const navigate = useNavigate();
@@ -26,7 +27,9 @@ export function AuthCallback() {
           `${decoded} Переконайтесь, що в OAuth Apps на GitHub у полі «Authorization callback URL» указано точно той самий рядок, що й «redirect_uri» у відповіді GET /api/auth/github/status (перевірте з того самого браузера/домену).`;
       }
       setError(msg);
-      const t = setTimeout(() => navigate('/login'), 8000);
+      const t = setTimeout(() => {
+        if (!redirectToCanonicalPath('/login')) navigate('/login');
+      }, 8000);
       return () => clearTimeout(t);
     }
 
@@ -57,7 +60,7 @@ export function AuthCallback() {
         console.error('Не вдалося завантажити профіль після OAuth:', e);
       } finally {
         // Перезавантажуємо сторінку, щоб AuthProvider перечитав localStorage
-        window.location.replace('/');
+        if (!redirectToCanonicalPath('/')) window.location.replace('/');
       }
     };
 
