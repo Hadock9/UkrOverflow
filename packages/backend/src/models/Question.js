@@ -3,6 +3,7 @@
  */
 
 import pool from '../config/database.js';
+import { CONTENT_TYPES } from '../constants/contentTypes.js';
 
 export class Question {
   /**
@@ -41,6 +42,7 @@ export class Question {
         rows[0].tags = [];
       }
       rows[0].votes = rows[0].upvotes - rows[0].downvotes;
+      rows[0].type = CONTENT_TYPES.QUESTION;
     }
 
     return rows[0] || null;
@@ -141,6 +143,7 @@ export class Question {
         console.error('Failed to parse tags:', row.tags, e);
         row.tags = [];
       }
+      row.type = CONTENT_TYPES.QUESTION;
     });
 
     // Підрахунок загальної кількості

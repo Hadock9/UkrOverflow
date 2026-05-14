@@ -30,7 +30,7 @@ export function Home() {
       mediator.emit(EventTypes.API_REQUEST, { endpoint: '/questions', tag }, 'Home');
 
       const response = await api.get('/questions', {
-        params: { sortBy, page, limit: 20, tag }
+        params: { sortBy, page, limit: 20, tag, contentType: activeType }
       });
 
       // API повертає { success, data: { questions, pagination } }

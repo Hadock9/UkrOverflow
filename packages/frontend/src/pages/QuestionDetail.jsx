@@ -242,6 +242,9 @@ export function QuestionDetail() {
     <div className="container">
       {/* Заголовок питання */}
       <div className="question-header">
+        <div style={{ marginBottom: 'var(--space-2)' }}>
+          <span className="tag">Питання</span>
+        </div>
         <h1 className="question-detail-title">{question.title}</h1>
         <div className="question-info">
           <span>Створено: {formatDate(question.created_at)}</span>

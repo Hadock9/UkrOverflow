@@ -5,6 +5,7 @@
 import express from 'express';
 import { body, query, param } from 'express-validator';
 import { Question } from '../models/Question.js';
+import { CONTENT_TYPES } from '../constants/contentTypes.js';
 import { authenticateToken, optionalAuth } from '../middleware/auth.js';
 import { attachViewerKeyOptional, resolveViewerKey } from '../middleware/viewerKey.js';
 import { validate } from '../middleware/validation.js';
@@ -21,6 +22,7 @@ router.get(
     query('page').optional().isInt({ min: 1 }).withMessage('Сторінка має бути числом >= 1'),
     query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Ліміт має бути від 1 до 100'),
     query('sortBy').optional().isIn(['created_at', 'views', 'votes']).withMessage('Невірний параметр сортування'),
+    query('contentType').optional().isIn(['all', CONTENT_TYPES.QUESTION]).withMessage('Невірний тип контенту'),
     query('tag').optional().trim(),
     query('authorId').optional().isInt().withMessage('ID автора має бути числом'),
     query('search').optional().trim()
@@ -28,7 +30,22 @@ router.get(
   validate,
   async (req, res, next) => {
     try {
-      const { page, limit, sortBy, tag, authorId, search } = req.query;
+      const { page, limit, sortBy, tag, authorId, search, contentType } = req.query;
+
+      if (contentType && !['all', CONTENT_TYPES.QUESTION].includes(contentType)) {
+        return res.json({
+          success: true,
+          data: {
+            questions: [],
+            pagination: {
+              page: parseInt(page) || 1,
+              limit: parseInt(limit) || 20,
+              total: 0,
+              totalPages: 0
+            }
+          }
+        });
+      }
 
       const result = await Question.list({
         page: parseInt(page) || 1,
