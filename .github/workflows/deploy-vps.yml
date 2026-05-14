@@ -1,0 +1,34 @@
+# Деплой на VPS по SSH (GitHub → Actions → «Deploy VPS» → Run workflow).
+#
+# Репозиторій → Settings → Secrets and variables → Actions → додати:
+#   VPS_HOST       — наприклад 93.115.22.26
+#   VPS_USER       — наприклад root
+#   VPS_SSH_KEY    — приватний ключ PEM (повний текст, включно з BEGIN/END)
+#
+# На VPS уже має бути клон у /opt/ukroverflow, docker compose і файл .env.
+
+name: Deploy VPS
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ukroverflow-deploy-vps
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH — git pull і docker compose up --build
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -eu
+            cd /opt/ukroverflow
+            git pull origin main
+            docker compose --env-file .env up -d --build
