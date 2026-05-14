@@ -6,6 +6,7 @@ import express from 'express';
 import { body, query, param } from 'express-validator';
 import { Question } from '../models/Question.js';
 import { authenticateToken, optionalAuth } from '../middleware/auth.js';
+import { attachViewerKeyOptional, resolveViewerKey } from '../middleware/viewerKey.js';
 import { validate } from '../middleware/validation.js';
 
 const router = express.Router();
@@ -49,23 +50,79 @@ router.get(
 );
 
 /**
+ * GET /api/questions/tags/all
+ * Має бути ПЕРЕД /:id, інакше "tags" сприймається як id
+ */
+router.get('/tags/all', async (req, res, next) => {
+  try {
+    const tags = await Question.getTags();
+
+    res.json({
+      success: true,
+      data: { tags }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/questions/:id/view
+ * Зафіксувати один унікальний перегляд (не збільшує при повторному заході тим самим глядачем)
+ */
+router.post(
+  '/:id/view',
+  [param('id').isInt().withMessage('ID має бути числом')],
+  validate,
+  resolveViewerKey,
+  async (req, res, next) => {
+    try {
+      const questionId = parseInt(req.params.id, 10);
+      const result = await Question.recordView(questionId, req.viewerKey);
+
+      if (!result) {
+        return res.status(404).json({
+          success: false,
+          message: 'Питання не знайдено'
+        });
+      }
+
+      res.json({
+        success: true,
+        data: result
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
  * GET /api/questions/:id
- * Отримання питання за ID
+ * Отримання питання за ID (без зміни лічильника переглядів)
  */
 router.get(
   '/:id',
   [param('id').isInt().withMessage('ID має бути числом')],
   validate,
   optionalAuth,
+  attachViewerKeyOptional,
   async (req, res, next) => {
     try {
-      const question = await Question.findById(req.params.id, true);
+      const questionId = parseInt(req.params.id, 10);
+      let question = await Question.findById(questionId);
 
       if (!question) {
         return res.status(404).json({
           success: false,
           message: 'Питання не знайдено'
         });
+      }
+
+      const wantRecord = String(req.headers['x-record-view'] || '').trim() === '1';
+      if (wantRecord && req.viewerKey) {
+        await Question.recordView(questionId, req.viewerKey);
+        question = await Question.findById(questionId);
       }
 
       res.json({
@@ -246,22 +303,5 @@ router.get(
     }
   }
 );
-
-/**
- * GET /api/questions/tags/all
- * Список всіх тегів
- */
-router.get('/tags/all', async (req, res, next) => {
-  try {
-    const tags = await Question.getTags();
-
-    res.json({
-      success: true,
-      data: { tags }
-    });
-  } catch (error) {
-    next(error);
-  }
-});
 
 export default router;

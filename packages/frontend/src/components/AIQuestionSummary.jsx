@@ -1,43 +1,35 @@
 /**
  * AI Question Summary Component
  * Gemini Flash для створення резюме довгих питань
+ * useQuery — один запит при подвійному mount (React Strict Mode)
  */
 
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { ai } from '../services/api';
 import './AIQuestionSummary.css';
 
 export function AIQuestionSummary({ questionId, bodyLength }) {
-  const [loading, setLoading] = useState(false);
-  const [summary, setSummary] = useState('');
-  const [showSummary, setShowSummary] = useState(false);
+  const enabled = Boolean(questionId) && bodyLength > 500;
 
-  useEffect(() => {
-    // Автоматично генеруємо резюме для довгих питань (>500 символів)
-    if (bodyLength > 500) {
-      loadSummary();
-    }
-  }, [questionId, bodyLength]);
-
-  const loadSummary = async () => {
-    setLoading(true);
-
-    try {
+  const { data, isLoading } = useQuery({
+    queryKey: ['ai', 'summarize', questionId, bodyLength > 500],
+    queryFn: async () => {
       const response = await ai.summarizeQuestion(questionId);
-      const data = response.data.data || response.data;
+      return response.data.data || response.data;
+    },
+    enabled,
+    staleTime: 15 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    retry: false,
+  });
 
-      if (data.needsSummary && data.summary) {
-        setSummary(data.summary);
-        setShowSummary(true);
-      }
-    } catch (err) {
-      console.error('AI Summary Error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const summary = data?.needsSummary && data?.summary ? data.summary : '';
 
-  if (loading) {
+  if (!enabled) {
+    return null;
+  }
+
+  if (isLoading) {
     return (
       <div className="ai-summary-loading">
         ⏳ ГЕНЕРАЦІЯ РЕЗЮМЕ...
@@ -45,7 +37,7 @@ export function AIQuestionSummary({ questionId, bodyLength }) {
     );
   }
 
-  if (!showSummary || !summary) {
+  if (!summary) {
     return null;
   }
 

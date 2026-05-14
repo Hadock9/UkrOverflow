@@ -19,16 +19,9 @@ export class Question {
   }
 
   /**
-   * Пошук питання за ID
+   * Пошук питання за ID (без зміни лічильника переглядів — див. recordView)
    */
-  static async findById(id, incrementViews = false) {
-    if (incrementViews) {
-      await pool.execute(
-        'UPDATE questions SET views = views + 1 WHERE id = ?',
-        [id]
-      );
-    }
-
+  static async findById(id) {
     const [rows] = await pool.execute(
       `SELECT q.*, u.username as author_name,
               (SELECT COUNT(*) FROM answers WHERE question_id = q.id) as answers_count,
@@ -51,6 +44,53 @@ export class Question {
     }
 
     return rows[0] || null;
+  }
+
+  /**
+   * Один унікальний перегляд на viewer_key (користувач або анонімний UUID).
+   * Повертає поточне значення views і чи було збільшення.
+   */
+  static async recordView(questionId, viewerKey) {
+    if (!viewerKey || viewerKey.length > 96) {
+      throw new Error('Некоректний ключ глядача');
+    }
+
+    const [exists] = await pool.execute('SELECT id FROM questions WHERE id = ?', [questionId]);
+    if (!exists.length) {
+      return null;
+    }
+
+    try {
+      const [insertResult] = await pool.execute(
+        `INSERT IGNORE INTO question_views (question_id, viewer_key, viewed_at)
+         VALUES (?, ?, NOW())`,
+        [questionId, viewerKey]
+      );
+
+      if (insertResult.affectedRows === 1) {
+        await pool.execute('UPDATE questions SET views = views + 1 WHERE id = ?', [questionId]);
+      }
+
+      const [[{ views }]] = await pool.execute('SELECT views FROM questions WHERE id = ?', [questionId]);
+      return {
+        counted: insertResult.affectedRows === 1,
+        views
+      };
+    } catch (err) {
+      const noTable =
+        err?.code === 'ER_NO_SUCH_TABLE' ||
+        err?.errno === 1146 ||
+        String(err?.sqlMessage || err?.message || '').includes('question_views');
+      if (!noTable) {
+        throw err;
+      }
+      console.warn(
+        '[Question] Немає таблиці question_views — виконайте `npm run migrate` у packages/backend. Тимчасовий режим: +1 без дедуплікації.'
+      );
+      await pool.execute('UPDATE questions SET views = views + 1 WHERE id = ?', [questionId]);
+      const [[{ views }]] = await pool.execute('SELECT views FROM questions WHERE id = ?', [questionId]);
+      return { counted: true, views };
+    }
   }
 
   /**
@@ -88,7 +128,8 @@ export class Question {
       params.push(`%${search}%`, `%${search}%`);
     }
 
-    query += ` ORDER BY q.${sort} DESC LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}`;
+    const orderCol = sort === 'votes' ? 'votes' : `q.${sort}`;
+    query += ` ORDER BY ${orderCol} DESC LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}`;
 
     const [rows] = params.length > 0 ? await pool.execute(query, params) : await pool.query(query);
 

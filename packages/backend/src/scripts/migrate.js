@@ -160,6 +160,21 @@ async function migrate() {
     `);
     console.log('✓ Таблиця bookmarks створена\n');
 
+    // 7. Унікальні перегляди питань (дедуплікація за користувачем / анонімним id)
+    console.log('📝 Створення таблиці question_views...');
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS question_views (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        question_id INT NOT NULL,
+        viewer_key VARCHAR(96) NOT NULL,
+        viewed_at DATETIME NOT NULL,
+        UNIQUE KEY uq_question_viewer (question_id, viewer_key),
+        INDEX idx_question (question_id),
+        FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log('✓ Таблиця question_views створена\n');
+
     console.log('✅ Міграція завершена успішно!');
   } catch (error) {
     console.error('❌ Помилка міграції:', error);

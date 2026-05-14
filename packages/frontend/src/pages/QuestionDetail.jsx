@@ -38,7 +38,9 @@ export function QuestionDetail() {
     try {
       mediator.emit(EventTypes.API_REQUEST, { endpoint: `/questions/${id}` }, 'QuestionDetail');
 
-      const response = await api.get(`/questions/${id}`);
+      const response = await api.get(`/questions/${id}`, {
+        headers: { 'X-Record-View': '1' },
+      });
       const questionData = response.data.data?.question || response.data.question || response.data;
       setQuestion(questionData);
 

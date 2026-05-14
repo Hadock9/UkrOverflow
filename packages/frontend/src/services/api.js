@@ -6,6 +6,18 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3338';
 
+const VISITOR_STORAGE_KEY = 'ukroverflow_visitor_id';
+
+function ensureVisitorId() {
+  if (typeof localStorage === 'undefined') return null;
+  let id = localStorage.getItem(VISITOR_STORAGE_KEY);
+  if (!id && globalThis.crypto?.randomUUID) {
+    id = globalThis.crypto.randomUUID();
+    localStorage.setItem(VISITOR_STORAGE_KEY, id);
+  }
+  return id;
+}
+
 const api = axios.create({
   baseURL: `${API_URL}/api`,
   headers: {
@@ -13,11 +25,15 @@ const api = axios.create({
   }
 });
 
-// Interceptor для додавання токену
+// Interceptor: JWT + резервний X-Visitor-Id (якщо токен прострочений, бекенд усе одно зможе ідентифікувати гостя)
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  const vid = ensureVisitorId();
+  if (vid) {
+    config.headers['X-Visitor-Id'] = vid;
   }
   return config;
 });

@@ -3,8 +3,33 @@ import aiService from '../services/aiService.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { Question } from '../models/Question.js';
 import { flashModelId, proModelId } from '../config/gemini.js';
+import { isGeminiQuotaOrRateLimitError } from '../utils/geminiErrors.js';
 
 const router = express.Router();
+
+/** In-memory кеш схожих питань: зменшує подвійні виклики (React Strict Mode) і навантаження на Gemini */
+const similarQuestionsCache = new Map();
+
+function cacheSimilarGet(questionId) {
+  const row = similarQuestionsCache.get(questionId);
+  if (!row || row.expiresAt <= Date.now()) {
+    if (row) similarQuestionsCache.delete(questionId);
+    return null;
+  }
+  return row.payload;
+}
+
+function cacheSimilarSet(questionId, payload, { isError } = { isError: false }) {
+  while (similarQuestionsCache.size >= 120) {
+    const oldest = similarQuestionsCache.keys().next().value;
+    similarQuestionsCache.delete(oldest);
+  }
+  const ttlMs = isError ? 120_000 : 300_000;
+  similarQuestionsCache.set(questionId, {
+    expiresAt: Date.now() + ttlMs,
+    payload,
+  });
+}
 
 /**
  * POST /api/ai/suggest-answer
@@ -196,9 +221,32 @@ router.post('/summarize', async (req, res) => {
 router.get('/similar-questions/:questionId', async (req, res) => {
   try {
     const { questionId } = req.params;
+    const qid = parseInt(questionId, 10);
+
+    if (process.env.AI_ENABLED === '0' || process.env.AI_ENABLED === 'false') {
+      return res.json({
+        success: true,
+        data: {
+          similarQuestions: [],
+          model: null,
+          aiDisabled: true,
+        },
+      });
+    }
+
+    const cached = cacheSimilarGet(qid);
+    if (cached) {
+      return res.json({
+        success: true,
+        data: {
+          ...cached,
+          cached: true,
+        },
+      });
+    }
 
     // Отримуємо питання з БД
-    const question = await Question.findById(questionId);
+    const question = await Question.findById(qid);
 
     if (!question) {
       return res.status(404).json({
@@ -215,9 +263,7 @@ router.get('/similar-questions/:questionId', async (req, res) => {
     });
 
     // Фільтруємо поточне питання
-    const questionsToCompare = allQuestions.questions.filter(
-      q => q.id !== parseInt(questionId)
-    );
+    const questionsToCompare = allQuestions.questions.filter((q) => q.id !== qid);
 
     // Шукаємо схожі через Gemini Flash
     const result = await aiService.findSimilarQuestions(
@@ -226,15 +272,25 @@ router.get('/similar-questions/:questionId', async (req, res) => {
       questionsToCompare
     );
 
+    const data = {
+      similarQuestions: result.similarQuestions || [],
+      model: result.model || null,
+    };
+
+    cacheSimilarSet(qid, data, { isError: !result.success });
+
     res.json({
       success: true,
-      data: {
-        similarQuestions: result.similarQuestions,
-        model: result.model,
-      },
+      data,
     });
   } catch (error) {
-    console.error('AI Similar Questions Error:', error);
+    if (isGeminiQuotaOrRateLimitError(error)) {
+      if (process.env.AI_DEBUG === '1') {
+        console.warn('[AI] similar-questions route:', String(error.message).slice(0, 160));
+      }
+    } else {
+      console.error('AI Similar Questions route error:', error);
+    }
     res.status(500).json({
       success: false,
       message: 'Помилка пошуку схожих питань',

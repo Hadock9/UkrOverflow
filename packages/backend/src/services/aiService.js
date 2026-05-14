@@ -6,6 +6,7 @@ import {
   proGenerationConfig,
 } from '../config/gemini.js';
 import { geminiGenerateContent, textFromGeminiResponse } from '../config/geminiRestClient.js';
+import { isGeminiQuotaOrRateLimitError } from '../utils/geminiErrors.js';
 
 /** Детальніший текст для помилок (Node 18+ інкладки в error.cause) */
 function describeGeminiError(err) {
@@ -43,7 +44,8 @@ function normalizeQuestionTags(tags) {
 class AIService {
 
   /**
-   * 1. AI-ПОМІЧНИК ДЛЯ ГЕНЕРАЦІЇ ВІДПОВІДЕЙ (спочатку Pro, потім Flash)
+   * 1. AI-підказка відповіді: за замовчуванням лише Flash (free tier без Pro).
+   * Увімкнути спробу Pro: AI_USE_PRO=1 у .env (потрібна квота на Pro).
    */
   async generateAnswerSuggestion(questionTitle, questionBody, tags) {
     const tagList = normalizeQuestionTags(tags);
@@ -67,12 +69,17 @@ ${questionBody}
     const contents = [{ role: 'user', parts: [{ text: prompt }] }];
     const baseBody = { contents, safetySettings };
 
-    const attempts = [
-      { id: proModelId, config: proGenerationConfig },
-      ...(flashModelId !== proModelId
-        ? [{ id: flashModelId, config: flashGenerationConfig }]
-        : []),
-    ];
+    const usePro =
+      process.env.AI_USE_PRO === '1' ||
+      process.env.AI_USE_PRO === 'true';
+
+    const attempts =
+      usePro && proModelId !== flashModelId
+        ? [
+            { id: proModelId, config: proGenerationConfig },
+            { id: flashModelId, config: flashGenerationConfig },
+          ]
+        : [{ id: flashModelId, config: flashGenerationConfig }];
 
     let lastError;
     for (const { id, config } of attempts) {
@@ -93,7 +100,13 @@ ${questionBody}
         };
       } catch (error) {
         lastError = error;
-        console.error(`AI Answer Generation (${id}):`, describeGeminiError(error));
+        if (isGeminiQuotaOrRateLimitError(error)) {
+          if (process.env.AI_DEBUG === '1') {
+            console.warn(`[AI] answer (${id}): квота/ліміт —`, String(error.message).slice(0, 140));
+          }
+        } else {
+          console.error(`AI Answer Generation (${id}):`, describeGeminiError(error));
+        }
       }
     }
 
@@ -144,7 +157,13 @@ ${questionBody}
         model: flashModelId,
       };
     } catch (error) {
-      console.error('AI Tag Suggestion Error:', error);
+      if (isGeminiQuotaOrRateLimitError(error)) {
+        if (process.env.AI_DEBUG === '1') {
+          console.warn('[AI] tags: квота/ліміт —', String(error.message).slice(0, 140));
+        }
+      } else {
+        console.error('AI Tag Suggestion Error:', describeGeminiError(error));
+      }
       return {
         success: false,
         error: describeGeminiError(error),
@@ -191,7 +210,13 @@ ${questionBody}
         model: flashModelId,
       };
     } catch (error) {
-      console.error('AI Moderation Error:', error);
+      if (isGeminiQuotaOrRateLimitError(error)) {
+        if (process.env.AI_DEBUG === '1') {
+          console.warn('[AI] moderate: квота/ліміт —', String(error.message).slice(0, 140));
+        }
+      } else {
+        console.error('AI Moderation Error:', describeGeminiError(error));
+      }
       return {
         success: false,
         status: 'OK',
@@ -243,7 +268,13 @@ TL;DR:`;
         model: flashModelId,
       };
     } catch (error) {
-      console.error('AI Summarization Error:', error);
+      if (isGeminiQuotaOrRateLimitError(error)) {
+        if (process.env.AI_DEBUG === '1') {
+          console.warn('[AI] summarize: квота або ліміт Gemini —', String(error.message).slice(0, 160));
+        }
+      } else {
+        console.error('AI Summarization Error:', describeGeminiError(error));
+      }
       return {
         success: false,
         needsSummary: false,
@@ -311,7 +342,13 @@ ID:`;
         model: flashModelId,
       };
     } catch (error) {
-      console.error('AI Similar Questions Error:', error);
+      if (isGeminiQuotaOrRateLimitError(error)) {
+        if (process.env.AI_DEBUG === '1') {
+          console.warn('[AI] similar-questions: квота або ліміт Gemini —', String(error.message).slice(0, 160));
+        }
+      } else {
+        console.error('AI Similar Questions Error:', describeGeminiError(error));
+      }
       return {
         success: false,
         similarQuestions: [],

@@ -1,41 +1,30 @@
 /**
  * AI Similar Questions Component
  * Gemini Flash для пошуку схожих питань
+ * useQuery — один запит при подвійному mount (React Strict Mode)
  */
 
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { ai } from '../services/api';
 import './AISimilarQuestions.css';
 
 export function AISimilarQuestions({ questionId }) {
-  const [loading, setLoading] = useState(true);
-  const [similarQuestions, setSimilarQuestions] = useState([]);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    loadSimilarQuestions();
-  }, [questionId]);
-
-  const loadSimilarQuestions = async () => {
-    setLoading(true);
-    setError('');
-
-    try {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['ai', 'similar-questions', questionId],
+    queryFn: async () => {
       const response = await ai.findSimilarQuestions(questionId);
-      const questions = response.data.data?.similarQuestions || response.data.similarQuestions || [];
+      return response.data.data || response.data;
+    },
+    enabled: Boolean(questionId),
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    retry: false,
+  });
 
-      setSimilarQuestions(questions);
-    } catch (err) {
-      console.error('AI Similar Questions Error:', err);
-      setError('');
-      setSimilarQuestions([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const similarQuestions = data?.similarQuestions ?? [];
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="ai-similar-loading">
         <span>⏳ ПОШУК СХОЖИХ ПИТАНЬ...</span>
@@ -43,7 +32,7 @@ export function AISimilarQuestions({ questionId }) {
     );
   }
 
-  if (error || similarQuestions.length === 0) {
+  if (isError || similarQuestions.length === 0) {
     return null;
   }
 

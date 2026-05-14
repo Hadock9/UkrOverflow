@@ -91,22 +91,26 @@ export function Home() {
       {/* Фільтри */}
       <div className="filters">
         <button
+          type="button"
           className={`filter-btn ${sortBy === 'created_at' ? 'active' : ''}`}
           onClick={() => setSortBy('created_at')}
         >
           НОВІ
         </button>
         <button
+          type="button"
           className={`filter-btn ${sortBy === 'votes' ? 'active' : ''}`}
           onClick={() => setSortBy('votes')}
         >
           ПОПУЛЯРНІ
         </button>
         <button
+          type="button"
           className={`filter-btn ${sortBy === 'views' ? 'active' : ''}`}
           onClick={() => setSortBy('views')}
+          title="Сортування за загальною кількістю переглядів усіх користувачів, не ваш особистий список"
         >
-          ПЕРЕГЛЯНУТІ
+          ТОП ПЕРЕГЛЯДІВ
         </button>
       </div>
 

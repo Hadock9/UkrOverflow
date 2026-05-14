@@ -60,7 +60,8 @@ app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? process.env.FRONTEND_URL
     : '*',
-  credentials: true
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Visitor-Id', 'X-Record-View']
 }));
 
 app.use(express.json({ limit: '10mb' }));
