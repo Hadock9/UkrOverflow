@@ -6,6 +6,15 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3338';
 
+export const apiBaseUrl = API_URL;
+export function githubLoginUrl({ link = false, token = null } = {}) {
+  const params = new URLSearchParams();
+  if (link) params.set('link', '1');
+  if (token) params.set('as', token);
+  const qs = params.toString();
+  return `${API_URL}/api/auth/github${qs ? `?${qs}` : ''}`;
+}
+
 const VISITOR_STORAGE_KEY = 'ukroverflow_visitor_id';
 
 function ensureVisitorId() {
@@ -191,6 +200,20 @@ export const faqs = {
   update: (id, data) => api.put(`/faqs/${id}`, data),
   delete: (id) => api.delete(`/faqs/${id}`),
   getTags: () => api.get('/faqs/tags/all'),
+};
+
+// GitHub integration
+export const github = {
+  status: () => api.get('/auth/github/status'),
+  sync: () => api.post('/github/sync'),
+  myRepos: (params) => api.get('/github/me/repos', { params }),
+  pin: (repoIds) => api.post('/github/me/pin', { repoIds }),
+  unlink: () => api.post('/auth/github/unlink'),
+  userProfile: (userId) => api.get(`/github/users/${userId}/profile`),
+  userRepos: (userId, params) => api.get(`/github/users/${userId}/repos`, { params }),
+  listLinks: (targetType, targetId, params) => api.get(`/github/links/${targetType}/${targetId}`, { params }),
+  addLink: (data) => api.post('/github/links', data),
+  removeLink: (id) => api.delete(`/github/links/${id}`),
 };
 
 // Stats

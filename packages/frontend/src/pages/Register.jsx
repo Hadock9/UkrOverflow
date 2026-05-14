@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useMediator } from '../contexts/MediatorContext';
 import { EventTypes } from '../../../mediator/src/index';
+import { githubLoginUrl } from '../services/api';
 import '../styles/brutalism.css';
 
 export function Register() {
@@ -200,6 +201,18 @@ export function Register() {
             {loading ? 'РЕЄСТРАЦІЯ...' : 'ЗАРЕЄСТРУВАТИСЯ'}
           </button>
         </form>
+
+        <div style={{ margin: 'var(--space-3) 0', textAlign: 'center', opacity: 0.6 }}>
+          АБО
+        </div>
+
+        <a
+          href={githubLoginUrl()}
+          className="btn btn-block"
+          style={{ background: '#0d1117', color: '#fff', borderColor: '#0d1117', textDecoration: 'none', textAlign: 'center' }}
+        >
+          РЕЄСТРАЦІЯ ЧЕРЕЗ GITHUB
+        </a>
 
         <div className="auth-footer">
           <p>

@@ -8,6 +8,7 @@ import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 import { useAuth } from '../contexts/AuthContext';
 import { guides } from '../services/api';
+import { LinkedReposPanel } from '../components/LinkedReposPanel';
 import '../styles/brutalism.css';
 
 const DIFFICULTY_LABELS = {
@@ -110,6 +111,10 @@ export function GuideDetail() {
             <span className="date">knowledge hub / guide</span>
           </div>
         </div>
+      </div>
+
+      <div style={{ marginTop: 'var(--space-4)' }}>
+        <LinkedReposPanel targetType="guide" targetId={guide.id} />
       </div>
     </div>
   );

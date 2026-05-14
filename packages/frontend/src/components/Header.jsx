@@ -22,33 +22,12 @@ export function Header() {
         <div className="header-content">
           <div className="header-left">
             <Link to="/" className="header-logo">
-              <h1>UKROVERFLOW</h1>
+              <h1>DEVHUB.UA</h1>
             </Link>
 
             <nav className="nav">
               <Link to="/" className="nav-item">
                 ХАБ
-              </Link>
-              <Link to="/questions" className="nav-item">
-                ПИТАННЯ
-              </Link>
-              <Link to="/articles" className="nav-item">
-                СТАТТІ
-              </Link>
-              <Link to="/guides" className="nav-item">
-                ГАЙДИ
-              </Link>
-              <Link to="/snippets" className="nav-item">
-                SNIPPETS
-              </Link>
-              <Link to="/roadmaps" className="nav-item">
-                ROADMAP
-              </Link>
-              <Link to="/best-practices" className="nav-item">
-                BEST PRACTICES
-              </Link>
-              <Link to="/faqs" className="nav-item">
-                FAQ
               </Link>
               <Link to="/tags" className="nav-item">
                 ТЕГИ

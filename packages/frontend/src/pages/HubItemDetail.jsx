@@ -10,6 +10,7 @@ import { Link, useParams } from 'react-router-dom';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { api } from '../services/api';
+import { LinkedReposPanel } from '../components/LinkedReposPanel';
 import '../styles/brutalism.css';
 
 function renderMarkdown(text) {
@@ -129,6 +130,10 @@ function HubItemDetail({ endpoint, dataKey, label, kind }) {
             <span className="date">knowledge hub / {kind}</span>
           </div>
         </div>
+      </div>
+
+      <div style={{ marginTop: 'var(--space-4)' }}>
+        <LinkedReposPanel targetType={kind} targetId={item.id} />
       </div>
     </div>
   );

@@ -31,6 +31,9 @@ import roadmapsRoutes from './routes/roadmaps.js';
 import bestPracticesRoutes from './routes/bestPractices.js';
 import faqsRoutes from './routes/faqs.js';
 import contentRoutes from './routes/content.js';
+import githubAuthRoutes from './routes/githubAuth.js';
+import githubRoutes from './routes/github.js';
+import githubWebhookRoutes from './routes/githubWebhook.js';
 
 // Завантаження змінних оточення
 dotenv.config();
@@ -70,6 +73,9 @@ app.use(cors({
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Visitor-Id', 'X-Record-View']
 }));
+
+// GitHub webhook потрібен у raw body для HMAC-перевірки — реєструємо ПЕРЕД express.json()
+app.use('/api/github', githubWebhookRoutes);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -124,6 +130,8 @@ app.use('/api/roadmaps', roadmapsRoutes);
 app.use('/api/best-practices', bestPracticesRoutes);
 app.use('/api/faqs', faqsRoutes);
 app.use('/api/content', contentRoutes);
+app.use('/api/auth/github', githubAuthRoutes);
+app.use('/api/github', githubRoutes);
 
 // WebSocket з'єднання
 const clients = new Map();

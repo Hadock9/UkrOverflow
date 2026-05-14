@@ -8,6 +8,7 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
+import { LinkedReposPanel } from '../components/LinkedReposPanel';
 import '../styles/brutalism.css';
 
 export function ArticleDetail() {
@@ -136,6 +137,10 @@ export function ArticleDetail() {
             <span className="date">knowledge hub / article</span>
           </div>
         </div>
+      </div>
+
+      <div style={{ marginTop: 'var(--space-4)' }}>
+        <LinkedReposPanel targetType="article" targetId={article.id} />
       </div>
     </div>
   );

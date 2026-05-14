@@ -8,7 +8,95 @@ import { useAuth } from '../contexts/AuthContext';
 import { useMediator } from '../contexts/MediatorContext';
 import { EventTypes } from '../../../mediator/src/index';
 import { api } from '../services/api';
+import { GitHubProfileCard } from '../components/GitHubProfileCard';
 import '../styles/brutalism.css';
+
+// Конфіг типів контенту: ендпоінти, ключі у response.data, маршрути detail/edit, лейбли.
+// Лейбл вкладки в множині, ім'я в однині використовується в empty-state.
+const CONTENT_TYPES = [
+  {
+    key: 'articles',
+    endpoint: '/articles',
+    listKey: 'articles',
+    deleteEndpoint: '/articles',
+    tabLabel: 'СТАТТІ',
+    singular: 'статтю',
+    detail: (id) => `/articles/${id}`,
+    edit: (id) => `/articles/${id}/edit`,
+    hasEdit: true,
+  },
+  {
+    key: 'guides',
+    endpoint: '/guides',
+    listKey: 'guides',
+    deleteEndpoint: '/guides',
+    tabLabel: 'ГАЙДИ',
+    singular: 'гайд',
+    detail: (id) => `/guides/${id}`,
+    edit: (id) => `/guides/${id}/edit`,
+    hasEdit: true,
+  },
+  {
+    key: 'snippets',
+    endpoint: '/snippets',
+    listKey: 'snippets',
+    deleteEndpoint: '/snippets',
+    tabLabel: 'SNIPPETS',
+    singular: 'сніпет',
+    detail: (id) => `/snippets/${id}`,
+    edit: (id) => `/snippets/${id}/edit`,
+    hasEdit: true,
+  },
+  {
+    key: 'roadmaps',
+    endpoint: '/roadmaps',
+    listKey: 'roadmaps',
+    deleteEndpoint: '/roadmaps',
+    tabLabel: 'ROADMAPS',
+    singular: 'роадмеп',
+    detail: (id) => `/roadmaps/${id}`,
+    edit: null,
+    hasEdit: false,
+  },
+  {
+    key: 'bestPractices',
+    endpoint: '/best-practices',
+    listKey: 'bestPractices',
+    deleteEndpoint: '/best-practices',
+    tabLabel: 'BEST PRACTICES',
+    singular: 'best practice',
+    detail: (id) => `/best-practices/${id}`,
+    edit: null,
+    hasEdit: false,
+  },
+  {
+    key: 'faqs',
+    endpoint: '/faqs',
+    listKey: 'faqs',
+    deleteEndpoint: '/faqs',
+    tabLabel: 'FAQ',
+    singular: 'FAQ',
+    detail: (id) => `/faqs/${id}`,
+    edit: null,
+    hasEdit: false,
+  },
+];
+
+// Витягує масив сутностей з відповіді API, незалежно від форми (.data.data.X / .data.X / .data)
+function extractList(response, key) {
+  const root = response?.data;
+  if (!root) return [];
+  const candidates = [
+    root?.data?.[key],
+    root?.[key],
+    Array.isArray(root?.data) ? root.data : null,
+    Array.isArray(root) ? root : null,
+  ];
+  for (const c of candidates) {
+    if (Array.isArray(c)) return c;
+  }
+  return [];
+}
 
 export function Profile() {
   const { id } = useParams();
@@ -19,11 +107,29 @@ export function Profile() {
   const [user, setUser] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState([]);
+  // Окремий стейт для кожного типу knowledge hub
+  const [articles, setArticles] = useState([]);
+  const [guides, setGuides] = useState([]);
+  const [snippets, setSnippets] = useState([]);
+  const [roadmaps, setRoadmaps] = useState([]);
+  const [bestPractices, setBestPractices] = useState([]);
+  const [faqs, setFaqs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [contentLoading, setContentLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('questions');
 
   const userId = id || currentUser?.id;
   const isOwnProfile = currentUser && currentUser.id === parseInt(userId);
+
+  // Мапа сетерів за ключем — дозволяє в одному циклі розкласти результати Promise.all
+  const setters = {
+    articles: setArticles,
+    guides: setGuides,
+    snippets: setSnippets,
+    roadmaps: setRoadmaps,
+    bestPractices: setBestPractices,
+    faqs: setFaqs,
+  };
 
   useEffect(() => {
     if (!userId) {
@@ -32,8 +138,7 @@ export function Profile() {
     }
 
     loadProfile();
-    loadQuestions();
-    loadAnswers();
+    loadAllContent();
   }, [userId]);
 
   const loadProfile = async () => {
@@ -49,86 +154,143 @@ export function Profile() {
       console.error('Помилка завантаження профілю:', error);
       mediator.emit(EventTypes.API_ERROR, {
         endpoint: `/users/${userId}`,
-        error: error.message
+        error: error.message,
       }, 'Profile');
     } finally {
       setLoading(false);
     }
   };
 
-  const loadQuestions = async () => {
-    try {
-      const response = await api.get('/questions', {
-        params: { authorId: userId, limit: 100 }
-      });
-      const { questions: questionsData } = response.data.data || response.data;
-      setQuestions(questionsData || []);
-    } catch (error) {
-      console.error('Помилка завантаження питань:', error);
-    }
-  };
+  // Паралельне завантаження questions + answers + усіх 6 типів knowledge hub через Promise.all
+  const loadAllContent = async () => {
+    setContentLoading(true);
+    const params = { authorId: userId, limit: 100 };
 
-  const loadAnswers = async () => {
-    try {
-      const response = await api.get('/answers', {
-        params: { authorId: userId, limit: 100 }
-      });
-      const answersData = response.data.data?.answers || response.data.answers || response.data;
-      setAnswers(Array.isArray(answersData) ? answersData : []);
-    } catch (error) {
-      console.error('Помилка завантаження відповідей:', error);
-    }
+    const tasks = [
+      api.get('/questions', { params })
+        .then((r) => setQuestions(extractList(r, 'questions')))
+        .catch((e) => console.error('Помилка завантаження питань:', e)),
+      api.get('/answers', { params })
+        .then((r) => setAnswers(extractList(r, 'answers')))
+        .catch((e) => console.error('Помилка завантаження відповідей:', e)),
+      ...CONTENT_TYPES.map((t) =>
+        api.get(t.endpoint, { params })
+          .then((r) => setters[t.key](extractList(r, t.listKey)))
+          .catch((e) => console.error(`Помилка завантаження ${t.key}:`, e)),
+      ),
+    ];
+
+    await Promise.all(tasks);
+    setContentLoading(false);
   };
 
   const handleDeleteQuestion = async (questionId) => {
-    if (!confirm('Ви впевнені, що хочете видалити це питання?')) {
-      return;
-    }
-
+    if (!confirm('Ви впевнені, що хочете видалити це питання?')) return;
     try {
       await api.delete(`/questions/${questionId}`);
-      loadQuestions();
-      mediator.emit(EventTypes.NOTIFICATION, {
-        type: 'success',
-        message: 'Питання видалено'
-      }, 'Profile');
+      const r = await api.get('/questions', { params: { authorId: userId, limit: 100 } });
+      setQuestions(extractList(r, 'questions'));
+      mediator.emit(EventTypes.NOTIFICATION, { type: 'success', message: 'Питання видалено' }, 'Profile');
     } catch (error) {
       console.error('Помилка видалення питання:', error);
       mediator.emit(EventTypes.NOTIFICATION, {
         type: 'error',
-        message: error.response?.data?.message || 'Помилка видалення питання'
+        message: error.response?.data?.message || 'Помилка видалення питання',
       }, 'Profile');
     }
   };
 
   const handleDeleteAnswer = async (answerId) => {
-    if (!confirm('Ви впевнені, що хочете видалити цю відповідь?')) {
-      return;
-    }
-
+    if (!confirm('Ви впевнені, що хочете видалити цю відповідь?')) return;
     try {
       await api.delete(`/answers/${answerId}`);
-      loadAnswers();
-      mediator.emit(EventTypes.NOTIFICATION, {
-        type: 'success',
-        message: 'Відповідь видалено'
-      }, 'Profile');
+      const r = await api.get('/answers', { params: { authorId: userId, limit: 100 } });
+      setAnswers(extractList(r, 'answers'));
+      mediator.emit(EventTypes.NOTIFICATION, { type: 'success', message: 'Відповідь видалено' }, 'Profile');
     } catch (error) {
       console.error('Помилка видалення відповіді:', error);
       mediator.emit(EventTypes.NOTIFICATION, {
         type: 'error',
-        message: error.response?.data?.message || 'Помилка видалення відповіді'
+        message: error.response?.data?.message || 'Помилка видалення відповіді',
+      }, 'Profile');
+    }
+  };
+
+  // Уніфіковане видалення для будь-якого hub-типу
+  const handleDeleteHubItem = async (type, itemId) => {
+    if (!confirm(`Ви впевнені, що хочете видалити цей елемент?`)) return;
+    try {
+      await api.delete(`${type.deleteEndpoint}/${itemId}`);
+      const r = await api.get(type.endpoint, { params: { authorId: userId, limit: 100 } });
+      setters[type.key](extractList(r, type.listKey));
+      mediator.emit(EventTypes.NOTIFICATION, { type: 'success', message: 'Елемент видалено' }, 'Profile');
+    } catch (error) {
+      console.error(`Помилка видалення ${type.key}:`, error);
+      mediator.emit(EventTypes.NOTIFICATION, {
+        type: 'error',
+        message: error.response?.data?.message || 'Помилка видалення',
       }, 'Profile');
     }
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return '';
     const date = new Date(dateString);
-    return date.toLocaleDateString('uk-UA', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
+    return date.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
+
+  // Спільна карточка для будь-якого hub-елементу: title -> detail, excerpt, tags, дата, кнопки
+  const renderItemCard = (item, type) => {
+    const excerptSource = item.excerpt || item.body || item.description || item.content || '';
+    const excerpt = typeof excerptSource === 'string'
+      ? excerptSource.substring(0, 200) + (excerptSource.length > 200 ? '...' : '')
+      : '';
+    const tags = Array.isArray(item.tags) ? item.tags : [];
+
+    return (
+      <div key={`${type.key}-${item.id}`} className="question-card">
+        <div className="question-content" style={{ flex: 1 }}>
+          <Link to={type.detail(item.id)} className="question-title">
+            {item.title || `${type.singular} #${item.id}`}
+          </Link>
+
+          {excerpt && (
+            <div className="question-excerpt">
+              {excerpt}
+            </div>
+          )}
+
+          {tags.length > 0 && (
+            <div className="question-tags">
+              {tags.map((tag, index) => (
+                <Link key={index} to={`/tags/${tag}`} className="tag">
+                  {tag}
+                </Link>
+              ))}
+            </div>
+          )}
+
+          <div className="question-meta">
+            <span className="date">Створено {formatDate(item.created_at)}</span>
+            {isOwnProfile && (
+              <div className="question-actions" style={{ marginLeft: 'auto' }}>
+                {type.hasEdit && (
+                  <Link to={type.edit(item.id)} className="btn btn-secondary btn-sm">
+                    РЕДАГУВАТИ
+                  </Link>
+                )}
+                <button
+                  onClick={() => handleDeleteHubItem(type, item.id)}
+                  className="btn btn-danger btn-sm"
+                >
+                  ВИДАЛИТИ
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   if (loading) {
@@ -143,17 +305,49 @@ export function Profile() {
     );
   }
 
+  // Перелік усіх вкладок з потрібними даними/лейблами/empty-станами
+  const tabs = [
+    { id: 'questions', label: 'ПИТАННЯ', count: questions.length },
+    { id: 'answers', label: 'ВІДПОВІДІ', count: answers.length },
+    ...CONTENT_TYPES.map((t) => {
+      const list =
+        t.key === 'articles' ? articles :
+          t.key === 'guides' ? guides :
+            t.key === 'snippets' ? snippets :
+              t.key === 'roadmaps' ? roadmaps :
+                t.key === 'bestPractices' ? bestPractices :
+                  faqs;
+      return { id: t.key, label: t.tabLabel, count: list.length, type: t, list };
+    }),
+  ];
+
   return (
     <div className="container">
       {/* Заголовок профілю */}
       <div className="page-header">
-        <div>
-          <h1 className="page-title">{user.username}</h1>
-          <p className="page-subtitle">
-            Користувач з {formatDate(user.created_at)}
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+          {user.avatar_url && (
+            <img
+              src={user.avatar_url}
+              alt={user.username}
+              style={{ width: 72, height: 72, border: '3px solid #000' }}
+            />
+          )}
+          <div>
+            <h1 className="page-title">{user.username}</h1>
+            <p className="page-subtitle">
+              Користувач з {formatDate(user.created_at)}
+              {user.github_login ? ` · @${user.github_login} (GitHub)` : ''}
+            </p>
+          </div>
         </div>
       </div>
+
+      <GitHubProfileCard
+        userId={userId}
+        isOwn={isOwnProfile}
+        token={typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null}
+      />
 
       {/* Статистика */}
       <div className="grid grid-4" style={{ marginBottom: 'var(--space-5)' }}>
@@ -192,25 +386,24 @@ export function Profile() {
       </div>
 
       {/* Вкладки */}
-      <div className="filters">
-        <button
-          className={`filter-btn ${activeTab === 'questions' ? 'active' : ''}`}
-          onClick={() => setActiveTab('questions')}
-        >
-          ПИТАННЯ ({questions.length})
-        </button>
-        <button
-          className={`filter-btn ${activeTab === 'answers' ? 'active' : ''}`}
-          onClick={() => setActiveTab('answers')}
-        >
-          ВІДПОВІДІ ({answers.length})
-        </button>
+      <div className="filters" style={{ flexWrap: 'wrap' }}>
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            className={`filter-btn ${activeTab === tab.id ? 'active' : ''}`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label} ({tab.count})
+          </button>
+        ))}
       </div>
 
       {/* Вміст вкладок */}
       {activeTab === 'questions' && (
         <div className="questions-list">
-          {questions.length === 0 ? (
+          {contentLoading ? (
+            <div className="loading">ЗАВАНТАЖЕННЯ...</div>
+          ) : questions.length === 0 ? (
             <div className="empty-state">
               <p>{isOwnProfile ? 'Ви ще не задали жодного питання' : 'Користувач не задав жодного питання'}</p>
               {isOwnProfile && (
@@ -282,7 +475,9 @@ export function Profile() {
 
       {activeTab === 'answers' && (
         <div className="questions-list">
-          {answers.length === 0 ? (
+          {contentLoading ? (
+            <div className="loading">ЗАВАНТАЖЕННЯ...</div>
+          ) : answers.length === 0 ? (
             <div className="empty-state">
               <p>{isOwnProfile ? 'Ви ще не дали жодної відповіді' : 'Користувач не дав жодної відповіді'}</p>
             </div>
@@ -310,7 +505,7 @@ export function Profile() {
                   </Link>
 
                   <div className="question-excerpt">
-                    {answer.body.substring(0, 200)}{answer.body.length > 200 ? '...' : ''}
+                    {(answer.body || '').substring(0, 200)}{(answer.body || '').length > 200 ? '...' : ''}
                   </div>
 
                   <div className="question-meta">
@@ -332,6 +527,36 @@ export function Profile() {
           )}
         </div>
       )}
+
+      {/* Уніфіковані вкладки для всіх knowledge-hub типів */}
+      {CONTENT_TYPES.map((type) => {
+        if (activeTab !== type.key) return null;
+        const list =
+          type.key === 'articles' ? articles :
+            type.key === 'guides' ? guides :
+              type.key === 'snippets' ? snippets :
+                type.key === 'roadmaps' ? roadmaps :
+                  type.key === 'bestPractices' ? bestPractices :
+                    faqs;
+
+        return (
+          <div key={type.key} className="questions-list">
+            {contentLoading ? (
+              <div className="loading">ЗАВАНТАЖЕННЯ...</div>
+            ) : list.length === 0 ? (
+              <div className="empty-state">
+                <p>
+                  {isOwnProfile
+                    ? `Ви ще не створили жодного елементу: ${type.tabLabel.toLowerCase()}`
+                    : `Користувач не створив жодного елементу: ${type.tabLabel.toLowerCase()}`}
+                </p>
+              </div>
+            ) : (
+              list.map((item) => renderItemCard(item, type))
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

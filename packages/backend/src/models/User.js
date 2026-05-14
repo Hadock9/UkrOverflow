@@ -28,18 +28,37 @@ export class User {
   }
 
   /**
-   * Пошук користувача за ID
+   * Пошук користувача за ID. Повертає public-fields + GitHub-секцію.
    */
   static async findById(id) {
     const [rows] = await pool.execute(
-      `SELECT id, username, email, reputation, role, created_at, updated_at,
+      `SELECT id, username, email, reputation, role, bio, location, website, avatar_url,
+              github_id, github_login, github_avatar_url, github_profile, github_stack,
+              github_contributions, github_badges, github_synced_at,
+              created_at, updated_at,
               (SELECT COUNT(*) FROM questions WHERE author_id = ?) as questions_count,
               (SELECT COUNT(*) FROM answers WHERE author_id = ?) as answers_count
        FROM users WHERE id = ?`,
       [id, id, id]
     );
 
-    return rows[0] || null;
+    const u = rows[0];
+    if (!u) return null;
+
+    const parseJson = (v, f) => {
+      if (v === null || v === undefined) return f;
+      if (typeof v === 'object') return v;
+      try { return JSON.parse(v); } catch { return f; }
+    };
+
+    return {
+      ...u,
+      github_profile: parseJson(u.github_profile, null),
+      github_stack: parseJson(u.github_stack, null),
+      github_contributions: parseJson(u.github_contributions, null),
+      github_badges: parseJson(u.github_badges, null),
+      github_connected: !!u.github_id,
+    };
   }
 
   /**
@@ -176,6 +195,128 @@ export class User {
         totalPages: Math.ceil(total / limit)
       }
     };
+  }
+
+  /**
+   * Пошук користувача за github_id
+   */
+  static async findByGithubId(githubId) {
+    const [rows] = await pool.execute(
+      'SELECT * FROM users WHERE github_id = ?',
+      [githubId]
+    );
+    return rows[0] || null;
+  }
+
+  /**
+   * Згенерувати унікальне ім'я користувача на основі GitHub-логіну.
+   */
+  static async generateUniqueUsernameFromGithub(login) {
+    const base = String(login || 'github_user')
+      .toLowerCase()
+      .replace(/[^a-z0-9_]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 24) || 'github_user';
+
+    let candidate = base;
+    for (let i = 0; i < 50; i += 1) {
+      const existing = await this.findByUsername(candidate);
+      if (!existing) return candidate;
+      candidate = `${base}_${i + 2}`;
+    }
+    return `${base}_${Date.now()}`;
+  }
+
+  /**
+   * Створити нового користувача з GitHub-OAuth (без пароля).
+   */
+  static async createFromGithub({ ghUser, primaryEmail, accessToken, profile }) {
+    const username = await this.generateUniqueUsernameFromGithub(ghUser.login);
+    const email = (primaryEmail || ghUser.email || `${username}@github.local`).slice(0, 255);
+
+    const [result] = await pool.execute(
+      `INSERT INTO users (
+         username, email, password, reputation, role,
+         bio, location, website, avatar_url,
+         github_id, github_login, github_avatar_url, github_access_token, github_profile,
+         created_at, updated_at
+       ) VALUES (?, ?, NULL, 0, 'user', ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      [
+        username,
+        email,
+        ghUser.bio ?? null,
+        ghUser.location ?? null,
+        ghUser.blog ?? null,
+        ghUser.avatar_url ?? null,
+        ghUser.id,
+        ghUser.login ?? null,
+        ghUser.avatar_url ?? null,
+        accessToken ?? null,
+        JSON.stringify(profile || {}),
+      ]
+    );
+
+    return this.findById(result.insertId);
+  }
+
+  /**
+   * Прив'язати GitHub до існуючого користувача.
+   */
+  static async linkGithub(userId, { ghUser, accessToken, profile }) {
+    await pool.execute(
+      `UPDATE users SET
+         github_id = ?, github_login = ?, github_avatar_url = ?,
+         github_access_token = ?, github_profile = ?,
+         avatar_url = COALESCE(avatar_url, ?),
+         updated_at = NOW()
+       WHERE id = ?`,
+      [
+        ghUser.id,
+        ghUser.login ?? null,
+        ghUser.avatar_url ?? null,
+        accessToken ?? null,
+        JSON.stringify(profile || {}),
+        ghUser.avatar_url ?? null,
+        userId,
+      ]
+    );
+    return this.findById(userId);
+  }
+
+  static async unlinkGithub(userId) {
+    await pool.execute(
+      `UPDATE users SET
+         github_id = NULL, github_login = NULL, github_avatar_url = NULL,
+         github_access_token = NULL, github_profile = NULL, github_stack = NULL,
+         github_synced_at = NULL, updated_at = NOW()
+       WHERE id = ?`,
+      [userId]
+    );
+    return this.findById(userId);
+  }
+
+  static async updateGithubSync(userId, { profile, stack, contributions, badges, accessToken }) {
+    const sets = ['github_synced_at = NOW()', 'updated_at = NOW()'];
+    const values = [];
+    if (profile !== undefined) { sets.push('github_profile = ?'); values.push(JSON.stringify(profile)); }
+    if (stack !== undefined) { sets.push('github_stack = ?'); values.push(JSON.stringify(stack)); }
+    if (contributions !== undefined) { sets.push('github_contributions = ?'); values.push(contributions ? JSON.stringify(contributions) : null); }
+    if (badges !== undefined) { sets.push('github_badges = ?'); values.push(JSON.stringify(badges || [])); }
+    if (accessToken !== undefined && accessToken !== null) {
+      sets.push('github_access_token = ?');
+      values.push(accessToken);
+    }
+    values.push(userId);
+    await pool.execute(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`, values);
+    return this.findById(userId);
+  }
+
+  static async getGithubAccessToken(userId) {
+    const [rows] = await pool.execute(
+      'SELECT github_access_token FROM users WHERE id = ?',
+      [userId]
+    );
+    return rows[0]?.github_access_token || null;
   }
 
   /**

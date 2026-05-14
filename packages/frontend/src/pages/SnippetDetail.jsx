@@ -8,6 +8,7 @@ import DOMPurify from 'dompurify';
 import { marked } from 'marked';
 import { useAuth } from '../contexts/AuthContext';
 import { snippets } from '../services/api';
+import { LinkedReposPanel } from '../components/LinkedReposPanel';
 import '../styles/brutalism.css';
 
 export function SnippetDetail() {
@@ -120,6 +121,10 @@ export function SnippetDetail() {
             <span className="date">knowledge hub / snippet</span>
           </div>
         </div>
+      </div>
+
+      <div style={{ marginTop: 'var(--space-4)' }}>
+        <LinkedReposPanel targetType="snippet" targetId={snippet.id} />
       </div>
     </div>
   );

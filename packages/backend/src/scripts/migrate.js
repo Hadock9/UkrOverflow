@@ -30,6 +30,24 @@ async function ensureDatabaseExists() {
   }
 }
 
+async function ensureColumn(connection, table, column, definition) {
+  try {
+    await connection.execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  } catch (e) {
+    // 1060 = duplicate column
+    if (e?.errno !== 1060) throw e;
+  }
+}
+
+async function ensureIndex(connection, table, indexName, definition) {
+  try {
+    await connection.execute(`ALTER TABLE ${table} ADD ${definition}`);
+  } catch (e) {
+    // 1061 = duplicate key, 1068 = multiple primary key, 1826 = duplicate FK
+    if (e?.errno !== 1061 && e?.errno !== 1068 && e?.errno !== 1826) throw e;
+  }
+}
+
 async function migrate() {
   await ensureDatabaseExists();
 
@@ -38,27 +56,94 @@ async function migrate() {
   try {
     console.log('🔄 Початок міграції бази даних...\n');
 
-    // 1. users
+    // 1. users (з GitHub-полями)
     console.log('📝 users...');
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS users (
         id INT PRIMARY KEY AUTO_INCREMENT,
         username VARCHAR(30) UNIQUE NOT NULL,
         email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
+        password VARCHAR(255) NULL,
         reputation INT DEFAULT 0,
         role ENUM('user', 'moderator', 'admin') DEFAULT 'user',
         bio TEXT,
         location VARCHAR(100),
         website VARCHAR(255),
+        avatar_url VARCHAR(500) NULL,
+        github_id BIGINT NULL,
+        github_login VARCHAR(64) NULL,
+        github_avatar_url VARCHAR(500) NULL,
+        github_access_token TEXT NULL,
+        github_profile JSON NULL,
+        github_stack JSON NULL,
+        github_contributions JSON NULL,
+        github_badges JSON NULL,
+        github_synced_at DATETIME NULL,
         created_at DATETIME NOT NULL,
         updated_at DATETIME NOT NULL,
+        UNIQUE KEY uq_github_id (github_id),
         INDEX idx_username (username),
         INDEX idx_email (email),
-        INDEX idx_reputation (reputation)
+        INDEX idx_reputation (reputation),
+        INDEX idx_github_login (github_login)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
+    // Якщо таблиця вже існувала — додамо нові колонки/індекси неруйнівно.
+    await ensureColumn(connection, 'users', 'avatar_url', 'VARCHAR(500) NULL');
+    await ensureColumn(connection, 'users', 'github_id', 'BIGINT NULL');
+    await ensureColumn(connection, 'users', 'github_login', 'VARCHAR(64) NULL');
+    await ensureColumn(connection, 'users', 'github_avatar_url', 'VARCHAR(500) NULL');
+    await ensureColumn(connection, 'users', 'github_access_token', 'TEXT NULL');
+    await ensureColumn(connection, 'users', 'github_profile', 'JSON NULL');
+    await ensureColumn(connection, 'users', 'github_stack', 'JSON NULL');
+    await ensureColumn(connection, 'users', 'github_contributions', 'JSON NULL');
+    await ensureColumn(connection, 'users', 'github_badges', 'JSON NULL');
+    await ensureColumn(connection, 'users', 'github_synced_at', 'DATETIME NULL');
+    await ensureIndex(connection, 'users', 'uq_github_id', 'UNIQUE KEY uq_github_id (github_id)');
+    await ensureIndex(connection, 'users', 'idx_github_login', 'INDEX idx_github_login (github_login)');
+    // Дозволяємо NULL password для GitHub-only акаунтів
+    try {
+      await connection.execute(`ALTER TABLE users MODIFY COLUMN password VARCHAR(255) NULL`);
+    } catch {
+      /* ігноруємо */
+    }
     console.log('✓ users\n');
+
+    // Поля у CREATE TABLE для випадку, коли таблиця створюється з нуля.
+    // ensureColumn вище гарантує наявність полів, якщо вона вже існувала.
+
+    console.log('📝 user_repositories...');
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS user_repositories (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        github_repo_id BIGINT NOT NULL,
+        name VARCHAR(120) NOT NULL,
+        full_name VARCHAR(200) NOT NULL,
+        html_url VARCHAR(500) NOT NULL,
+        description TEXT NULL,
+        homepage VARCHAR(500) NULL,
+        language VARCHAR(60) NULL,
+        languages JSON NULL,
+        topics JSON NULL,
+        stars INT DEFAULT 0,
+        forks INT DEFAULT 0,
+        watchers INT DEFAULT 0,
+        open_issues INT DEFAULT 0,
+        is_fork BOOLEAN DEFAULT FALSE,
+        is_archived BOOLEAN DEFAULT FALSE,
+        is_pinned BOOLEAN DEFAULT FALSE,
+        pushed_at DATETIME NULL,
+        repo_created_at DATETIME NULL,
+        synced_at DATETIME NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE KEY uq_user_repo (user_id, github_repo_id),
+        INDEX idx_user (user_id),
+        INDEX idx_pinned (user_id, is_pinned),
+        INDEX idx_lang (language)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log('✓ user_repositories\n');
 
     // 2. legacy questions
     console.log('📝 questions (legacy)...');
@@ -505,6 +590,38 @@ async function migrate() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
     console.log('✓ content_bookmarks\n');
+
+    console.log('📝 content_linked_repos (GitHub repos на контенті)...');
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS content_linked_repos (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        target_type ENUM('question','article','guide','snippet','roadmap','best_practice','faq','content') NOT NULL,
+        target_id INT NOT NULL,
+        github_repo_id BIGINT NOT NULL,
+        name VARCHAR(120) NOT NULL,
+        full_name VARCHAR(200) NOT NULL,
+        html_url VARCHAR(500) NOT NULL,
+        description TEXT NULL,
+        homepage VARCHAR(500) NULL,
+        language VARCHAR(60) NULL,
+        topics JSON NULL,
+        stars INT DEFAULT 0,
+        forks INT DEFAULT 0,
+        open_issues INT DEFAULT 0,
+        is_fork BOOLEAN DEFAULT FALSE,
+        is_archived BOOLEAN DEFAULT FALSE,
+        added_by_user_id INT NOT NULL,
+        added_note VARCHAR(280) NULL,
+        pushed_at DATETIME NULL,
+        added_at DATETIME NOT NULL,
+        FOREIGN KEY (added_by_user_id) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE KEY uq_target_repo (target_type, target_id, github_repo_id),
+        INDEX idx_target (target_type, target_id),
+        INDEX idx_added_by (added_by_user_id),
+        INDEX idx_lang (language)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log('✓ content_linked_repos\n');
 
     console.log('✅ Міграція завершена успішно!');
   } catch (error) {

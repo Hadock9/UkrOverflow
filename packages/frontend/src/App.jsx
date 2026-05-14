@@ -28,6 +28,7 @@ import { SnippetDetail } from './pages/SnippetDetail'
 import { NewSnippet } from './pages/NewSnippet'
 import { EditSnippet } from './pages/EditSnippet'
 import { RoadmapDetail, BestPracticeDetail, FaqDetail } from './pages/HubItemDetail'
+import { AuthCallback } from './pages/AuthCallback'
 
 function App() {
   const [initialized, setInitialized] = useState(false)
@@ -67,7 +68,7 @@ function App() {
       <div className="container" style={{ textAlign: 'center', padding: '100px 20px' }}>
         <div className="loading"></div>
         <p style={{ marginTop: '20px', fontFamily: 'var(--font-mono)' }}>
-          ЗАВАНТАЖЕННЯ UKROVERFLOW...
+          ЗАВАНТАЖЕННЯ DEVHUB.UA...
         </p>
       </div>
     )
@@ -93,6 +94,7 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
 
             {/* Knowledge hub типи */}
             <Route path="/articles" element={<Home />} />
@@ -130,7 +132,7 @@ function App() {
           fontSize: '0.875rem'
         }}>
           <div className="container">
-            UKROVERFLOW 2.0
+            DEVHUB.UA
           </div>
         </footer>
       </div>

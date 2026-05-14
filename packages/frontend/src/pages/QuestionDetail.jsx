@@ -14,6 +14,7 @@ import { MarkdownEditor } from '../components/MarkdownEditor';
 import { AIAssistant } from '../components/AIAssistant';
 import { AISimilarQuestions } from '../components/AISimilarQuestions';
 import { AIQuestionSummary } from '../components/AIQuestionSummary';
+import { LinkedReposPanel } from '../components/LinkedReposPanel';
 import '../styles/brutalism.css';
 
 export function QuestionDetail() {
@@ -379,6 +380,11 @@ export function QuestionDetail() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Пов'язані GitHub репозиторії */}
+      <div style={{ marginTop: 'var(--space-4)' }}>
+        <LinkedReposPanel targetType="question" targetId={id} />
       </div>
 
       {/* Схожі питання (AI) */}
