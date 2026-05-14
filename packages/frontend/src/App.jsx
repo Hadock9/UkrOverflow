@@ -18,6 +18,16 @@ import { Register } from './pages/Register'
 import { Tags } from './pages/Tags'
 import { Users } from './pages/Users'
 import { Profile } from './pages/Profile'
+import { ArticleDetail } from './pages/ArticleDetail'
+import { NewArticle } from './pages/NewArticle'
+import { EditArticle } from './pages/EditArticle'
+import { GuideDetail } from './pages/GuideDetail'
+import { NewGuide } from './pages/NewGuide'
+import { EditGuide } from './pages/EditGuide'
+import { SnippetDetail } from './pages/SnippetDetail'
+import { NewSnippet } from './pages/NewSnippet'
+import { EditSnippet } from './pages/EditSnippet'
+import { RoadmapDetail, BestPracticeDetail, FaqDetail } from './pages/HubItemDetail'
 
 function App() {
   const [initialized, setInitialized] = useState(false)
@@ -83,6 +93,32 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+
+            {/* Knowledge hub типи */}
+            <Route path="/articles" element={<Home />} />
+            <Route path="/articles/new" element={<NewArticle />} />
+            <Route path="/articles/:id/edit" element={<EditArticle />} />
+            <Route path="/articles/:id" element={<ArticleDetail />} />
+
+            <Route path="/guides" element={<Home />} />
+            <Route path="/guides/new" element={<NewGuide />} />
+            <Route path="/guides/:id/edit" element={<EditGuide />} />
+            <Route path="/guides/:id" element={<GuideDetail />} />
+
+            <Route path="/snippets" element={<Home />} />
+            <Route path="/snippets/new" element={<NewSnippet />} />
+            <Route path="/snippets/:id/edit" element={<EditSnippet />} />
+            <Route path="/snippets/:id" element={<SnippetDetail />} />
+
+            <Route path="/roadmaps" element={<Home />} />
+            <Route path="/roadmaps/:id" element={<RoadmapDetail />} />
+
+            <Route path="/best-practices" element={<Home />} />
+            <Route path="/best-practices/:id" element={<BestPracticeDetail />} />
+
+            <Route path="/faq" element={<Home />} />
+            <Route path="/faqs" element={<Home />} />
+            <Route path="/faqs/:id" element={<FaqDetail />} />
           </Routes>
         </main>
 

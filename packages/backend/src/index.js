@@ -24,6 +24,13 @@ import aiRoutes from './routes/ai.js';
 import notificationsRoutes from './routes/notifications.js';
 import bookmarksRoutes from './routes/bookmarks.js';
 import statsRoutes from './routes/stats.js';
+import articlesRoutes from './routes/articles.js';
+import guidesRoutes from './routes/guides.js';
+import snippetsRoutes from './routes/snippets.js';
+import roadmapsRoutes from './routes/roadmaps.js';
+import bestPracticesRoutes from './routes/bestPractices.js';
+import faqsRoutes from './routes/faqs.js';
+import contentRoutes from './routes/content.js';
 
 // Завантаження змінних оточення
 dotenv.config();
@@ -110,6 +117,13 @@ app.use('/api/users', usersRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/bookmarks', bookmarksRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/articles', articlesRoutes);
+app.use('/api/guides', guidesRoutes);
+app.use('/api/snippets', snippetsRoutes);
+app.use('/api/roadmaps', roadmapsRoutes);
+app.use('/api/best-practices', bestPracticesRoutes);
+app.use('/api/faqs', faqsRoutes);
+app.use('/api/content', contentRoutes);
 
 // WebSocket з'єднання
 const clients = new Map();

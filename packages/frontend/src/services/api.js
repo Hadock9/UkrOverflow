@@ -128,6 +128,71 @@ export const bookmarks = {
   check: (questionId) => api.get(`/bookmarks/check/${questionId}`)
 };
 
+// Knowledge hub: уніфікований фід
+export const content = {
+  list: (params) => api.get('/content', { params }),
+};
+
+// Articles
+export const articles = {
+  list: (params) => api.get('/articles', { params }),
+  get: (id) => api.get(`/articles/${id}`),
+  create: (data) => api.post('/articles', data),
+  update: (id, data) => api.put(`/articles/${id}`, data),
+  delete: (id) => api.delete(`/articles/${id}`),
+  getTags: () => api.get('/articles/tags/all'),
+};
+
+// Guides
+export const guides = {
+  list: (params) => api.get('/guides', { params }),
+  get: (id) => api.get(`/guides/${id}`),
+  create: (data) => api.post('/guides', data),
+  update: (id, data) => api.put(`/guides/${id}`, data),
+  delete: (id) => api.delete(`/guides/${id}`),
+  getTags: () => api.get('/guides/tags/all'),
+};
+
+// Snippets
+export const snippets = {
+  list: (params) => api.get('/snippets', { params }),
+  get: (id) => api.get(`/snippets/${id}`),
+  create: (data) => api.post('/snippets', data),
+  update: (id, data) => api.put(`/snippets/${id}`, data),
+  delete: (id) => api.delete(`/snippets/${id}`),
+  getTags: () => api.get('/snippets/tags/all'),
+};
+
+// Roadmaps
+export const roadmaps = {
+  list: (params) => api.get('/roadmaps', { params }),
+  get: (id) => api.get(`/roadmaps/${id}`),
+  create: (data) => api.post('/roadmaps', data),
+  update: (id, data) => api.put(`/roadmaps/${id}`, data),
+  delete: (id) => api.delete(`/roadmaps/${id}`),
+  getTags: () => api.get('/roadmaps/tags/all'),
+};
+
+// Best practices
+export const bestPractices = {
+  list: (params) => api.get('/best-practices', { params }),
+  get: (id) => api.get(`/best-practices/${id}`),
+  create: (data) => api.post('/best-practices', data),
+  update: (id, data) => api.put(`/best-practices/${id}`, data),
+  delete: (id) => api.delete(`/best-practices/${id}`),
+  getTags: () => api.get('/best-practices/tags/all'),
+};
+
+// FAQs
+export const faqs = {
+  list: (params) => api.get('/faqs', { params }),
+  get: (id) => api.get(`/faqs/${id}`),
+  create: (data) => api.post('/faqs', data),
+  update: (id, data) => api.put(`/faqs/${id}`, data),
+  delete: (id) => api.delete(`/faqs/${id}`),
+  getTags: () => api.get('/faqs/tags/all'),
+};
+
 // Stats
 export const stats = {
   overview: () => api.get('/stats/overview'),
