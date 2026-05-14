@@ -4,13 +4,16 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 COPY packages/frontend/package.json packages/frontend/
+COPY packages/mediator/package.json packages/mediator/
+COPY packages/shared/package.json packages/shared/
 RUN npm ci -w frontend
 
+COPY packages/shared ./packages/shared
+COPY packages/mediator ./packages/mediator
 COPY packages/frontend ./packages/frontend
 
 WORKDIR /app/packages/frontend
 
-# Порожній VITE_API_URL = запити на той самий origin (/api через nginx)
 ARG VITE_API_URL=
 ARG VITE_WS_URL=
 ENV VITE_API_URL=$VITE_API_URL

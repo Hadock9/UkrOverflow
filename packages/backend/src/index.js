@@ -54,6 +54,7 @@ if (missingVars.length > 0) {
 }
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = parseInt(process.env.API_PORT || '3338');
 const HOST = process.env.API_HOST || 'localhost';
 
@@ -69,10 +70,20 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
+const corsOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? process.env.FRONTEND_URL
-    : '*',
+  origin:
+    process.env.NODE_ENV === 'production'
+      ? corsOrigins.length === 0
+        ? false
+        : corsOrigins.length === 1
+          ? corsOrigins[0]
+          : corsOrigins
+      : '*',
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Visitor-Id', 'X-Record-View']
 }));
