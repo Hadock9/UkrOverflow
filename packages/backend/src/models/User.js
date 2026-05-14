@@ -89,7 +89,20 @@ export class User {
    * Перевірка паролю
    */
   static async verifyPassword(plainPassword, hashedPassword) {
-    return bcrypt.compare(plainPassword, hashedPassword);
+    if (
+      plainPassword == null ||
+      String(plainPassword) === '' ||
+      hashedPassword == null ||
+      typeof hashedPassword !== 'string' ||
+      hashedPassword.trim() === ''
+    ) {
+      return false;
+    }
+    try {
+      return await bcrypt.compare(plainPassword, hashedPassword);
+    } catch {
+      return false;
+    }
   }
 
   /**

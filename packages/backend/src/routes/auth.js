@@ -113,6 +113,16 @@ router.post(
         });
       }
 
+      if (user.password == null || String(user.password).trim() === '') {
+        return res.status(401).json({
+          success: false,
+          message:
+            user.github_id
+              ? 'Для цього акаунта пароль не заданий. Увійдіть через GitHub.'
+              : 'Для цього акаунта не налаштовано пароль. Зверніться до підтримки.'
+        });
+      }
+
       // Перевірка паролю
       const isPasswordValid = await User.verifyPassword(password, user.password);
       if (!isPasswordValid) {
