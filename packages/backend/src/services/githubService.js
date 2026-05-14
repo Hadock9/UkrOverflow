@@ -132,6 +132,25 @@ function githubCallbackFromRequestHost(req, allowed) {
   return null;
 }
 
+/** У продакшені GitHub очікує https на публічному домені; http:// той самий host — відхиляється. */
+function upgradeHttpDomainGithubCallbackToHttps(urlStr) {
+  if (process.env.NODE_ENV === 'development') return urlStr;
+  try {
+    const fin = finalizeRedirectUri(urlStr);
+    const u = new URL(fin);
+    if (u.protocol !== 'http:') return fin;
+    const h = u.hostname.toLowerCase();
+    if (h === 'localhost' || h === '127.0.0.1') return fin;
+    if (isBareIpv4(h)) return fin;
+    console.warn(
+      '[GitHub OAuth] redirect_uri був http:// на домені — перемикаємо на https:// (узгодження з OAuth App на GitHub).'
+    );
+    return finalizeRedirectUri(`https://${u.host}${u.pathname}${u.search}`);
+  } catch {
+    return urlStr;
+  }
+}
+
 /**
  * Callback URL для GitHub OAuth з урахуванням запиту (authorize і token exchange мають бути однакові).
  * @param {import('express').Request | null | undefined} req
@@ -139,34 +158,36 @@ function githubCallbackFromRequestHost(req, allowed) {
 export function resolveGithubCallbackUrlFromRequest(req) {
   const allowed = parseFrontendOrigins();
 
+  let resolved;
+
   const explicit = process.env.GITHUB_CALLBACK_URL?.trim();
   if (explicit) {
-    return coerceAwayFromIpv4LiteralCallback(explicit, allowed);
-  }
-
-  const publicApi = process.env.PUBLIC_API_URL?.trim();
-  if (publicApi) {
-    const built = `${publicApi.replace(/\/$/, '')}/api/auth/github/callback`;
-    return coerceAwayFromIpv4LiteralCallback(built, allowed);
-  }
-
-  if (process.env.NODE_ENV === 'development') {
+    resolved = coerceAwayFromIpv4LiteralCallback(explicit, allowed);
+  } else if (process.env.PUBLIC_API_URL?.trim()) {
+    const publicApi = process.env.PUBLIC_API_URL.trim();
+    resolved = coerceAwayFromIpv4LiteralCallback(
+      `${publicApi.replace(/\/$/, '')}/api/auth/github/callback`,
+      allowed
+    );
+  } else if (process.env.NODE_ENV === 'development') {
     const port = process.env.API_PORT || '3338';
-    return finalizeRedirectUri(`http://localhost:${port}/api/auth/github/callback`);
-  }
-
-  if (req && allowed.length > 0) {
+    resolved = finalizeRedirectUri(`http://localhost:${port}/api/auth/github/callback`);
+  } else if (req && allowed.length > 0) {
     const fromHost = githubCallbackFromRequestHost(req, allowed);
-    if (fromHost) return finalizeRedirectUri(fromHost);
+    if (fromHost) resolved = finalizeRedirectUri(fromHost);
   }
 
-  if (allowed.length > 0) {
+  if (resolved === undefined && allowed.length > 0) {
     const base = pickOriginForGithubOAuthCallback(allowed) ?? allowed[0];
-    return finalizeRedirectUri(`${base.replace(/\/$/, '')}/api/auth/github/callback`);
+    resolved = finalizeRedirectUri(`${base.replace(/\/$/, '')}/api/auth/github/callback`);
   }
 
-  const port = process.env.API_PORT || '3338';
-  return finalizeRedirectUri(`http://localhost:${port}/api/auth/github/callback`);
+  if (resolved === undefined) {
+    const port = process.env.API_PORT || '3338';
+    resolved = finalizeRedirectUri(`http://localhost:${port}/api/auth/github/callback`);
+  }
+
+  return upgradeHttpDomainGithubCallbackToHttps(resolved);
 }
 
 /** Статичний callback (старту, логів) без Host запиту. */
