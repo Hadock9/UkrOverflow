@@ -209,7 +209,7 @@ export function GitHubProfileCard({ userId, isOwn, token }) {
         </p>
         {!enabled && (
           <div className="alert alert-error" style={{ marginBottom: 'var(--space-2)' }}>
-            GitHub OAuth не налаштовано на сервері. Задайте GITHUB_CLIENT_ID / SECRET / CALLBACK_URL у .env та перезапустіть бекенд.
+            GitHub OAuth не налаштовано на сервері. Задайте GITHUB_CLIENT_ID та GITHUB_CLIENT_SECRET у .env і перезапустіть API. Callback має збігатися з полем Authorization callback URL у OAuth App (перевірте GET /api/auth/github/status).
           </div>
         )}
         <a

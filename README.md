@@ -21,8 +21,7 @@ npm run dev
 | Backend API | `packages/backend` |
 | Mediator | `packages/mediator` |
 
-Скопіюйте `.env.example` у корені та у `packages/backend` / `packages/frontend` за потреби (див. `DOCS.txt` та `QUICK_START_AI.md` для AI).
-
+Скопіюйте `.env.example` у корені та у `packages/backend` / `packages/frontend` за потреби (див. `DOCS.txt` та `QUICK_START_AI.md` для AI). Деплой Docker: `deploy/env.docker.example` — там приклад **`GITHUB_*` / `FRONTEND_URL`**: у GitHub OAuth App поля Homepage і Authorization callback мають бути повними URL (`http://...` або `https://...`), символ у символ як у серверному `.env`.
 ## Ліцензія
 
 MIT

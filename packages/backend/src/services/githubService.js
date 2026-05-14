@@ -9,9 +9,19 @@
  * Callback URL для GitHub App повинен збігатися з тим, що повертає
  * resolveGithubCallbackUrlFromRequest(req) — GITHUB_CALLBACK_URL, GITHUB_OAUTH_PUBLIC_ORIGIN,
  * або GITHUB_OAUTH_REDIRECT_URI (повний URL 1:1 як у GitHub OAuth App — найнадійніше).
+ *
+ * На сторінці OAuth App поля Homepage / Authorization callback — завжди з http:// або https://.
  */
 
-import { parseFrontendOrigins, pickOriginForGithubOAuthCallback } from '../utils/frontendOrigin.js';
+import {
+  parseFrontendOrigins,
+  pickOriginForGithubOAuthCallback,
+  sanitizeHttpUrlDuplicates,
+} from '../utils/frontendOrigin.js';
+
+function readGithubOAuthEnvUrl(envKey) {
+  return sanitizeHttpUrlDuplicates(process.env[envKey]);
+}
 
 const GITHUB_API = 'https://api.github.com';
 const GITHUB_OAUTH = 'https://github.com/login/oauth';
@@ -68,7 +78,7 @@ function hostWithoutPort(headerValue) {
 
 /** Куди підміняти IPv4-callback: явний домен або вибір із FRONTEND_URL. */
 function resolveCanonicalOAuthOrigin(allowed) {
-  const forced = process.env.GITHUB_OAUTH_PUBLIC_ORIGIN?.trim();
+  const forced = readGithubOAuthEnvUrl('GITHUB_OAUTH_PUBLIC_ORIGIN');
   if (forced) {
     const raw = forced.replace(/\/$/, '');
     try {
@@ -111,7 +121,7 @@ function coerceAwayFromIpv4LiteralCallback(candidateUrl, allowed) {
 
     const httpsBase = `https://${canonUrl.host}`;
     console.warn(
-      '[GitHub OAuth] Callback був на IPv4 — замінено на канонічний https-домен. Задайте GITHUB_CALLBACK_URL або GITHUB_OAUTH_PUBLIC_ORIGIN=https://devflow.info і приберіть IP з .env.'
+      '[GitHub OAuth] Callback був на IPv4 — замінено на канонічний https-домен. Задайте GITHUB_CALLBACK_URL або GITHUB_OAUTH_PUBLIC_ORIGIN і приберіть IP з .env.'
     );
     return finalizeRedirectUri(`${httpsBase.replace(/\/$/, '')}/api/auth/github/callback`);
   } catch {
@@ -178,7 +188,7 @@ function upgradeHttpDomainGithubCallbackToHttps(urlStr) {
 
 /** Якщо лишився http:// (часто IP або localhost у проді), підміняємо на https://… з GITHUB_OAUTH_PUBLIC_ORIGIN. */
 function forceHttpsGithubCallbackUsingPublicOriginIfStillHttp(urlStr) {
-  const pub = process.env.GITHUB_OAUTH_PUBLIC_ORIGIN?.trim()?.replace(/\/$/, '');
+  const pub = readGithubOAuthEnvUrl('GITHUB_OAUTH_PUBLIC_ORIGIN').replace(/\/$/, '');
   if (!pub || process.env.NODE_ENV === 'development') return urlStr;
   try {
     const fin = finalizeRedirectUri(urlStr);
@@ -204,7 +214,7 @@ function ensureProductionGithubRedirectUsesHttps(urlStr) {
  * @param {import('express').Request | null | undefined} req
  */
 export function resolveGithubCallbackUrlFromRequest(req) {
-  const strictFull = process.env.GITHUB_OAUTH_REDIRECT_URI?.trim();
+  const strictFull = readGithubOAuthEnvUrl('GITHUB_OAUTH_REDIRECT_URI');
   if (strictFull) {
     return ensureProductionGithubRedirectUsesHttps(finalizeRedirectUri(strictFull));
   }
@@ -213,11 +223,11 @@ export function resolveGithubCallbackUrlFromRequest(req) {
 
   let resolved;
 
-  const explicit = process.env.GITHUB_CALLBACK_URL?.trim();
+  const explicit = readGithubOAuthEnvUrl('GITHUB_CALLBACK_URL');
   if (explicit) {
     resolved = coerceAwayFromIpv4LiteralCallback(explicit, allowed);
-  } else if (process.env.PUBLIC_API_URL?.trim()) {
-    const publicApi = process.env.PUBLIC_API_URL.trim();
+  } else if (readGithubOAuthEnvUrl('PUBLIC_API_URL')) {
+    const publicApi = readGithubOAuthEnvUrl('PUBLIC_API_URL');
     resolved = coerceAwayFromIpv4LiteralCallback(
       `${publicApi.replace(/\/$/, '')}/api/auth/github/callback`,
       allowed
@@ -240,7 +250,7 @@ export function resolveGithubCallbackUrlFromRequest(req) {
       const port = process.env.API_PORT || '3338';
       resolved = finalizeRedirectUri(`http://localhost:${port}/api/auth/github/callback`);
     } else {
-      const pub = process.env.GITHUB_OAUTH_PUBLIC_ORIGIN?.trim()?.replace(/\/$/, '');
+      const pub = readGithubOAuthEnvUrl('GITHUB_OAUTH_PUBLIC_ORIGIN').replace(/\/$/, '');
       if (pub) {
         try {
           const bu = new URL(pub.startsWith('http') ? pub : `https://${pub}`);
@@ -274,7 +284,7 @@ export function logGithubOAuthRedirectUriHint() {
     const uri = resolveGithubCallbackUrl();
     console.log(`[GitHub OAuth] redirect_uri → ${uri}`);
     const origins = parseFrontendOrigins();
-    if (origins.length > 1 && !process.env.GITHUB_CALLBACK_URL?.trim()) {
+    if (origins.length > 1 && !readGithubOAuthEnvUrl('GITHUB_CALLBACK_URL')) {
       console.warn(
         '[GitHub OAuth] Декілька origin у FRONTEND_URL без GITHUB_CALLBACK_URL — для redirect_uri обрано канонічний (пріоритет: https і доменне ім’я). Надійніше задати GITHUB_CALLBACK_URL як у GitHub OAuth App.'
       );

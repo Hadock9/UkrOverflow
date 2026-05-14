@@ -10,8 +10,8 @@
  *   GITHUB_OAUTH_REDIRECT_URI — повний callback URL як у GitHub OAuth App (найнадійніше).
  *   GITHUB_CALLBACK_URL або PUBLIC_API_URL або FRONTEND_URL / GITHUB_OAUTH_PUBLIC_ORIGIN — інакше.
  *   FRONTEND_URL (для post-callback редіректу та CORS)
- */
-
+ *
+ * Поля OAuth App на GitHub (Homepage, Authorization callback) — повні URL із http:// або https://.
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { jwtConfig } from '../config/jwt.js';

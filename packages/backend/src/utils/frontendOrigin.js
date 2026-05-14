@@ -2,10 +2,26 @@
  * FRONTEND_URL може містити кілька origin через кому (різні способи доступу до сайту).
  */
 
+/**
+ * Прибирає подвійні схеми після типової помилки копіпасти (https://https://host).
+ */
+export function sanitizeHttpUrlDuplicates(value) {
+  let t = String(value ?? '').trim().replace(/\s+/g, '');
+  if (!t) return '';
+  while (/^https?:\/\/https?:\/\//i.test(t)) {
+    t = t.replace(/^https?:\/\//i, '');
+  }
+  return t;
+}
+
 export function parseFrontendOrigins() {
   const raw = process.env.FRONTEND_URL?.trim();
   if (!raw) return [];
-  return raw.split(',').map((s) => s.trim()).filter(Boolean).map((s) => s.replace(/\/$/, ''));
+  return raw
+    .split(',')
+    .map((s) => sanitizeHttpUrlDuplicates(s.trim()))
+    .filter(Boolean)
+    .map((s) => s.replace(/\/$/, ''));
 }
 
 export function primaryFrontendOrigin() {
