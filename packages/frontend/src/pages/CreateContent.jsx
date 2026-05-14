@@ -13,7 +13,7 @@ export function CreateContent() {
         <div>
           <h1 className="page-title">СТВОРИТИ КОНТЕНТ</h1>
           <p className="page-subtitle">
-            Knowledge hub об'єднує питання, статті, міні-гайди, snippets, roadmap-и, best practices та FAQ.
+            База знань DevFlow: питання, статті, міні-гайди, сніпети, навчальні маршрути, найкращі практики та часті запитання.
           </p>
         </div>
       </div>

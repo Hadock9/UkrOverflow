@@ -18,7 +18,7 @@ marked.setOptions({
 export function MarkdownEditor({
   value = '',
   onChange,
-  placeholder = 'Введіть текст (підтримується Markdown)...',
+  placeholder = 'Введіть текст (підтримується Маркдаун)...',
   minHeight = '200px',
   showPreview = true,
   showToolbar = true
@@ -59,11 +59,11 @@ export function MarkdownEditor({
     { label: 'H3', action: () => insertMarkdown('### '), title: 'Заголовок 3' },
     { label: 'B', action: () => insertMarkdown('**', '**'), title: 'Жирний' },
     { label: 'I', action: () => insertMarkdown('_', '_'), title: 'Курсив' },
-    { label: 'CODE', action: () => insertMarkdown('`', '`'), title: 'Код' },
-    { label: 'LINK', action: () => insertMarkdown('[', '](url)'), title: 'Посилання' },
+    { label: 'КОД', action: () => insertMarkdown('`', '`'), title: 'Код' },
+    { label: 'ЛІНК', action: () => insertMarkdown('[', '](url)'), title: 'Посилання' },
     { label: 'UL', action: () => insertMarkdown('- '), title: 'Список' },
     { label: 'OL', action: () => insertMarkdown('1. '), title: 'Нумерований список' },
-    { label: 'QUOTE', action: () => insertMarkdown('> '), title: 'Цитата' }
+    { label: 'ЦИТ', action: () => insertMarkdown('> '), title: 'Цитата' }
   ];
 
   return (

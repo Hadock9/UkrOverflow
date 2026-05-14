@@ -1,5 +1,5 @@
 /**
- * Сторінка перегляду snippet.
+ * Сторінка перегляду сніпета.
  */
 
 import { useEffect, useState } from 'react';
@@ -31,7 +31,7 @@ export function SnippetDetail() {
       const snippetData = response.data.data?.snippet || response.data.snippet || response.data;
       setSnippet(snippetData);
     } catch (error) {
-      console.error('Помилка завантаження snippet:', error);
+      console.error('Помилка завантаження сніпета:', error);
       setSnippet(null);
     } finally {
       setLoading(false);
@@ -39,13 +39,13 @@ export function SnippetDetail() {
   };
 
   const handleDelete = async () => {
-    if (!confirm('Ви впевнені, що хочете видалити цей snippet?')) return;
+    if (!confirm('Ви впевнені, що хочете видалити цей сніпет?')) return;
     try {
       await snippets.delete(id);
       navigate('/');
     } catch (error) {
-      console.error('Помилка видалення snippet:', error);
-      alert(error.response?.data?.message || 'Помилка видалення snippet');
+      console.error('Помилка видалення сніпета:', error);
+      alert(error.response?.data?.message || 'Помилка видалення сніпета');
     }
   };
 
@@ -67,7 +67,7 @@ export function SnippetDetail() {
   };
 
   if (loading) return <div className="container"><div className="loading">ЗАВАНТАЖЕННЯ...</div></div>;
-  if (!snippet) return <div className="container"><div className="error">SNIPPET НЕ ЗНАЙДЕНО</div></div>;
+  if (!snippet) return <div className="container"><div className="error">СНІПЕТ НЕ ЗНАЙДЕНО</div></div>;
 
   const canManage = user && (user.id === snippet.author_id || user.role === 'admin');
 
@@ -77,7 +77,7 @@ export function SnippetDetail() {
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-3)', alignItems: 'flex-start', flexWrap: 'wrap' }}>
           <div>
             <div style={{ marginBottom: 'var(--space-2)', display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap' }}>
-              <span className="tag">Snippet</span>
+              <span className="tag">Сніпет</span>
               <span className="badge">{snippet.language}</span>
             </div>
             <h1 className="question-detail-title">{snippet.title}</h1>
@@ -118,7 +118,7 @@ export function SnippetDetail() {
           <div className="question-meta" style={{ marginTop: 'var(--space-4)' }}>
             <Link to={`/users/${snippet.author_id}`} className="author">{snippet.author_name}</Link>
             <span className="separator">•</span>
-            <span className="date">knowledge hub / snippet</span>
+            <span className="date">збірка знань / сніпет</span>
           </div>
         </div>
       </div>

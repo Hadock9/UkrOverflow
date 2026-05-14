@@ -1,7 +1,7 @@
 {
-  "name": "ukroverflow",
+  "name": "devflow",
   "version": "2.0.0",
-  "description": "Українська платформа питань та відповідей",
+  "description": "DevFlow — спільнота та knowledge hub для розробників",
   "private": true,
   "workspaces": [
     "packages/*"
@@ -12,7 +12,11 @@
     "dev:frontend": "cd packages/frontend && npm run dev",
     "build": "cd packages/frontend && npm run build",
     "migrate": "cd packages/backend && npm run migrate",
-    "seed": "cd packages/backend && npm run seed"
+    "seed": "cd packages/backend && npm run seed",
+    "test": "npm run test -w @ukroverflow/backend && npm run test -w frontend",
+    "docker:up": "docker compose --env-file .env up -d --build",
+    "docker:down": "docker compose --env-file .env down",
+    "docker:logs": "docker compose --env-file .env logs -f api web"
   },
   "keywords": [
     "stackoverflow",

@@ -1,6 +1,6 @@
 /**
- * Універсальна сторінка перегляду для нових типів knowledge hub:
- * roadmap, best_practice, faq.
+ * Універсальна сторінка перегляду для нових типів збірки знань:
+ * навчальний маршрут, найкраща практика, ЧаП.
  *
  * Експортує три компоненти, які різняться лише endpoint, ключем у data та підписом.
  */
@@ -92,7 +92,7 @@ function HubItemDetail({ endpoint, dataKey, label, kind }) {
 
           {kind === 'faq' && Array.isArray(item.qa_pairs) && item.qa_pairs.length > 0 && (
             <div style={{ marginBottom: 'var(--space-3)' }}>
-              <h3 style={{ marginBottom: 'var(--space-2)' }}>QA</h3>
+              <h3 style={{ marginBottom: 'var(--space-2)' }}>ЗАПИТАННЯ ТА ВІДПОВІДІ</h3>
               {item.qa_pairs.map((p, idx) => (
                 <div key={idx} style={{ marginBottom: 'var(--space-3)' }}>
                   <p style={{ fontWeight: 700, margin: 0 }}>Q: {p.question}</p>
@@ -127,7 +127,7 @@ function HubItemDetail({ endpoint, dataKey, label, kind }) {
               {item.author_name}
             </Link>
             <span className="separator">•</span>
-            <span className="date">knowledge hub / {kind}</span>
+            <span className="date">DevFlow · {label}</span>
           </div>
         </div>
       </div>
@@ -140,15 +140,15 @@ function HubItemDetail({ endpoint, dataKey, label, kind }) {
 }
 
 export function RoadmapDetail() {
-  return <HubItemDetail endpoint="/roadmaps" dataKey="roadmap" label="Roadmap" kind="roadmap" />;
+  return <HubItemDetail endpoint="/roadmaps" dataKey="roadmap" label="МАРШРУТ" kind="roadmap" />;
 }
 
 export function BestPracticeDetail() {
-  return <HubItemDetail endpoint="/best-practices" dataKey="bestPractice" label="Best practice" kind="best_practice" />;
+  return <HubItemDetail endpoint="/best-practices" dataKey="bestPractice" label="НАЙКРАЩА ПРАКТИКА" kind="best_practice" />;
 }
 
 export function FaqDetail() {
-  return <HubItemDetail endpoint="/faqs" dataKey="faq" label="FAQ" kind="faq" />;
+  return <HubItemDetail endpoint="/faqs" dataKey="faq" label="ЧАП" kind="faq" />;
 }
 
 export default HubItemDetail;

@@ -1,12 +1,18 @@
 /**
- * API Client для UkrOverflow
+ * API Client для DevFlow
  */
 
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3338';
-
-export const apiBaseUrl = API_URL;
+/**
+ * Порожній VITE_API_URL = той самий origin (деплой за nginx: /api проксується на бекенд).
+ * Не задано / null = локальна розробка на :3338.
+ */
+const raw = import.meta.env.VITE_API_URL;
+export const apiBaseUrl = raw === ''
+  ? ''
+  : (raw == null ? 'http://localhost:3338' : String(raw).replace(/\/$/, ''));
+const API_URL = apiBaseUrl;
 export function githubLoginUrl({ link = false, token = null } = {}) {
   const params = new URLSearchParams();
   if (link) params.set('link', '1');
@@ -17,18 +23,36 @@ export function githubLoginUrl({ link = false, token = null } = {}) {
 
 const VISITOR_STORAGE_KEY = 'ukroverflow_visitor_id';
 
+/** Так само, як UUID_STRING на бекенді — щоб анонімний перегляд завжди мав валідний ключ. */
+function isValidVisitorUuid(s) {
+  return typeof s === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s.trim());
+}
+
+function generateVisitorUuid() {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+  // RFC 4122 v4 (fallback для середовищ без Web Crypto API)
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 function ensureVisitorId() {
   if (typeof localStorage === 'undefined') return null;
   let id = localStorage.getItem(VISITOR_STORAGE_KEY);
-  if (!id && globalThis.crypto?.randomUUID) {
-    id = globalThis.crypto.randomUUID();
+  if (!id || !isValidVisitorUuid(id)) {
+    id = generateVisitorUuid();
     localStorage.setItem(VISITOR_STORAGE_KEY, id);
   }
   return id;
 }
 
 const api = axios.create({
-  baseURL: `${API_URL}/api`,
+  baseURL: API_URL === '' ? '/api' : `${API_URL}/api`,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -96,6 +120,7 @@ export const votes = {
 // Search
 export const search = {
   search: (query, params) => api.get('/search', { params: { q: query, ...params } }),
+  global: (query, params) => api.get('/search/global', { params: { q: query, ...params } }),
   suggestions: (query) => api.get('/search/suggestions', { params: { q: query } })
 };
 
@@ -224,6 +249,44 @@ export const stats = {
   recentActivity: (limit) => api.get('/stats/recent-activity', { params: { limit } }),
   unanswered: (limit) => api.get('/stats/unanswered', { params: { limit } })
 };
+
+// Communities
+export const communities = {
+  list: (params) => api.get('/communities', { params }),
+  get: (slug) => api.get(`/communities/${slug}`),
+  create: (data) => api.post('/communities', data),
+  update: (id, data) => api.put(`/communities/${id}`, data),
+  delete: (id) => api.delete(`/communities/${id}`),
+  join: (id) => api.post(`/communities/${id}/join`),
+  leave: (id) => api.post(`/communities/${id}/leave`),
+  members: (id, params) => api.get(`/communities/${id}/members`, { params }),
+};
+
+// Community posts
+export const communityPosts = {
+  list: (params) => api.get('/community-posts', { params }),
+  get: (id, opts) => api.get(`/community-posts/${id}`, opts),
+  create: (data) => api.post('/community-posts', data),
+  update: (id, data) => api.put(`/community-posts/${id}`, data),
+  delete: (id) => api.delete(`/community-posts/${id}`),
+  close: (id, status) => api.post(`/community-posts/${id}/close`, { status }),
+  listComments: (id) => api.get(`/community-posts/${id}/comments`),
+  addComment: (id, data) => api.post(`/community-posts/${id}/comments`, data),
+  deleteComment: (commentId) => api.delete(`/community-posts/comments/${commentId}`),
+  forQuestion: (questionId, params) => api.get(`/community-posts/for-question/${questionId}`, { params }),
+};
+
+// Mentors
+export const mentors = {
+  list: (params) => api.get('/mentors', { params }),
+  me: () => api.get('/mentors/me'),
+  upsertMe: (data) => api.put('/mentors/me', data),
+  deleteMe: () => api.delete('/mentors/me'),
+  byUser: (userId) => api.get(`/mentors/${userId}`),
+};
+
+// Users search (за стеком/локацією/q)
+export const usersSearch = (params) => api.get('/users/search', { params });
 
 // Експорт API клієнта
 export { api };

@@ -1,5 +1,5 @@
 /**
- * Сторінка створення нового best practice knowledge hub.
+ * Сторінка створення нової найкращої практики (knowledge hub).
  * Поля повторюють контракт POST /api/best-practices (express-validator у backend).
  */
 
@@ -72,7 +72,7 @@ export function NewBestPractice() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) {
-      alert('Увійдіть, щоб створити best practice');
+      alert('Увійдіть, щоб створити найкращу практику');
       navigate('/login');
       return;
     }
@@ -101,10 +101,10 @@ export function NewBestPractice() {
       const response = await bestPractices.create(payload);
       const bpData = response.data.data?.bestPractice || response.data.bestPractice || response.data;
 
-      mediator.emit(EventTypes.NOTIFICATION, { type: 'success', message: 'Best practice створено' }, 'NewBestPractice');
+      mediator.emit(EventTypes.NOTIFICATION, { type: 'success', message: 'Найкращу практику створено' }, 'NewBestPractice');
       navigate(`/best-practices/${bpData.id}`);
     } catch (error) {
-      console.error('Помилка створення best practice:', error);
+      console.error('Помилка створення найкращої практики:', error);
       if (error.response?.data?.errors) {
         const apiErrors = {};
         error.response.data.errors.forEach((err) => {
@@ -112,7 +112,7 @@ export function NewBestPractice() {
         });
         setErrors(apiErrors);
       } else {
-        alert(error.response?.data?.message || 'Помилка створення best practice');
+        alert(error.response?.data?.message || 'Помилка створення найкращої практики');
       }
     } finally {
       setSubmitting(false);
@@ -123,7 +123,7 @@ export function NewBestPractice() {
     return (
       <div className="container">
         <div className="empty-state">
-          <h2>УВІЙДІТЬ, ЩОБ СТВОРИТИ BEST PRACTICE</h2>
+          <h2>УВІЙДІТЬ, ЩОБ СТВОРИТИ НАЙКРАЩУ ПРАКТИКУ</h2>
           <button onClick={() => navigate('/login')} className="btn btn-primary">УВІЙТИ</button>
         </div>
       </div>
@@ -133,22 +133,22 @@ export function NewBestPractice() {
   return (
     <div className="container">
       <div className="page-header">
-        <h1 className="page-title">НОВА BEST PRACTICE</h1>
+        <h1 className="page-title">НОВА НАЙКРАЩА ПРАКТИКА</h1>
         <p className="page-subtitle">
-          Перевірений підхід, правило або шаблон. Включає коротке formulating правило та розгорнутий розбір.
+          Перевірений підхід, правило або шаблон. Включає коротке формулювання правила та розгорнутий розбір.
         </p>
       </div>
 
       <div className="question-card" style={{ marginBottom: 'var(--space-4)' }}>
         <div className="question-content">
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-2)', alignItems: 'center' }}>
-            <span className="tag">Best practice</span>
+            <span className="tag">Найкраща практика</span>
             <button type="button" className="btn btn-secondary" onClick={() => navigate('/create')} disabled={submitting}>
               ІНШІ ФОРМАТИ
             </button>
           </div>
           <p style={{ marginTop: 'var(--space-2)', marginBottom: 0 }}>
-            Використовуйте для правил архітектури, code review checklists, антипатернів і team conventions.
+            Використовуйте для правил архітектури, чеклистів перегляду коду, антипатернів і командних угод.
           </p>
         </div>
       </div>
@@ -227,7 +227,7 @@ export function NewBestPractice() {
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={handleTagKeyDown}
-              placeholder="react, code-review, architecture"
+              placeholder="react, перевірка-коду, архітектура"
               style={{ flex: 1 }}
             />
             <button
@@ -267,7 +267,7 @@ export function NewBestPractice() {
 
         <div className="form-actions">
           <button type="submit" className="btn btn-primary" disabled={submitting}>
-            {submitting ? 'ПУБЛІКАЦІЯ...' : 'СТВОРИТИ BEST PRACTICE'}
+            {submitting ? 'ПУБЛІКАЦІЯ...' : 'СТВОРИТИ НАЙКРАЩУ ПРАКТИКУ'}
           </button>
           <button type="button" className="btn btn-secondary" onClick={() => navigate('/create')} disabled={submitting}>
             СКАСУВАТИ

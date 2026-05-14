@@ -9,7 +9,7 @@ import DOMPurify from 'dompurify';
 import { useMediator } from '../contexts/MediatorContext';
 import { useAuth } from '../contexts/AuthContext';
 import { EventTypes } from '../../../mediator/src/index';
-import { api } from '../services/api';
+import { api, communityPosts } from '../services/api';
 import { MarkdownEditor } from '../components/MarkdownEditor';
 import { AIAssistant } from '../components/AIAssistant';
 import { AISimilarQuestions } from '../components/AISimilarQuestions';
@@ -27,11 +27,23 @@ export function QuestionDetail() {
   const [answers, setAnswers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [answerBody, setAnswerBody] = useState('');
+  const [relatedCommunityPosts, setRelatedCommunityPosts] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     loadQuestion();
     loadAnswers();
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    communityPosts
+      .forQuestion(id, { limit: 8 })
+      .then((r) => {
+        const payload = r.data?.data || r.data;
+        setRelatedCommunityPosts(payload?.posts || []);
+      })
+      .catch(() => setRelatedCommunityPosts([]));
   }, [id]);
 
   const loadQuestion = async () => {
@@ -397,6 +409,27 @@ export function QuestionDetail() {
           </div>
         ))}
       </div>
+
+      {relatedCommunityPosts.length > 0 && (
+        <div className="question-detail-card" style={{ marginTop: 'var(--space-4)' }}>
+          <h2 className="section-title">У СПІЛЬНОТАХ ЗА СХОЖИМИ ТЕГАМИ</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {relatedCommunityPosts.map((p) => (
+              <div key={p.id} style={{ border: '2px solid #000', padding: 12, background: '#fff' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>
+                  {p.community_name && (
+                    <Link to={`/communities/${p.community_slug}`} className="tag">{p.community_name}</Link>
+                  )}
+                </div>
+                <Link to={`/community-posts/${p.id}`} className="question-title">{p.title}</Link>
+                <p className="question-excerpt" style={{ marginTop: 8 }}>
+                  {(p.body || '').slice(0, 160)}{p.body && p.body.length > 160 ? '…' : ''}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Пов'язані GitHub репозиторії */}
       <div style={{ marginTop: 'var(--space-4)' }}>

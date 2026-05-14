@@ -1,5 +1,5 @@
 /**
- * Сторінка створення нового roadmap-у knowledge hub.
+ * Сторінка створення нового навчального маршруту knowledge hub.
  * Поля повторюють контракт POST /api/roadmaps (express-validator у backend).
  */
 
@@ -88,7 +88,7 @@ export function NewRoadmap() {
     else if (summary.length < 20) newErrors.summary = 'Опис має бути мінімум 20 символів';
     else if (summary.length > 280) newErrors.summary = 'Опис не довший за 280 символів';
 
-    if (!body.trim()) newErrors.body = 'Опис roadmap-у обов\'язковий';
+    if (!body.trim()) newErrors.body = 'Опис навчального маршруту обов\'язковий';
     else if (body.length < 80) newErrors.body = 'Опис має бути мінімум 80 символів';
 
     const weeks = Number(estimatedWeeks);
@@ -110,7 +110,7 @@ export function NewRoadmap() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) {
-      alert('Увійдіть, щоб створити roadmap');
+      alert('Увійдіть, щоб створити навчальний маршрут');
       navigate('/login');
       return;
     }
@@ -144,10 +144,10 @@ export function NewRoadmap() {
       const response = await roadmaps.create(payload);
       const roadmapData = response.data.data?.roadmap || response.data.roadmap || response.data;
 
-      mediator.emit(EventTypes.NOTIFICATION, { type: 'success', message: 'Roadmap створено' }, 'NewRoadmap');
+      mediator.emit(EventTypes.NOTIFICATION, { type: 'success', message: 'Маршрут створено' }, 'NewRoadmap');
       navigate(`/roadmaps/${roadmapData.id}`);
     } catch (error) {
-      console.error('Помилка створення roadmap:', error);
+      console.error('Помилка створення маршруту:', error);
       if (error.response?.data?.errors) {
         const apiErrors = {};
         error.response.data.errors.forEach((err) => {
@@ -155,7 +155,7 @@ export function NewRoadmap() {
         });
         setErrors(apiErrors);
       } else {
-        alert(error.response?.data?.message || 'Помилка створення roadmap');
+        alert(error.response?.data?.message || 'Помилка створення маршруту');
       }
     } finally {
       setSubmitting(false);
@@ -166,7 +166,7 @@ export function NewRoadmap() {
     return (
       <div className="container">
         <div className="empty-state">
-          <h2>УВІЙДІТЬ, ЩОБ СТВОРИТИ ROADMAP</h2>
+          <h2>УВІЙДІТЬ, ЩОБ СТВОРИТИ МАРШРУТ</h2>
           <button onClick={() => navigate('/login')} className="btn btn-primary">УВІЙТИ</button>
         </div>
       </div>
@@ -176,7 +176,7 @@ export function NewRoadmap() {
   return (
     <div className="container">
       <div className="page-header">
-        <h1 className="page-title">НОВИЙ ROADMAP</h1>
+        <h1 className="page-title">НОВИЙ НАВЧАЛЬНИЙ МАРШРУТ</h1>
         <p className="page-subtitle">
           Навчальний маршрут зі структурованими кроками — від точки А до точки Б.
         </p>
@@ -185,7 +185,7 @@ export function NewRoadmap() {
       <div className="question-card" style={{ marginBottom: 'var(--space-4)' }}>
         <div className="question-content">
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-2)', alignItems: 'center' }}>
-            <span className="tag">Roadmap</span>
+            <span className="tag">Маршрут</span>
             <button type="button" className="btn btn-secondary" onClick={() => navigate('/create')} disabled={submitting}>
               ІНШІ ФОРМАТИ
             </button>
@@ -205,7 +205,7 @@ export function NewRoadmap() {
             className={`form-input ${errors.title ? 'error' : ''}`}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Наприклад: Frontend Developer Roadmap 2026"
+            placeholder="Наприклад: навчальний маршрут фронтенд-розробника 2026"
             maxLength={255}
           />
           {errors.title && <div className="form-error">{errors.title}</div>}
@@ -256,7 +256,7 @@ export function NewRoadmap() {
         </div>
 
         <div className="form-group">
-          <label htmlFor="body" className="form-label">ОПИС ROADMAP-У</label>
+          <label htmlFor="body" className="form-label">ОПИС МАРШРУТУ</label>
           <MarkdownEditor value={body} onChange={setBody} showPreview={true} />
           {errors.body && <div className="form-error">{errors.body}</div>}
         </div>
@@ -350,7 +350,7 @@ export function NewRoadmap() {
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={handleTagKeyDown}
-              placeholder="javascript, react, roadmap"
+              placeholder="javascript, react, навчальний-маршрут"
               style={{ flex: 1 }}
             />
             <button
@@ -394,7 +394,7 @@ export function NewRoadmap() {
 
         <div className="form-actions">
           <button type="submit" className="btn btn-primary" disabled={submitting}>
-            {submitting ? 'ПУБЛІКАЦІЯ...' : 'СТВОРИТИ ROADMAP'}
+            {submitting ? 'ПУБЛІКАЦІЯ...' : 'СТВОРИТИ МАРШРУТ'}
           </button>
           <button type="button" className="btn btn-secondary" onClick={() => navigate('/create')} disabled={submitting}>
             СКАСУВАТИ

@@ -1,5 +1,5 @@
 /**
- * Сторінка створення нового snippet.
+ * Сторінка створення нового сніпета.
  */
 
 import { useState } from 'react';
@@ -31,7 +31,7 @@ export function NewSnippet() {
     if (!title.trim()) newErrors.title = 'Заголовок обов\'язковий';
     else if (title.length < 5) newErrors.title = 'Заголовок має бути мінімум 5 символів';
 
-    if (!description.trim()) newErrors.description = 'Пояснення snippet обов\'язкове';
+    if (!description.trim()) newErrors.description = 'Пояснення сніпета обов\'язкове';
     else if (description.length < 20) newErrors.description = 'Пояснення має бути мінімум 20 символів';
 
     if (!code.trim()) newErrors.code = 'Код обов\'язковий';
@@ -49,7 +49,7 @@ export function NewSnippet() {
     e.preventDefault();
 
     if (!user) {
-      alert('Увійдіть, щоб створити snippet');
+      alert('Увійдіть, щоб створити сніпет');
       navigate('/login');
       return;
     }
@@ -78,12 +78,12 @@ export function NewSnippet() {
 
       mediator.emit(EventTypes.NOTIFICATION, {
         type: 'success',
-        message: 'Snippet створено',
+        message: 'Сніпет створено',
       }, 'NewSnippet');
 
       navigate(`/snippets/${snippetData.id}`);
     } catch (error) {
-      console.error('Помилка створення snippet:', error);
+      console.error('Помилка створення сніпета:', error);
       if (error.response?.data?.errors) {
         const apiErrors = {};
         error.response.data.errors.forEach((err) => {
@@ -91,7 +91,7 @@ export function NewSnippet() {
         });
         setErrors(apiErrors);
       } else {
-        alert(error.response?.data?.message || 'Помилка створення snippet');
+        alert(error.response?.data?.message || 'Помилка створення сніпета');
       }
     } finally {
       setSubmitting(false);
@@ -102,7 +102,7 @@ export function NewSnippet() {
     return (
       <div className="container">
         <div className="empty-state">
-          <h2>УВІЙДІТЬ, ЩОБ СТВОРИТИ SNIPPET</h2>
+          <h2>УВІЙДІТЬ, ЩОБ СТВОРИТИ СНІПЕТ</h2>
           <button onClick={() => navigate('/login')} className="btn btn-primary">
             УВІЙТИ
           </button>
@@ -114,7 +114,7 @@ export function NewSnippet() {
   return (
     <div className="container">
       <div className="page-header">
-        <h1 className="page-title">НОВИЙ SNIPPET</h1>
+        <h1 className="page-title">НОВИЙ СНІПЕТ</h1>
         <p className="page-subtitle">
           Формат knowledge hub для коротких, прикладних фрагментів коду з поясненням і тегами.
         </p>
@@ -123,7 +123,7 @@ export function NewSnippet() {
       <div className="question-card" style={{ marginBottom: 'var(--space-4)' }}>
         <div className="question-content">
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-2)', alignItems: 'center' }}>
-            <span className="tag">Snippet</span>
+            <span className="tag">Сніпет</span>
             <button type="button" className="btn btn-secondary" onClick={() => navigate('/create')} disabled={submitting}>
               ІНШІ ФОРМАТИ
             </button>
@@ -152,7 +152,7 @@ export function NewSnippet() {
 
         <div className="form-group">
           <label htmlFor="description" className="form-label">ПОЯСНЕННЯ</label>
-          <textarea id="description" className={`form-textarea ${errors.description ? 'error' : ''}`} value={description} onChange={(e) => setDescription(e.target.value)} rows={5} placeholder="Коли використовувати цей snippet, що він вирішує і які є нюанси." />
+          <textarea id="description" className={`form-textarea ${errors.description ? 'error' : ''}`} value={description} onChange={(e) => setDescription(e.target.value)} rows={5} placeholder="Коли використовувати цей сніпет, що він вирішує і які є нюанси." />
           {errors.description && <div className="form-error">{errors.description}</div>}
         </div>
 
@@ -164,13 +164,13 @@ export function NewSnippet() {
 
         <div className="form-group">
           <label htmlFor="tags" className="form-label">ТЕГИ</label>
-          <input id="tags" className={`form-input ${errors.tags ? 'error' : ''}`} value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="react, hooks, performance" />
+          <input id="tags" className={`form-input ${errors.tags ? 'error' : ''}`} value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="react, hooks, швидкодія" />
           {errors.tags && <div className="form-error">{errors.tags}</div>}
         </div>
 
         <div className="form-actions">
           <button type="submit" className="btn btn-primary" disabled={submitting}>
-            {submitting ? 'ПУБЛІКАЦІЯ...' : 'ОПУБЛІКУВАТИ SNIPPET'}
+            {submitting ? 'ПУБЛІКАЦІЯ...' : 'ОПУБЛІКУВАТИ СНІПЕТ'}
           </button>
           <button type="button" className="btn btn-secondary" onClick={() => navigate('/create')} disabled={submitting}>
             СКАСУВАТИ

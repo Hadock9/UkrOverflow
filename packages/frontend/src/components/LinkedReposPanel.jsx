@@ -1,6 +1,6 @@
 /**
  * LinkedReposPanel — список GitHub-репозиторіїв, прив'язаних до контент-сутності
- * (питання/стаття/гайд/snippet/roadmap/best_practice/faq), з можливістю додати/видалити
+ * (питання/стаття/гайд/сніпет/навчальний маршрут/найкраща практика/ЧаП), з можливістю додати/видалити
  * для аутентифікованого користувача.
  */
 
@@ -105,7 +105,7 @@ export function LinkedReposPanel({ targetType, targetId }) {
             className="btn btn-sm"
             onClick={() => setShowForm((s) => !s)}
           >
-            {showForm ? '× Скасувати' : '+ Прив’язати repo'}
+            {showForm ? '× Скасувати' : '+ Прив’язати репозиторій'}
           </button>
         )}
       </div>
@@ -123,7 +123,7 @@ export function LinkedReposPanel({ targetType, targetId }) {
           <input
             className="input"
             type="text"
-            placeholder="Коротко: чим repo корисний (макс. 280 симв.)"
+            placeholder="Коротко: чим репозиторій корисний (макс. 280 симв.)"
             maxLength={280}
             value={noteInput}
             onChange={(e) => setNoteInput(e.target.value)}
@@ -170,7 +170,7 @@ export function LinkedReposPanel({ targetType, targetId }) {
                     {r.language && <span>{r.language}</span>}
                     <span title="Зірки">★ {formatNumber(r.stars)}</span>
                     <span title="Форки">⑃ {formatNumber(r.forks)}</span>
-                    {r.is_archived ? <span style={{ color: '#b91c1c' }}>archived</span> : null}
+                    {r.is_archived ? <span style={{ color: '#b91c1c' }}>архів</span> : null}
                   </div>
                 </div>
                 {r.description && (

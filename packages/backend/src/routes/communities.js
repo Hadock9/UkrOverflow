@@ -1,5 +1,5 @@
 /**
- * Routes /api/communities — спільноти DEVHUB.
+ * Routes /api/communities — спільноти DevFlow.
  */
 
 import express from 'express';

@@ -3,6 +3,9 @@
  */
 
 .md-editor {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   border: var(--border-width) solid var(--border-color);
   background: var(--color-white);
   margin-bottom: var(--space-4);

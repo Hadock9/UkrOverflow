@@ -61,9 +61,9 @@ export function AuthCallback() {
   return (
     <div className="container" style={{ textAlign: 'center', padding: '100px 20px' }}>
       {error ? (
-        <div className="error">GITHUB AUTH ERROR: {error}</div>
+        <div className="error">Помилка входу через GitHub: {error}</div>
       ) : (
-        <div className="loading">ВХОДИМО ЧЕРЕЗ GITHUB...</div>
+        <div className="loading">ВХІД ЧЕРЕЗ GITHUB...</div>
       )}
     </div>
   );

@@ -176,7 +176,7 @@ export function NewQuestion() {
           {errors.body && <div className="form-error">{errors.body}</div>}
           <div className="form-hint">
             Включіть всі деталі, які можуть допомогти іншим зрозуміти вашу проблему.
-            Підтримується Markdown форматування.
+            Підтримується форматування Маркдаун.
           </div>
         </div>
 

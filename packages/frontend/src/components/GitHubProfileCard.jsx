@@ -205,7 +205,7 @@ export function GitHubProfileCard({ userId, isOwn, token }) {
       <div className="card" style={{ marginBottom: 'var(--space-4)', padding: 'var(--space-4)' }}>
         <h2 style={{ margin: 0 }}>GITHUB</h2>
         <p style={{ marginTop: 'var(--space-2)' }}>
-          Прив’яжіть GitHub, щоб автоматично підтягнути стек, репозиторії і contribution-статистику.
+          Підключіть GitHub, щоб автоматично підтягнути стек, репозиторії та статистику контрибуцій.
         </p>
         {!enabled && (
           <div className="alert alert-error" style={{ marginBottom: 'var(--space-2)' }}>
@@ -251,8 +251,8 @@ export function GitHubProfileCard({ userId, isOwn, token }) {
                 🔗 {profile.blog}
               </a>
             )}
-            {profile?.followers !== undefined && <span>👥 {profile.followers} followers</span>}
-            {profile?.public_repos !== undefined && <span>📦 {profile.public_repos} repos</span>}
+            {profile?.followers !== undefined && <span>👥 {profile.followers} підписників</span>}
+            {profile?.public_repos !== undefined && <span>📦 {profile.public_repos} репозиторіїв</span>}
           </div>
         </div>
 
@@ -264,7 +264,7 @@ export function GitHubProfileCard({ userId, isOwn, token }) {
               onClick={handleSync}
               disabled={syncing}
             >
-              {syncing ? 'СИНХРОНІЗАЦІЯ...' : '⟳ SYNC GITHUB'}
+              {syncing ? 'СИНХРОНІЗАЦІЯ...' : '⟳ СИНХРОНІЗУВАТИ GITHUB'}
             </button>
             <button type="button" className="btn btn-danger btn-sm" onClick={handleUnlink}>
               ВІДВ’ЯЗАТИ
@@ -289,7 +289,7 @@ export function GitHubProfileCard({ userId, isOwn, token }) {
             <ContributionHeatmap data={data.contributions} />
           ) : (
             <p style={{ margin: 0, fontSize: 13, opacity: 0.6 }}>
-              {isOwn ? 'Натисніть «Sync GitHub», щоб підтягнути contribution-сітку.' : 'Дані ще не синхронізовані.'}
+              {isOwn ? 'Натисніть «Синхронізувати GitHub», щоб підтягнути сітку контрибуцій.' : 'Дані ще не синхронізовані.'}
             </p>
           )}
         </div>
@@ -303,14 +303,14 @@ export function GitHubProfileCard({ userId, isOwn, token }) {
               <StackBar items={data.stack.languages} max={totalLangCount || 1} />
             ) : (
               <p style={{ margin: 0, fontSize: 13, opacity: 0.7 }}>
-                Поки немає даних. {isOwn ? 'Натисніть Sync GitHub.' : ''}
+                Поки немає даних. {isOwn ? 'Натисніть «Синхронізувати GitHub».' : ''}
               </p>
             )}
           </div>
           <div className="card" style={{ padding: 'var(--space-3)' }}>
             <div className="stat-label" style={{ marginBottom: 8 }}>СТАТИСТИКА</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontFamily: 'var(--font-mono)', fontSize: 14 }}>
-              <div>📦 публічних repo: <strong>{formatNumber(data.stack.publicRepoCount)}</strong></div>
+              <div>📦 публічних репозиторіїв: <strong>{formatNumber(data.stack.publicRepoCount)}</strong></div>
               <div>★ суми зірок: <strong>{formatNumber(data.stack.totalStars)}</strong></div>
               <div>⑂ форків: <strong>{formatNumber(data.stack.totalForks)}</strong></div>
               {data?.activity && (
@@ -338,7 +338,7 @@ export function GitHubProfileCard({ userId, isOwn, token }) {
 
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-          <h3 style={{ margin: 0 }}>{showAllRepos ? 'УСІ REPO' : 'ЗАКРІПЛЕНІ / ТОП-REPO'}</h3>
+          <h3 style={{ margin: 0 }}>{showAllRepos ? 'УСІ РЕПОЗИТОРІЇ' : 'ЗАКРІПЛЕНІ / ТОП РЕПОЗИТОРІЇВ'}</h3>
           {(data?.repos?.length || 0) > 6 && (
             <button type="button" className="btn btn-sm" onClick={() => setShowAllRepos((v) => !v)}>
               {showAllRepos ? 'ПОКАЗАТИ МЕНШЕ' : `ПОКАЗАТИ ВСІ (${data.repos.length})`}
@@ -347,7 +347,7 @@ export function GitHubProfileCard({ userId, isOwn, token }) {
         </div>
         {visibleRepos.length === 0 ? (
           <p style={{ opacity: 0.7 }}>
-            Repo поки не закешовані. {isOwn ? 'Натисніть «SYNC GITHUB» вище.' : ''}
+            Репозиторії ще не закешовані. {isOwn ? 'Натисніть «Синхронізувати GitHub» вище.' : ''}
           </p>
         ) : (
           <div className="grid grid-2" style={{ gap: 'var(--space-2)' }}>
@@ -367,7 +367,7 @@ export function GitHubProfileCard({ userId, isOwn, token }) {
 
       {data?.synced_at && (
         <p style={{ margin: 0, fontSize: 11, opacity: 0.5, fontFamily: 'var(--font-mono)' }}>
-          Останній sync: {new Date(data.synced_at).toLocaleString('uk-UA')}
+          Остання синхронізація: {new Date(data.synced_at).toLocaleString('uk-UA')}
         </p>
       )}
     </div>

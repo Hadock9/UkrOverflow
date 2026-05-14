@@ -3,6 +3,10 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  test: {
+    environment: 'node',
+    include: ['src/**/*.test.js'],
+  },
   server: {
     port: 5173,
     // true викликає os.networkInterfaces(); у деяких середовищах це падає (sandbox / обмеження ОС)

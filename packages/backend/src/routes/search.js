@@ -7,8 +7,59 @@ import { query } from 'express-validator';
 import pool from '../config/database.js';
 import { validate } from '../middleware/validation.js';
 import { optionalAuth } from '../middleware/auth.js';
+import { globalSearch } from '../services/globalSearchService.js';
 
 const router = express.Router();
+
+/**
+ * GET /api/search/global?q=...&types=question,snippet,community_post&page=1&limit=20
+ * Уніфіковані результати по хабу та постах спільнот.
+ */
+router.get(
+  '/global',
+  [
+    query('q').trim().isLength({ min: 2 }).withMessage('Мінімум 2 символи'),
+    query('types').optional().trim(),
+    query('page').optional().isInt({ min: 1 }),
+    query('limit').optional().isInt({ min: 1, max: 50 }),
+  ],
+  validate,
+  optionalAuth,
+  async (req, res, next) => {
+    try {
+      const { q, types, page = 1, limit = 20 } = req.query;
+      const typeList = types
+        ? String(types)
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : null;
+      const { hits: allHits, query: qNorm } = await globalSearch(q, {
+        types: typeList || undefined,
+        limitPerType: 14,
+      });
+      const p = Math.max(1, parseInt(page, 10) || 1);
+      const l = Math.min(50, Math.max(5, parseInt(limit, 10) || 20));
+      const offset = (p - 1) * l;
+      const pageHits = allHits.slice(offset, offset + l);
+      res.json({
+        success: true,
+        data: {
+          hits: pageHits,
+          pagination: {
+            page: p,
+            limit: l,
+            total: allHits.length,
+            totalPages: Math.max(1, Math.ceil(allHits.length / l)),
+          },
+          query: qNorm,
+        },
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 /**
  * GET /api/search

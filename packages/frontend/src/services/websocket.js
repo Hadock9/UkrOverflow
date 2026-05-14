@@ -2,7 +2,17 @@
  * WebSocket Client для realtime updates
  */
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3338/ws';
+function resolveWsUrl() {
+  const env = import.meta.env.VITE_WS_URL;
+  if (env != null && String(env).trim() !== '') {
+    return String(env).trim();
+  }
+  if (typeof window !== 'undefined' && window.location?.host) {
+    const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${wsProto}//${window.location.host}/ws`;
+  }
+  return 'ws://localhost:3338/ws';
+}
 
 class WebSocketClient {
   constructor() {
@@ -18,7 +28,7 @@ class WebSocketClient {
       return;
     }
 
-    this.ws = new WebSocket(WS_URL);
+    this.ws = new WebSocket(resolveWsUrl());
 
     this.ws.onopen = () => {
       console.log('✓ WebSocket підключено');

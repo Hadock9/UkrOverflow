@@ -59,7 +59,7 @@ function makeUtils(seed) {
 const COMMUNITIES = [
   {
     slug: 'devhub-lviv',
-    name: 'DEVHUB Львів',
+    name: 'DevFlow Львів',
     type: 'city',
     location: 'Львів',
     website: 'https://devhub.ua/lviv',
@@ -196,7 +196,7 @@ const TYPE_TEMPLATES = {
     body: 'Запрошуємо на офлайн-зустріч. Будуть три доповіді, нетворкінг, кава і піца. Реєстрація — за посиланням нижче. Місць обмежено, приходьте заздалегідь.',
     stack: () => ['typescript'],
     meta: () => ({
-      location: 'Київ, простір DEVHUB',
+      location: 'Київ, простір DevFlow',
       eventDate: '2026-06-15T18:00:00Z',
       eventLink: 'https://devhub.ua/events/meetup-2026',
     }),

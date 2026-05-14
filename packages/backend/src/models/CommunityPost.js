@@ -4,6 +4,9 @@
 
 import pool from '../config/database.js';
 import Community from './Community.js';
+import { Question } from './Question.js';
+import { LINKABLE_HUB_TYPES } from '../constants/contentTypes.js';
+import { normalizeTagList } from '../utils/tagNormalize.js';
 
 const ALLOWED_TYPES = ['discussion', 'pet_project', 'code_review', 'mentor_request', 'roadmap_request', 'team_search', 'event', 'announcement'];
 const ALLOWED_STATUSES = ['open', 'closed', 'filled'];
@@ -22,14 +25,35 @@ function decorate(row) {
   return row;
 }
 
+function normalizeLinkedType(t) {
+  if (!t) return null;
+  const s = String(t).trim();
+  return LINKABLE_HUB_TYPES.includes(s) ? s : null;
+}
+
 export class CommunityPost {
-  static async create({ communityId, authorId, type, title, body, metadata, stack, status }) {
+  static async create({
+    communityId,
+    authorId,
+    type,
+    title,
+    body,
+    metadata,
+    stack,
+    status,
+    linkedContentType,
+    linkedContentId,
+  }) {
     const cleanType = ALLOWED_TYPES.includes(type) ? type : 'discussion';
     const cleanStatus = ALLOWED_STATUSES.includes(status) ? status : 'open';
+    const lt = normalizeLinkedType(linkedContentType);
+    const lid = linkedContentId != null && linkedContentId !== '' ? parseInt(linkedContentId, 10) : null;
+    const linkedType = lt && lid > 0 ? lt : null;
+    const linkedId = linkedType ? lid : null;
 
     const [result] = await pool.execute(
-      `INSERT INTO community_posts (community_id, author_id, type, title, body, metadata, stack, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO community_posts (community_id, author_id, type, title, body, metadata, stack, status, linked_content_type, linked_content_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         communityId,
         authorId,
@@ -37,8 +61,10 @@ export class CommunityPost {
         title,
         body,
         JSON.stringify(metadata || {}),
-        JSON.stringify(stack || []),
+        JSON.stringify(normalizeTagList(Array.isArray(stack) ? stack : [])),
         cleanStatus,
+        linkedType,
+        linkedId,
       ]
     );
     await Community.incrementPostCount(communityId);
@@ -119,15 +145,79 @@ export class CommunityPost {
     };
   }
 
-  static async update(id, { type, title, body, metadata, stack, status }) {
+  /**
+   * Пости спільноти, де стек перетинається з тегами питання (JSON_OVERLAPS).
+   */
+  static async findRelatedByQuestionTags(questionId, { limit = 8 } = {}) {
+    const limitN = Math.min(Math.max(parseInt(limit, 10) || 8, 1), 30);
+    const question = await Question.findById(questionId);
+    if (!question) {
+      return { posts: [], pagination: { total: 0, limit: limitN, page: 1, totalPages: 0 } };
+    }
+    let tags = normalizeTagList(Array.isArray(question.tags) ? question.tags : []);
+    if (!tags.length) {
+      return { posts: [], pagination: { total: 0, limit: limitN, page: 1, totalPages: 0 } };
+    }
+    tags = tags.slice(0, 15);
+    const tagsJson = JSON.stringify(tags);
+
+    let rows;
+    try {
+      [rows] = await pool.execute(
+        `SELECT p.*, u.username AS author_name, u.avatar_url AS author_avatar,
+                c.slug AS community_slug, c.name AS community_name, c.type AS community_type
+         FROM community_posts p
+         LEFT JOIN users u ON p.author_id = u.id
+         LEFT JOIN communities c ON p.community_id = c.id
+         WHERE JSON_OVERLAPS(COALESCE(p.stack, CAST('[]' AS JSON)), CAST(? AS JSON))
+         ORDER BY p.created_at DESC
+         LIMIT ${limitN}`,
+        [tagsJson]
+      );
+    } catch {
+      const likes = tags.map(() => '(p.stack LIKE ?)').join(' OR ');
+      const likeParams = tags.map((t) => `%${String(t)}%`);
+      [rows] = await pool.execute(
+        `SELECT p.*, u.username AS author_name, u.avatar_url AS author_avatar,
+                c.slug AS community_slug, c.name AS community_name, c.type AS community_type
+         FROM community_posts p
+         LEFT JOIN users u ON p.author_id = u.id
+         LEFT JOIN communities c ON p.community_id = c.id
+         WHERE (${likes})
+         ORDER BY p.created_at DESC
+         LIMIT ${limitN}`,
+        likeParams
+      );
+    }
+    rows.forEach(decorate);
+    return {
+      posts: rows,
+      pagination: { total: rows.length, limit: limitN, page: 1, totalPages: 1 },
+    };
+  }
+
+  static async update(id, { type, title, body, metadata, stack, status, linkedContentType, linkedContentId }) {
     const updates = [];
     const values = [];
     if (type !== undefined && ALLOWED_TYPES.includes(type)) { updates.push('type = ?'); values.push(type); }
     if (title !== undefined) { updates.push('title = ?'); values.push(title); }
     if (body !== undefined) { updates.push('body = ?'); values.push(body); }
     if (metadata !== undefined) { updates.push('metadata = ?'); values.push(JSON.stringify(metadata || {})); }
-    if (stack !== undefined) { updates.push('stack = ?'); values.push(JSON.stringify(stack || [])); }
+    if (stack !== undefined) { updates.push('stack = ?'); values.push(JSON.stringify(normalizeTagList(Array.isArray(stack) ? stack : []))); }
     if (status !== undefined && ALLOWED_STATUSES.includes(status)) { updates.push('status = ?'); values.push(status); }
+
+    if (linkedContentType !== undefined || linkedContentId !== undefined) {
+      const lt = normalizeLinkedType(linkedContentType);
+      const lid = linkedContentId != null && linkedContentId !== '' ? parseInt(linkedContentId, 10) : null;
+      if (lt && lid > 0) {
+        updates.push('linked_content_type = ?');
+        updates.push('linked_content_id = ?');
+        values.push(lt, lid);
+      } else {
+        updates.push('linked_content_type = NULL');
+        updates.push('linked_content_id = NULL');
+      }
+    }
 
     if (!updates.length) return this.findById(id);
     values.push(id);

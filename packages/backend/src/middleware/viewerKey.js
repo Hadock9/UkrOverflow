@@ -6,8 +6,9 @@
 import jwt from 'jsonwebtoken';
 import { jwtConfig } from '../config/jwt.js';
 
-const UUID_V4 =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+/** Будь-який UUID у стандартному рядковому форматі (v1–v5; v4 найчастіший). */
+const UUID_STRING =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /**
  * Повертає viewer_key або null (без помилки клієнту).
@@ -29,7 +30,7 @@ export function tryResolveViewerKey(req) {
 
   const raw = req.headers['x-visitor-id'];
   const s = typeof raw === 'string' ? raw.trim() : '';
-  if (s && UUID_V4.test(s)) {
+  if (s && UUID_STRING.test(s)) {
     return `anon:${s}`;
   }
 
@@ -48,7 +49,7 @@ export function resolveViewerKey(req, res, next) {
   if (!key) {
     return res.status(400).json({
       success: false,
-      message: 'Для перегляду без входу надішліть заголовок X-Visitor-Id (UUID v4)',
+      message: 'Для перегляду без входу надішліть заголовок X-Visitor-Id (UUID)',
     });
   }
   req.viewerKey = key;

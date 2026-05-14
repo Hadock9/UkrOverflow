@@ -37,20 +37,34 @@ const CREATE_ITEM_LABEL = {
   [CONTENT_TYPES.QUESTION]: 'Питання',
   [CONTENT_TYPES.ARTICLE]: 'Статтю',
   [CONTENT_TYPES.GUIDE]: 'Міні-гайд',
-  [CONTENT_TYPES.SNIPPET]: 'Snippet',
-  [CONTENT_TYPES.ROADMAP]: 'Roadmap',
-  [CONTENT_TYPES.BEST_PRACTICE]: 'Best practice',
-  [CONTENT_TYPES.FAQ]: 'FAQ',
+  [CONTENT_TYPES.SNIPPET]: 'Сніпет',
+  [CONTENT_TYPES.ROADMAP]: 'Маршрут',
+  [CONTENT_TYPES.BEST_PRACTICE]: 'Практику',
+  [CONTENT_TYPES.FAQ]: 'ЧаП',
 };
 
-const CREATE_MENU_ITEMS = CONTENT_TYPE_DEFINITIONS
-  .filter((item) => item.id !== CONTENT_TYPES.ALL && CREATE_LINKS[item.id])
-  .map((item) => ({
-    id: item.id,
-    label: CREATE_ITEM_LABEL[item.id] || item.shortLabel,
-    description: item.description,
-    href: CREATE_LINKS[item.id],
-  }));
+const CREATE_MENU_ITEMS = [
+  ...CONTENT_TYPE_DEFINITIONS
+    .filter((item) => item.id !== CONTENT_TYPES.ALL && CREATE_LINKS[item.id])
+    .map((item) => ({
+      id: item.id,
+      label: CREATE_ITEM_LABEL[item.id] || item.shortLabel,
+      description: item.description,
+      href: CREATE_LINKS[item.id],
+    })),
+  {
+    id: 'community',
+    label: 'СПІЛЬНОТУ',
+    description: 'Локальна, університетська або онлайн-спільнота',
+    href: '/communities/new',
+  },
+  {
+    id: 'community_post',
+    label: 'ПОСТ У СПІЛЬНОТІ',
+    description: 'Оберіть спільноту й опублікуйте пост: пет-проєкт, перегляд коду, пошук ментора тощо.',
+    href: '/communities',
+  },
+];
 
 function detailHrefFor(item) {
   switch (item.type) {
@@ -159,12 +173,12 @@ export function Home() {
   const pageHeading = tag
     ? `КОНТЕНТ З ТЕГОМ: ${tag}`
     : contentType === 'all'
-      ? 'KNOWLEDGE HUB'
-      : (currentMeta?.label || 'KNOWLEDGE HUB');
+      ? 'DEVFLOW · ХАБ'
+      : (currentMeta?.label || 'DEVFLOW · ХАБ');
 
   return (
     <div className="container">
-      <div className="page-header">
+      <div className="page-header page-header-split">
         <div>
           <h1 className="page-title">{pageHeading}</h1>
           <p className="page-subtitle">

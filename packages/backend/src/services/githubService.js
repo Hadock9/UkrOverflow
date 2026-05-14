@@ -10,7 +10,7 @@
 
 const GITHUB_API = 'https://api.github.com';
 const GITHUB_OAUTH = 'https://github.com/login/oauth';
-const USER_AGENT = 'UkrOverflow-Knowledge-Hub';
+const USER_AGENT = 'DevFlow-Knowledge-Hub/1.0';
 
 function requireEnv() {
   const id = process.env.GITHUB_CLIENT_ID;
@@ -293,7 +293,7 @@ export async function fetchContributionCalendar(token) {
  */
 export async function fetchPublicRepoMetadata(fullName, token) {
   if (!fullName || !fullName.includes('/')) {
-    throw new Error('Очікую формат owner/name');
+    throw new Error('Очікується формат власник/назва');
   }
   const [owner, repo] = fullName.split('/').slice(0, 2);
   return githubGet(`/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`, token);
@@ -306,40 +306,40 @@ export function computeBadges({ stack, activity, contributions }) {
   const badges = [];
 
   if (stack?.publicRepoCount >= 10) {
-    badges.push({ id: 'oss-builder', label: 'OSS Builder', description: '10+ публічних репозиторіїв' });
+    badges.push({ id: 'oss-builder', label: 'Будівник OSS', description: '10+ публічних репозиторіїв' });
   } else if (stack?.publicRepoCount >= 3) {
-    badges.push({ id: 'open-source', label: 'Open Source', description: '3+ публічних репозиторіїв' });
+    badges.push({ id: 'open-source', label: 'Відкритий код', description: '3+ публічних репозиторіїв' });
   }
 
   if ((stack?.languages?.length || 0) >= 5) {
-    badges.push({ id: 'polyglot', label: 'Polyglot', description: `${stack.languages.length} різних мов у коді` });
+    badges.push({ id: 'polyglot', label: 'Поліглот', description: `${stack.languages.length} різних мов у коді` });
   }
 
   if (stack?.totalStars >= 1000) {
-    badges.push({ id: 'star-collector', label: 'Star Collector', description: '1k+ зірок' });
+    badges.push({ id: 'star-collector', label: 'Збирач зірок', description: '1k+ зірок' });
   } else if (stack?.totalStars >= 100) {
-    badges.push({ id: 'starred', label: 'Starred', description: '100+ зірок' });
+    badges.push({ id: 'starred', label: 'У полі зору', description: '100+ зірок' });
   } else if (stack?.totalStars >= 25) {
-    badges.push({ id: 'noticed', label: 'Noticed', description: '25+ зірок' });
+    badges.push({ id: 'noticed', label: 'Помічений', description: '25+ зірок' });
   }
 
   if (activity?.commits >= 100) {
-    badges.push({ id: 'prolific-committer', label: 'Prolific Committer', description: '100+ commits за 30 днів' });
+    badges.push({ id: 'prolific-committer', label: 'Плідний комітер', description: '100+ комітів за 30 днів' });
   } else if (activity?.commits >= 30) {
-    badges.push({ id: 'active', label: 'Active', description: '30+ commits за 30 днів' });
+    badges.push({ id: 'active', label: 'Активний', description: '30+ комітів за 30 днів' });
   }
 
   if (contributions?.totalContributions >= 1000) {
-    badges.push({ id: 'year-grinder', label: 'Year Grinder', description: '1000+ контрибуцій за рік' });
+    badges.push({ id: 'year-grinder', label: 'Тисячник року', description: '1000+ контрибуцій за рік' });
   } else if (contributions?.totalContributions >= 365) {
-    badges.push({ id: 'daily-coder', label: 'Daily Coder', description: '365+ контрибуцій за рік' });
+    badges.push({ id: 'daily-coder', label: 'Щоденний кодер', description: '365+ контрибуцій за рік' });
   }
 
   if (contributions?.breakdown?.pullRequests >= 50) {
-    badges.push({ id: 'pr-machine', label: 'PR Machine', description: '50+ PR за рік' });
+    badges.push({ id: 'pr-machine', label: 'Майстер pull request-ів', description: '50+ PR за рік' });
   }
   if (contributions?.breakdown?.reviews >= 50) {
-    badges.push({ id: 'reviewer', label: 'Reviewer', description: '50+ code reviews' });
+    badges.push({ id: 'reviewer', label: 'Рев’юер', description: '50+ переглядів коду' });
   }
 
   return badges;

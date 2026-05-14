@@ -1,7 +1,7 @@
 {
   "name": "@ukroverflow/backend",
   "version": "1.0.0",
-  "description": "Backend API для UkrOverflow без Strapi",
+  "description": "Backend API для DevFlow без Strapi",
   "type": "module",
   "main": "src/index.js",
   "scripts": {
@@ -10,7 +10,8 @@
     "migrate": "node src/scripts/migrate.js",
     "seed": "node src/scripts/seed.js",
     "seed:user": "node src/scripts/seedForUser.js",
-    "seed:communities": "node src/scripts/seedCommunities.js"
+    "seed:communities": "node src/scripts/seedCommunities.js",
+    "test": "node --test 'src/**/*.test.js'"
   },
   "keywords": [
     "api",

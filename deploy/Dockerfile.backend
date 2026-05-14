@@ -1,0 +1,16 @@
+# Monorepo: backend workspace
+FROM node:22-bookworm-slim
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+COPY packages/backend/package.json packages/backend/
+RUN npm ci --omit=dev -w @ukroverflow/backend
+
+COPY packages/backend ./packages/backend
+
+WORKDIR /app/packages/backend
+ENV NODE_ENV=production
+
+EXPOSE 3338
+
+CMD ["sh", "-c", "node src/scripts/migrate.js && exec node src/index.js"]

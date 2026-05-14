@@ -18,7 +18,7 @@ export function ContributionHeatmap({ data }) {
   if (!data || !Array.isArray(data.weeks) || data.weeks.length === 0) {
     return (
       <div className="card" style={{ padding: 'var(--space-3)', fontSize: 13, opacity: 0.7 }}>
-        Контрибуцій ще немає. Натисніть «Sync GitHub», щоб підтягнути.
+        Контрибуцій ще немає. Натисніть «Синхронізувати GitHub», щоб підтягнути дані.
       </div>
     );
   }
@@ -52,10 +52,10 @@ export function ContributionHeatmap({ data }) {
           {data.totalContributions ?? 0} контрибуцій за рік
         </strong>
         <span style={{ fontSize: 12, opacity: 0.7, fontFamily: 'var(--font-mono)' }}>
-          {breakdown.commits ? `${breakdown.commits} commits · ` : ''}
-          {breakdown.pullRequests ? `${breakdown.pullRequests} PR · ` : ''}
-          {breakdown.reviews ? `${breakdown.reviews} reviews · ` : ''}
-          {breakdown.issues ? `${breakdown.issues} issues` : ''}
+          {breakdown.commits ? `${breakdown.commits} комітів · ` : ''}
+          {breakdown.pullRequests ? `${breakdown.pullRequests} злиттів · ` : ''}
+          {breakdown.reviews ? `${breakdown.reviews} ревʼю · ` : ''}
+          {breakdown.issues ? `${breakdown.issues} задач` : ''}
         </span>
       </div>
 

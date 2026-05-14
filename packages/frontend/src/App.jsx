@@ -1,5 +1,5 @@
 /**
- * UkrOverflow App
+ * DevFlow App
  * Головний компонент з інтеграцією Mediator
  */
 
@@ -32,6 +32,15 @@ import { NewRoadmap } from './pages/NewRoadmap'
 import { NewBestPractice } from './pages/NewBestPractice'
 import { NewFaq } from './pages/NewFaq'
 import { AuthCallback } from './pages/AuthCallback'
+import { Communities } from './pages/Communities'
+import { NewCommunity } from './pages/NewCommunity'
+import { CommunityDetail } from './pages/CommunityDetail'
+import { NewCommunityPost } from './pages/NewCommunityPost'
+import { CommunityPostDetail } from './pages/CommunityPostDetail'
+import { Mentors } from './pages/Mentors'
+import { MentorProfileEdit } from './pages/MentorProfileEdit'
+import { DevCatalog } from './pages/DevCatalog'
+import { GlobalSearch } from './pages/GlobalSearch'
 
 function App() {
   const [initialized, setInitialized] = useState(false)
@@ -71,7 +80,7 @@ function App() {
       <div className="container" style={{ textAlign: 'center', padding: '100px 20px' }}>
         <div className="loading"></div>
         <p style={{ marginTop: '20px', fontFamily: 'var(--font-mono)' }}>
-          ЗАВАНТАЖЕННЯ DEVHUB.UA...
+          ЗАВАНТАЖЕННЯ DEVFLOW...
         </p>
       </div>
     )
@@ -91,6 +100,7 @@ function App() {
             <Route path="/questions/:id" element={<QuestionDetail />} />
             <Route path="/ask" element={<NewQuestion />} />
             <Route path="/tags" element={<Tags />} />
+            <Route path="/search" element={<GlobalSearch />} />
             <Route path="/tags/:tag" element={<Home />} />
             <Route path="/users" element={<Users />} />
             <Route path="/users/:id" element={<Profile />} />
@@ -127,6 +137,15 @@ function App() {
             <Route path="/faqs" element={<Home />} />
             <Route path="/faqs/new" element={<NewFaq />} />
             <Route path="/faqs/:id" element={<FaqDetail />} />
+
+            <Route path="/communities" element={<Communities />} />
+            <Route path="/communities/new" element={<NewCommunity />} />
+            <Route path="/communities/:slug" element={<CommunityDetail />} />
+            <Route path="/communities/:slug/new" element={<NewCommunityPost />} />
+            <Route path="/community-posts/:id" element={<CommunityPostDetail />} />
+            <Route path="/mentors" element={<Mentors />} />
+            <Route path="/mentors/edit" element={<MentorProfileEdit />} />
+            <Route path="/devs" element={<DevCatalog />} />
           </Routes>
         </main>
 
@@ -138,7 +157,7 @@ function App() {
           fontSize: '0.875rem'
         }}>
           <div className="container">
-            DEVHUB.UA
+            DevFlow
           </div>
         </footer>
       </div>

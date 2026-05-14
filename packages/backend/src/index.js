@@ -1,6 +1,6 @@
 /**
  * Головний файл backend сервера
- * UkrOverflow - без Strapi, без хардкодів
+ * DevFlow - без Strapi, без хардкодів
  */
 
 import express from 'express';
@@ -109,7 +109,7 @@ if (process.env.NODE_ENV === 'development') {
 app.get('/health', (req, res) => {
   res.json({
     success: true,
-    message: 'UkrOverflow API працює',
+    message: 'DevFlow API працює',
     timestamp: new Date().toISOString(),
     version: '2.0.0'
   });
@@ -262,7 +262,7 @@ async function start() {
 
     server.listen(PORT, HOST, () => {
       console.log('\n' + '='.repeat(50));
-      console.log('🚀 UkrOverflow Backend Server');
+      console.log('🚀 DevFlow Backend Server');
       console.log('='.repeat(50));
       console.log(`📡 HTTP: http://${HOST}:${PORT}`);
       console.log(`🔌 WebSocket: ws://${HOST}:${PORT}/ws`);

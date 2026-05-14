@@ -1,5 +1,5 @@
 /**
- * Модель Community — спільноти DEVHUB (місто/університет/online/dev_club тощо).
+ * Модель Community — спільноти DevFlow (місто/університет/online/dev_club тощо).
  */
 
 import pool from '../config/database.js';

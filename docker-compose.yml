@@ -1,0 +1,64 @@
+# DevFlow: MySQL + API + nginx (статичний фронт + проксі /api та /ws)
+# Підготуйте .env у корені репозиторію (див. deploy/env.docker.example)
+#
+# Запуск: docker compose --env-file .env up -d --build
+# Логи API: docker compose logs -f api
+#
+# Після зміни домену перебудуйте web лише якщо міняється публічний URL API
+# (для порожнього VITE_API_URL перебудова не обов'язкова).
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME:-ukroverflow}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD-SHELL', 'mysqladmin ping -h localhost -uroot -p"$$MYSQL_ROOT_PASSWORD" || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
+
+  api:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-ukroverflow}
+      API_HOST: 0.0.0.0
+      API_PORT: 3338
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - '3338'
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+        VITE_WS_URL: ${VITE_WS_URL:-}
+    restart: unless-stopped
+    ports:
+      - '${HTTP_PORT:-80}:80'
+    depends_on:
+      - api
+
+volumes:
+  mysql_data:

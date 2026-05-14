@@ -1,5 +1,5 @@
 /**
- * Сторінка редагування snippet.
+ * Сторінка редагування сніпета.
  */
 
 import { useEffect, useState } from 'react';
@@ -34,7 +34,7 @@ export function EditSnippet() {
       const snippetData = response.data.data?.snippet || response.data.snippet || response.data;
 
       if (!user || (user.id !== snippetData.author_id && user.role !== 'admin')) {
-        alert('Ви не можете редагувати цей snippet');
+        alert('Ви не можете редагувати цей сніпет');
         navigate(`/snippets/${id}`);
         return;
       }
@@ -45,8 +45,8 @@ export function EditSnippet() {
       setLanguage(snippetData.language || 'javascript');
       setTagsInput(Array.isArray(snippetData.tags) ? snippetData.tags.join(', ') : '');
     } catch (error) {
-      console.error('Помилка завантаження snippet:', error);
-      alert('Помилка завантаження snippet');
+      console.error('Помилка завантаження сніпета:', error);
+      alert('Помилка завантаження сніпета');
       navigate('/');
     } finally {
       setLoading(false);
@@ -81,7 +81,7 @@ export function EditSnippet() {
       });
       navigate(`/snippets/${id}`);
     } catch (error) {
-      console.error('Помилка оновлення snippet:', error);
+      console.error('Помилка оновлення сніпета:', error);
       if (error.response?.data?.errors) {
         const apiErrors = {};
         error.response.data.errors.forEach((err) => {
@@ -89,7 +89,7 @@ export function EditSnippet() {
         });
         setErrors(apiErrors);
       } else {
-        alert(error.response?.data?.message || 'Помилка оновлення snippet');
+        alert(error.response?.data?.message || 'Помилка оновлення сніпета');
       }
     } finally {
       setSubmitting(false);
@@ -98,7 +98,7 @@ export function EditSnippet() {
 
   if (!user) {
     return (
-      <div className="container"><div className="empty-state"><h2>УВІЙДІТЬ, ЩОБ РЕДАГУВАТИ SNIPPET</h2><button onClick={() => navigate('/login')} className="btn btn-primary">УВІЙТИ</button></div></div>
+      <div className="container"><div className="empty-state"><h2>УВІЙДІТЬ, ЩОБ РЕДАГУВАТИ СНІПЕТ</h2><button onClick={() => navigate('/login')} className="btn btn-primary">УВІЙТИ</button></div></div>
     );
   }
 
@@ -107,7 +107,7 @@ export function EditSnippet() {
   return (
     <div className="container">
       <div className="page-header">
-        <h1 className="page-title">РЕДАГУВАТИ SNIPPET</h1>
+        <h1 className="page-title">РЕДАГУВАТИ СНІПЕТ</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="question-form">

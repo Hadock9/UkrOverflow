@@ -681,15 +681,27 @@ async function migrate() {
         views INT DEFAULT 0,
         comment_count INT DEFAULT 0,
         status ENUM('open','closed','filled') DEFAULT 'open',
+        linked_content_type VARCHAR(32) NULL,
+        linked_content_id INT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_community_type (community_id, type),
+        INDEX idx_linked_hub (linked_content_type, linked_content_id),
         INDEX idx_author (author_id),
         INDEX idx_created (created_at),
         FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE,
         FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
+    await ensureColumn(connection, 'community_posts', 'linked_content_type', 'VARCHAR(32) NULL');
+    await ensureColumn(connection, 'community_posts', 'linked_content_id', 'INT NULL');
+    try {
+      await connection.execute(
+        'ALTER TABLE community_posts ADD FULLTEXT INDEX idx_comm_post_search (title, body)'
+      );
+    } catch (e) {
+      if (e?.errno !== 1061 && e?.errno !== 1068) throw e;
+    }
     console.log('✓ community_posts\n');
 
     console.log('📝 community_post_comments...');

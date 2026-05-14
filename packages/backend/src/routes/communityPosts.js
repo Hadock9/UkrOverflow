@@ -9,6 +9,7 @@ import CommunityComment from '../models/CommunityComment.js';
 import Community from '../models/Community.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validate } from '../middleware/validation.js';
+import { LINKABLE_HUB_TYPES } from '../constants/contentTypes.js';
 
 const router = express.Router();
 
@@ -53,6 +54,25 @@ router.get(
 );
 
 router.get(
+  '/for-question/:questionId',
+  [
+    param('questionId').isInt(),
+    query('limit').optional().isInt({ min: 1, max: 30 }),
+  ],
+  validate,
+  async (req, res, next) => {
+    try {
+      const questionId = parseInt(req.params.questionId, 10);
+      const limit = parseInt(req.query.limit, 10) || 8;
+      const result = await CommunityPost.findRelatedByQuestionTags(questionId, { limit });
+      res.json({ success: true, data: result });
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
+router.get(
   '/:id',
   [param('id').isInt()],
   validate,
@@ -80,11 +100,23 @@ router.post(
     body('metadata').optional().custom((v) => v === null || typeof v === 'object'),
     body('stack').optional().isArray({ max: 20 }),
     body('status').optional().isIn(POST_STATUSES),
+    body('linkedContentType').optional().isIn(LINKABLE_HUB_TYPES),
+    body('linkedContentId').optional().isInt(),
   ],
   validate,
   async (req, res, next) => {
     try {
-      const { communityId, type, title, body: postBody, metadata, stack, status } = req.body;
+      const {
+        communityId,
+        type,
+        title,
+        body: postBody,
+        metadata,
+        stack,
+        status,
+        linkedContentType,
+        linkedContentId,
+      } = req.body;
       const community = await Community.findById(communityId);
       if (!community) return res.status(404).json({ success: false, message: 'Спільноту не знайдено' });
 
@@ -97,6 +129,8 @@ router.post(
         metadata: metadata || {},
         stack: Array.isArray(stack) ? stack : [],
         status,
+        linkedContentType,
+        linkedContentId,
       });
       res.status(201).json({ success: true, data: { post } });
     } catch (e) { next(e); }

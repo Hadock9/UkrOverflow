@@ -7,7 +7,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useMediator } from '../contexts/MediatorContext';
 import { EventTypes } from '../../../mediator/src/index';
-import { api } from '../services/api';
+import { api, communityPosts } from '../services/api';
 import { GitHubProfileCard } from '../components/GitHubProfileCard';
 import '../styles/brutalism.css';
 
@@ -41,7 +41,7 @@ const CONTENT_TYPES = [
     endpoint: '/snippets',
     listKey: 'snippets',
     deleteEndpoint: '/snippets',
-    tabLabel: 'SNIPPETS',
+    tabLabel: 'СНІПЕТИ',
     singular: 'сніпет',
     detail: (id) => `/snippets/${id}`,
     edit: (id) => `/snippets/${id}/edit`,
@@ -52,8 +52,8 @@ const CONTENT_TYPES = [
     endpoint: '/roadmaps',
     listKey: 'roadmaps',
     deleteEndpoint: '/roadmaps',
-    tabLabel: 'ROADMAPS',
-    singular: 'роадмеп',
+    tabLabel: 'МАРШРУТИ',
+    singular: 'маршрут',
     detail: (id) => `/roadmaps/${id}`,
     edit: null,
     hasEdit: false,
@@ -63,8 +63,8 @@ const CONTENT_TYPES = [
     endpoint: '/best-practices',
     listKey: 'bestPractices',
     deleteEndpoint: '/best-practices',
-    tabLabel: 'BEST PRACTICES',
-    singular: 'best practice',
+    tabLabel: 'НАЙКРАЩІ ПРАКТИКИ',
+    singular: 'практику',
     detail: (id) => `/best-practices/${id}`,
     edit: null,
     hasEdit: false,
@@ -74,13 +74,24 @@ const CONTENT_TYPES = [
     endpoint: '/faqs',
     listKey: 'faqs',
     deleteEndpoint: '/faqs',
-    tabLabel: 'FAQ',
-    singular: 'FAQ',
+    tabLabel: 'ЧАП',
+    singular: 'ЧаП',
     detail: (id) => `/faqs/${id}`,
     edit: null,
     hasEdit: false,
   },
 ];
+
+const COMMUNITY_POST_TYPE_LABELS = {
+  discussion: 'Обговорення',
+  pet_project: 'Pet-проєкт',
+  code_review: 'Code review',
+  mentor_request: 'Запит ментора',
+  roadmap_request: 'Маршрут / навчання',
+  team_search: 'Пошук команди',
+  event: 'Подія',
+  announcement: 'Оголошення',
+};
 
 // Витягує масив сутностей з відповіді API, незалежно від форми (.data.data.X / .data.X / .data)
 function extractList(response, key) {
@@ -114,6 +125,8 @@ export function Profile() {
   const [roadmaps, setRoadmaps] = useState([]);
   const [bestPractices, setBestPractices] = useState([]);
   const [faqs, setFaqs] = useState([]);
+  /** Пости у спільнотах (окрема таблиця /api; не входять у /api/content) */
+  const [userCommunityPosts, setUserCommunityPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [contentLoading, setContentLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('questions');
@@ -161,23 +174,28 @@ export function Profile() {
     }
   };
 
-  // Паралельне завантаження questions + answers + усіх 6 типів knowledge hub через Promise.all
+  // Паралельно: увесь хаб одним запитом /api/content + відповіді
   const loadAllContent = async () => {
     setContentLoading(true);
     const params = { authorId: userId, limit: 100 };
 
     const tasks = [
-      api.get('/questions', { params })
-        .then((r) => setQuestions(extractList(r, 'questions')))
-        .catch((e) => console.error('Помилка завантаження питань:', e)),
+      api
+        .get('/content', { params: { authorId: userId, contentType: 'all', limit: 300, page: 1 } })
+        .then((r) => {
+          const items = r.data?.data?.items || [];
+          setQuestions(items.filter((i) => i.type === 'question'));
+          setArticles(items.filter((i) => i.type === 'article'));
+          setGuides(items.filter((i) => i.type === 'guide'));
+          setSnippets(items.filter((i) => i.type === 'snippet'));
+          setRoadmaps(items.filter((i) => i.type === 'roadmap'));
+          setBestPractices(items.filter((i) => i.type === 'best_practice'));
+          setFaqs(items.filter((i) => i.type === 'faq'));
+        })
+        .catch((e) => console.error('Помилка завантаження контенту хабу:', e)),
       api.get('/answers', { params })
         .then((r) => setAnswers(extractList(r, 'answers')))
         .catch((e) => console.error('Помилка завантаження відповідей:', e)),
-      ...CONTENT_TYPES.map((t) =>
-        api.get(t.endpoint, { params })
-          .then((r) => setters[t.key](extractList(r, t.listKey)))
-          .catch((e) => console.error(`Помилка завантаження ${t.key}:`, e)),
-      ),
     ];
 
     await Promise.all(tasks);
@@ -196,6 +214,22 @@ export function Profile() {
       mediator.emit(EventTypes.NOTIFICATION, {
         type: 'error',
         message: error.response?.data?.message || 'Помилка видалення питання',
+      }, 'Profile');
+    }
+  };
+
+  const handleDeleteCommunityPost = async (postId) => {
+    if (!confirm('Ви впевнені, що хочете видалити цей пост у спільноті?')) return;
+    try {
+      await communityPosts.delete(postId);
+      const r = await communityPosts.list({ authorId: parseInt(userId, 10), limit: 100, page: 1 });
+      setUserCommunityPosts(r.data?.data?.posts || []);
+      mediator.emit(EventTypes.NOTIFICATION, { type: 'success', message: 'Пост видалено' }, 'Profile');
+    } catch (error) {
+      console.error('Помилка видалення посту спільноти:', error);
+      mediator.emit(EventTypes.NOTIFICATION, {
+        type: 'error',
+        message: error.response?.data?.message || 'Помилка видалення посту',
       }, 'Profile');
     }
   };
@@ -309,6 +343,7 @@ export function Profile() {
   const tabs = [
     { id: 'questions', label: 'ПИТАННЯ', count: questions.length },
     { id: 'answers', label: 'ВІДПОВІДІ', count: answers.length },
+    { id: 'community_posts', label: 'СПІЛЬНОТА', count: userCommunityPosts.length },
     ...CONTENT_TYPES.map((t) => {
       const list =
         t.key === 'articles' ? articles :
@@ -353,13 +388,14 @@ export function Profile() {
       {(() => {
         const totalPosts =
           questions.length +
+          userCommunityPosts.length +
           articles.length +
           guides.length +
           snippets.length +
           roadmaps.length +
           bestPractices.length +
           faqs.length;
-        const breakdown = `Питання: ${questions.length} · Статті: ${articles.length} · Гайди: ${guides.length} · Snippets: ${snippets.length} · Roadmaps: ${roadmaps.length} · Best practices: ${bestPractices.length} · FAQ: ${faqs.length}`;
+        const breakdown = `Питання: ${questions.length} · Спільнота: ${userCommunityPosts.length} · Статті: ${articles.length} · Гайди: ${guides.length} · Сніпети: ${snippets.length} · Маршрути: ${roadmaps.length} · Найкращі практики: ${bestPractices.length} · ЧаП: ${faqs.length}`;
         return (
           <div className="grid grid-4" style={{ marginBottom: 'var(--space-5)' }}>
             <div className="card">
@@ -539,6 +575,83 @@ export function Profile() {
                 </div>
               </div>
             ))
+          )}
+        </div>
+      )}
+
+      {activeTab === 'community_posts' && (
+        <div className="questions-list">
+          {contentLoading ? (
+            <div className="loading">ЗАВАНТАЖЕННЯ...</div>
+          ) : userCommunityPosts.length === 0 ? (
+            <div className="empty-state">
+              <p>
+                {isOwnProfile
+                  ? 'Ви ще не створили жодного посту у спільнотах'
+                  : 'Користувач не створив жодного посту у спільнотах'}
+              </p>
+            </div>
+          ) : (
+            userCommunityPosts.map((post) => {
+              const bodyPreview = typeof post.body === 'string'
+                ? post.body.substring(0, 220) + (post.body.length > 220 ? '...' : '')
+                : '';
+              const typeLabel = COMMUNITY_POST_TYPE_LABELS[post.type] || post.type || '';
+              return (
+                <div key={post.id} className="question-card">
+                  <div className="question-stats">
+                    <div className="stat">
+                      <div className="stat-value">{post.votes ?? 0}</div>
+                      <div className="stat-label">ГОЛОСІВ</div>
+                    </div>
+                    <div className="stat">
+                      <div className="stat-value">{post.comment_count ?? 0}</div>
+                      <div className="stat-label">КОМЕНТАРІВ</div>
+                    </div>
+                    <div className="stat">
+                      <div className="stat-value">{post.views ?? 0}</div>
+                      <div className="stat-label">ПЕРЕГЛЯДІВ</div>
+                    </div>
+                  </div>
+                  <div className="question-content">
+                    <Link to={`/community-posts/${post.id}`} className="question-title">
+                      {post.title}
+                    </Link>
+                    {post.community_slug && (
+                      <div style={{ marginTop: 'var(--space-2)', fontSize: '0.9rem' }}>
+                        <span className="badge badge-secondary">{typeLabel}</span>
+                        {' · '}
+                        <Link to={`/communities/${post.community_slug}`}>
+                          {post.community_name || post.community_slug}
+                        </Link>
+                      </div>
+                    )}
+                    {!post.community_slug && typeLabel && (
+                      <div style={{ marginTop: 'var(--space-2)', fontSize: '0.9rem' }}>
+                        <span className="badge badge-secondary">{typeLabel}</span>
+                      </div>
+                    )}
+                    {bodyPreview && (
+                      <div className="question-excerpt">{bodyPreview}</div>
+                    )}
+                    <div className="question-meta">
+                      <span className="date">Створено {formatDate(post.created_at)}</span>
+                      {isOwnProfile && (
+                        <div className="question-actions" style={{ marginLeft: 'auto' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCommunityPost(post.id)}
+                            className="btn btn-danger btn-sm"
+                          >
+                            ВИДАЛИТИ
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
       )}

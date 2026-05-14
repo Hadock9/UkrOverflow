@@ -1,5 +1,5 @@
 /**
- * Сторінка створення нового FAQ knowledge hub.
+ * Сторінка створення нового ЧаП у knowledge hub.
  * Поля повторюють контракт POST /api/faqs (express-validator у backend).
  */
 
@@ -92,7 +92,7 @@ export function NewFaq() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) {
-      alert('Увійдіть, щоб створити FAQ');
+      alert('Увійдіть, щоб створити ЧаП');
       navigate('/login');
       return;
     }
@@ -120,10 +120,10 @@ export function NewFaq() {
       const response = await faqs.create(payload);
       const faqData = response.data.data?.faq || response.data.faq || response.data;
 
-      mediator.emit(EventTypes.NOTIFICATION, { type: 'success', message: 'FAQ створено' }, 'NewFaq');
+      mediator.emit(EventTypes.NOTIFICATION, { type: 'success', message: 'ЧаП створено' }, 'NewFaq');
       navigate(`/faqs/${faqData.id}`);
     } catch (error) {
-      console.error('Помилка створення FAQ:', error);
+      console.error('Помилка створення ЧаП:', error);
       if (error.response?.data?.errors) {
         const apiErrors = {};
         error.response.data.errors.forEach((err) => {
@@ -131,7 +131,7 @@ export function NewFaq() {
         });
         setErrors(apiErrors);
       } else {
-        alert(error.response?.data?.message || 'Помилка створення FAQ');
+        alert(error.response?.data?.message || 'Помилка створення ЧаП');
       }
     } finally {
       setSubmitting(false);
@@ -142,7 +142,7 @@ export function NewFaq() {
     return (
       <div className="container">
         <div className="empty-state">
-          <h2>УВІЙДІТЬ, ЩОБ СТВОРИТИ FAQ</h2>
+          <h2>УВІЙДІТЬ, ЩОБ СТВОРИТИ ЧаП</h2>
           <button onClick={() => navigate('/login')} className="btn btn-primary">УВІЙТИ</button>
         </div>
       </div>
@@ -152,7 +152,7 @@ export function NewFaq() {
   return (
     <div className="container">
       <div className="page-header">
-        <h1 className="page-title">НОВЕ FAQ</h1>
+        <h1 className="page-title">НОВИЙ ЧаП</h1>
         <p className="page-subtitle">
           Збірка часто-питаних запитань і компактних відповідей по конкретній темі чи технології.
         </p>
@@ -161,13 +161,13 @@ export function NewFaq() {
       <div className="question-card" style={{ marginBottom: 'var(--space-4)' }}>
         <div className="question-content">
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-2)', alignItems: 'center' }}>
-            <span className="tag">FAQ</span>
+            <span className="tag">ЧаП</span>
             <button type="button" className="btn btn-secondary" onClick={() => navigate('/create')} disabled={submitting}>
               ІНШІ ФОРМАТИ
             </button>
           </div>
           <p style={{ marginTop: 'var(--space-2)', marginBottom: 0 }}>
-            Підходить для onboarding документації, технологічних шпаргалок і відповідей на типові запитання.
+            Підходить для вступної документації, технологічних шпаргалок і відповідей на типові запитання.
           </p>
         </div>
       </div>
@@ -181,7 +181,7 @@ export function NewFaq() {
             className={`form-input ${errors.title ? 'error' : ''}`}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Наприклад: FAQ по налаштуванню Vite + React"
+            placeholder="Наприклад: ЧаП із налаштування Vite + React"
             maxLength={255}
           />
           {errors.title && <div className="form-error">{errors.title}</div>}
@@ -243,7 +243,7 @@ export function NewFaq() {
                     className="form-input"
                     value={pair.question}
                     onChange={(e) => updatePair(index, 'question', e.target.value)}
-                    placeholder="Як працює fast refresh у Vite?"
+                    placeholder="Як працює швидке оновлення (fast refresh) у Vite?"
                     maxLength={500}
                   />
                 </div>
@@ -285,7 +285,7 @@ export function NewFaq() {
               value={tagInput}
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={handleTagKeyDown}
-              placeholder="vite, react, faq"
+              placeholder="vite, react, чап"
               style={{ flex: 1 }}
             />
             <button
@@ -325,7 +325,7 @@ export function NewFaq() {
 
         <div className="form-actions">
           <button type="submit" className="btn btn-primary" disabled={submitting}>
-            {submitting ? 'ПУБЛІКАЦІЯ...' : 'СТВОРИТИ FAQ'}
+            {submitting ? 'ПУБЛІКАЦІЯ...' : 'СТВОРИТИ ЧаП'}
           </button>
           <button type="button" className="btn btn-secondary" onClick={() => navigate('/create')} disabled={submitting}>
             СКАСУВАТИ
