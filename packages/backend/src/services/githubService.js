@@ -7,7 +7,7 @@
  * Очікувані env (обов’язково для вмикання OAuth):
  *   GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET
  * Callback URL для GitHub App повинен збігатися з тим, що повертає
- * resolveGithubCallbackUrlFromRequest(req) — або задайте явно GITHUB_CALLBACK_URL.
+ * resolveGithubCallbackUrlFromRequest(req) — або GITHUB_CALLBACK_URL / GITHUB_OAUTH_PUBLIC_ORIGIN.
  */
 
 import { parseFrontendOrigins, pickOriginForGithubOAuthCallback } from '../utils/frontendOrigin.js';
@@ -44,24 +44,54 @@ function isBareIpv4(hostname) {
   return /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname);
 }
 
-/** Якщо callback заданий як http://IP, а у FRONTEND_URL є https-домен — використовуємо домен (під OAuth App на GitHub). */
-function coerceAwayFromIpHttpCallback(candidateUrl, allowed) {
-  if (!candidateUrl || !allowed?.length) return finalizeRedirectUri(candidateUrl);
+/** Куди підміняти IPv4-callback: явний домен або вибір із FRONTEND_URL. */
+function resolveCanonicalOAuthOrigin(allowed) {
+  const forced = process.env.GITHUB_OAUTH_PUBLIC_ORIGIN?.trim();
+  if (forced) {
+    const raw = forced.replace(/\/$/, '');
+    try {
+      const u = new URL(raw.startsWith('http') ? raw : `https://${raw}`);
+      if (u.protocol === 'https:' && !isBareIpv4(u.hostname)) return raw;
+    } catch {
+      /* ignore */
+    }
+  }
+  if (!allowed?.length) return null;
+  const canonical = pickOriginForGithubOAuthCallback(allowed) ?? allowed[0];
+  try {
+    const u = new URL(canonical.startsWith('http') ? canonical : `https://${canonical}`);
+    if (u.protocol === 'https:' && !isBareIpv4(u.hostname)) return canonical.replace(/\/$/, '');
+    if (!isBareIpv4(u.hostname)) return canonical.replace(/\/$/, '');
+  } catch {
+    return canonical.replace(/\/$/, '');
+  }
+  return canonical.replace(/\/$/, '');
+}
+
+/** Якщо callback на голий IPv4, а є канонічний https-домен — підміняємо (узгоджено з OAuth App на GitHub). */
+function coerceAwayFromIpv4LiteralCallback(candidateUrl, allowed) {
+  if (!candidateUrl) return finalizeRedirectUri(candidateUrl);
   try {
     const fin = finalizeRedirectUri(candidateUrl);
     const u = new URL(fin);
-    const ipHttp = u.protocol === 'http:' && isBareIpv4(u.hostname);
-    if (!ipHttp) return fin;
+    if (!isBareIpv4(u.hostname)) return fin;
 
-    const canonical = pickOriginForGithubOAuthCallback(allowed) ?? allowed[0];
-    const cu = new URL(canonical.startsWith('http') ? canonical : `https://${canonical}`);
-    const useCanon = cu.protocol === 'https:' && !isBareIpv4(cu.hostname);
-    if (!useCanon) return fin;
+    const canonical = resolveCanonicalOAuthOrigin(allowed);
+    if (!canonical) return fin;
 
+    let canonUrl;
+    try {
+      canonUrl = new URL(canonical.startsWith('http') ? canonical : `https://${canonical}`);
+    } catch {
+      return fin;
+    }
+    if (isBareIpv4(canonUrl.hostname)) return fin;
+
+    const httpsBase = `https://${canonUrl.host}`;
     console.warn(
-      '[GitHub OAuth] Callback був на http://IP — замінено на канонічний https-домен із FRONTEND_URL. Приберіть застарілий GITHUB_CALLBACK_URL/PUBLIC_API_URL на IP з .env.'
+      '[GitHub OAuth] Callback був на IPv4 — замінено на канонічний https-домен. Задайте GITHUB_CALLBACK_URL або GITHUB_OAUTH_PUBLIC_ORIGIN=https://devflow.info і приберіть IP з .env.'
     );
-    return finalizeRedirectUri(`${canonical.replace(/\/$/, '')}/api/auth/github/callback`);
+    return finalizeRedirectUri(`${httpsBase.replace(/\/$/, '')}/api/auth/github/callback`);
   } catch {
     return finalizeRedirectUri(candidateUrl);
   }
@@ -111,13 +141,13 @@ export function resolveGithubCallbackUrlFromRequest(req) {
 
   const explicit = process.env.GITHUB_CALLBACK_URL?.trim();
   if (explicit) {
-    return coerceAwayFromIpHttpCallback(explicit, allowed);
+    return coerceAwayFromIpv4LiteralCallback(explicit, allowed);
   }
 
   const publicApi = process.env.PUBLIC_API_URL?.trim();
   if (publicApi) {
     const built = `${publicApi.replace(/\/$/, '')}/api/auth/github/callback`;
-    return coerceAwayFromIpHttpCallback(built, allowed);
+    return coerceAwayFromIpv4LiteralCallback(built, allowed);
   }
 
   if (process.env.NODE_ENV === 'development') {
