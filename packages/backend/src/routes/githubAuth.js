@@ -24,14 +24,9 @@ import {
   fetchUserEmails,
   pickPublicProfile,
 } from '../services/githubService.js';
+import { resolveFrontendBaseUrl } from '../utils/frontendOrigin.js';
 
 const router = express.Router();
-
-function frontendUrl() {
-  const raw = process.env.FRONTEND_URL || 'http://localhost:5173';
-  const first = raw.split(',').map((s) => s.trim()).filter(Boolean)[0];
-  return first || 'http://localhost:5173';
-}
 
 function makeState(payload) {
   return jwt.sign(payload, jwtConfig.secret, { expiresIn: '10m' });
@@ -98,7 +93,7 @@ router.get('/callback', async (req, res, next) => {
   const { code, state, error: oauthError, error_description: oauthDescription } = req.query;
 
   const fail = (msg) => {
-    const url = new URL(frontendUrl());
+    const url = new URL(resolveFrontendBaseUrl(req));
     url.pathname = '/auth/callback';
     url.searchParams.set('error', msg);
     return res.redirect(url.toString());
@@ -143,7 +138,7 @@ router.get('/callback', async (req, res, next) => {
     if (user.github_access_token) delete user.github_access_token;
     if (user.password) delete user.password;
 
-    const url = new URL(frontendUrl());
+    const url = new URL(resolveFrontendBaseUrl(req));
     url.pathname = '/auth/callback';
     url.searchParams.set('token', token);
     url.searchParams.set('user', JSON.stringify({

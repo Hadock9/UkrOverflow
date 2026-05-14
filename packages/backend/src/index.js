@@ -11,6 +11,8 @@ import { WebSocketServer } from 'ws';
 import { createServer } from 'http';
 import dotenv from 'dotenv';
 
+import { parseFrontendOrigins } from './utils/frontendOrigin.js';
+
 import { testConnection, closePool } from './config/database.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
@@ -54,9 +56,15 @@ if (missingVars.length > 0) {
 }
 
 const app = express();
-app.set('trust proxy', 1);
 const PORT = parseInt(process.env.API_PORT || '3338');
 const HOST = process.env.API_HOST || 'localhost';
+
+function productionCorsOrigin() {
+  const list = parseFrontendOrigins();
+  if (list.length === 0) return false;
+  if (list.length === 1) return list[0];
+  return list;
+}
 
 // Створення HTTP сервера
 const server = createServer(app);
@@ -70,20 +78,10 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
-const corsOrigins = (process.env.FRONTEND_URL || '')
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean);
-
 app.use(cors({
-  origin:
-    process.env.NODE_ENV === 'production'
-      ? corsOrigins.length === 0
-        ? false
-        : corsOrigins.length === 1
-          ? corsOrigins[0]
-          : corsOrigins
-      : '*',
+  origin: process.env.NODE_ENV === 'production'
+    ? productionCorsOrigin()
+    : '*',
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Visitor-Id', 'X-Record-View']
 }));

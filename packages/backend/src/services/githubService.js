@@ -10,6 +10,8 @@
  * resolveGithubCallbackUrl() — або задайте явно GITHUB_CALLBACK_URL.
  */
 
+import { parseFrontendOrigins } from '../utils/frontendOrigin.js';
+
 const GITHUB_API = 'https://api.github.com';
 const GITHUB_OAUTH = 'https://github.com/login/oauth';
 const USER_AGENT = 'DevFlow-Knowledge-Hub/1.0';
@@ -29,10 +31,9 @@ export function resolveGithubCallbackUrl() {
     return `http://localhost:${port}/api/auth/github/callback`;
   }
 
-  const feRaw = process.env.FRONTEND_URL?.trim();
-  if (feRaw) {
-    const fe = feRaw.split(',').map((s) => s.trim()).filter(Boolean)[0];
-    if (fe) return `${fe.replace(/\/$/, '')}/api/auth/github/callback`;
+  const origins = parseFrontendOrigins();
+  if (origins.length > 0) {
+    return `${origins[0].replace(/\/$/, '')}/api/auth/github/callback`;
   }
 
   const port = process.env.API_PORT || '3338';
