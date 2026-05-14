@@ -94,7 +94,7 @@ http://localhost:3338/api/ai/status
 http://localhost:5175
 ```
 
-1. Увійдіть (taras@ukroverflow.com / password123)
+1. Увійдіть (зареєстрований акаунт або після `npm run seed` — з паролями з `.env`, див. `SEED_*` у `.env.example`)
 2. Відкрийте будь-яке питання
 3. Побачите:
    - 🤖 TL;DR (AI) - якщо питання довге

@@ -11,6 +11,7 @@
     "seed": "node src/scripts/seed.js",
     "seed:user": "node src/scripts/seedForUser.js",
     "seed:communities": "node src/scripts/seedCommunities.js",
+    "seed:notifications": "node src/scripts/seedNotifications.js",
     "test": "node --test 'src/**/*.test.js'"
   },
   "keywords": [

@@ -83,7 +83,7 @@ export function Login() {
               className="form-input"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="taras@ukroverflow.com"
+              placeholder="email@example.com"
               autoComplete="username"
             />
           </div>
@@ -131,37 +131,6 @@ export function Login() {
               ЗАРЕЄСТРУВАТИСЯ
             </Link>
           </p>
-        </div>
-
-        {/* Тестові облікові дані */}
-        <div className="test-credentials">
-          <h3>ШВИДКИЙ ВХІД:</h3>
-          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => {
-                setIdentifier('taras@ukroverflow.com');
-                setPassword('password123');
-              }}
-            >
-              КОРИСТУВАЧ
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => {
-                setIdentifier('admin@ukroverflow.com');
-                setPassword('admin123');
-              }}
-            >
-              АДМІН
-            </button>
-          </div>
-          <div style={{ marginTop: '10px', fontSize: '12px', color: '#666' }}>
-            <p><strong>Користувач:</strong> taras@ukroverflow.com / password123</p>
-            <p><strong>Адмін:</strong> admin@ukroverflow.com / admin123</p>
-          </div>
         </div>
       </div>
     </div>

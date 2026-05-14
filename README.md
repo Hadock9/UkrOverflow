@@ -11,7 +11,7 @@ npm install
 npm run dev
 ```
 
-Окремо: `npm run dev:backend`, `npm run dev:frontend`. Міграції та сид: `npm run migrate`, `npm run seed`.
+Окремо: `npm run dev:backend`, `npm run dev:frontend`. Міграції та сид: `npm run migrate`, `npm run seed`. Для стабільних паролів після seed додайте в `.env` `SEED_ADMIN_PASSWORD` та `SEED_USER_PASSWORD` (див. `.env.example`); якщо їх немає в **development**, seed згенерує паролі й покаже їх у терміналі.
 
 ## Структура
 

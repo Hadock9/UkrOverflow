@@ -19,6 +19,7 @@
 
 import 'dotenv/config';
 import bcrypt from 'bcrypt';
+import crypto from 'node:crypto';
 import pool from '../config/database.js';
 
 // ── CLI args ──────────────────────────────────────────────────────────────────
@@ -233,7 +234,11 @@ async function ensureCoAuthors(connection, userId) {
   }
 
   console.log('ℹ️  Інших юзерів у БД немає — створюю 3 seed-користувачів для відповідей...');
-  const passwordHash = await bcrypt.hash('password123', 10);
+  const passwordPlain = process.env.SEED_USER_PASSWORD;
+  const passwordHash = await bcrypt.hash(
+    passwordPlain || crypto.randomBytes(24).toString('base64url'),
+    10
+  );
   const seedUsers = [
     { username: 'admin', email: 'admin@ukroverflow.local', reputation: 5000, role: 'admin', bio: 'Адмін платформи', location: 'Київ' },
     { username: 'taras', email: 'taras@ukroverflow.local', reputation: 1250, role: 'user', bio: 'Backend / Node.js', location: 'Київ' },

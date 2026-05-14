@@ -8,9 +8,7 @@ URLs:
 - WebSocket: ws://localhost:3338/ws
 - API Health: http://localhost:3338/health
 
-Тестовий акаунт:
-Email: taras@ukroverflow.com
-Пароль: password123
+Вхід: зареєструйте акаунт або GitHub OAuth. Після `npm run seed` паролі задаються лише через змінні `SEED_ADMIN_PASSWORD` та `SEED_USER_PASSWORD` у `.env` (не зберігайте їх у репозиторії).
 
 АРХІТЕКТУРА
 
@@ -342,12 +340,13 @@ npm run dev         - Запустити все разом
 
 Після npm run seed створюються:
 
-Користувачі:
-1. taras_shevchenko (taras@ukroverflow.com) - admin
-2. lesya_ukrainka (lesya@ukroverflow.com) - moderator
-3. ivan_franko (ivan@ukroverflow.com) - user
+Користувачі (логін — email з цього списку, пароль з `SEED_USER_PASSWORD`, крім admin — `SEED_ADMIN_PASSWORD`):
+1. admin (admin@ukroverflow.com) — admin
+2. taras_shevchenko (taras@ukroverflow.com) — user
+3. lesya_ukrainka (lesya@ukroverflow.com) — moderator
+(та інші з seed.js)
 
-Пароль для всіх: password123
+Паролі не зберігаються в коді; задайте їх у `.env` перед `npm run seed`.
 
 Дані:
 - 4 питання з різними тегами
@@ -357,7 +356,7 @@ npm run dev         - Запустити все разом
 ЩО МОЖНА ЗРОБИТИ
 
 1. Переглянути питання - відкрити http://localhost:5175
-2. Увійти - натиснути "УВІЙТИ" і використати тестовий акаунт
+2. Увійти — «УВІЙТИ» (реєстрація, GitHub або обліковий запис після seed з паролями з .env)
 3. Створити питання - кнопка "+ НОВЕ ПИТАННЯ"
 4. Відповісти на питання - вибрати питання і написати відповідь
 5. Голосувати - кнопки ▲ ▼ на питаннях і відповідях

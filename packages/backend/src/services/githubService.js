@@ -4,32 +4,54 @@
  * Реалізація на вбудованому fetch (Node 18+). Без сторонніх залежностей.
  * Документація: https://docs.github.com/en/rest
  *
- * Очікувані env:
- *   GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_CALLBACK_URL
+ * Очікувані env (обов’язково для вмикання OAuth):
+ *   GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET
+ * Callback URL для GitHub App повинен збігатися з тим, що повертає
+ * resolveGithubCallbackUrl() — або задайте явно GITHUB_CALLBACK_URL.
  */
 
 const GITHUB_API = 'https://api.github.com';
 const GITHUB_OAUTH = 'https://github.com/login/oauth';
 const USER_AGENT = 'DevFlow-Knowledge-Hub/1.0';
 
+/** Публічна URL редіректу GitHub OAuth (має збігатися з "Authorization callback URL" у GitHub App). */
+export function resolveGithubCallbackUrl() {
+  const explicit = process.env.GITHUB_CALLBACK_URL?.trim();
+  if (explicit) return explicit;
+
+  const publicApi = process.env.PUBLIC_API_URL?.trim();
+  if (publicApi) {
+    return `${publicApi.replace(/\/$/, '')}/api/auth/github/callback`;
+  }
+
+  if (process.env.NODE_ENV === 'development') {
+    const port = process.env.API_PORT || '3338';
+    return `http://localhost:${port}/api/auth/github/callback`;
+  }
+
+  const fe = process.env.FRONTEND_URL?.trim();
+  if (fe) {
+    return `${fe.replace(/\/$/, '')}/api/auth/github/callback`;
+  }
+
+  const port = process.env.API_PORT || '3338';
+  return `http://localhost:${port}/api/auth/github/callback`;
+}
+
 function requireEnv() {
-  const id = process.env.GITHUB_CLIENT_ID;
-  const secret = process.env.GITHUB_CLIENT_SECRET;
-  const callback = process.env.GITHUB_CALLBACK_URL;
-  if (!id || !secret || !callback) {
+  const id = process.env.GITHUB_CLIENT_ID?.trim();
+  const secret = process.env.GITHUB_CLIENT_SECRET?.trim();
+  const callback = resolveGithubCallbackUrl();
+  if (!id || !secret) {
     throw new Error(
-      'GitHub OAuth не налаштовано. Задайте GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_CALLBACK_URL у .env'
+      'GitHub OAuth не налаштовано. Задайте GITHUB_CLIENT_ID та GITHUB_CLIENT_SECRET у .env (callback за замовчуванням: див. resolveGithubCallbackUrl).'
     );
   }
   return { id, secret, callback };
 }
 
 export function isGitHubConfigured() {
-  return Boolean(
-    process.env.GITHUB_CLIENT_ID &&
-      process.env.GITHUB_CLIENT_SECRET &&
-      process.env.GITHUB_CALLBACK_URL
-  );
+  return Boolean(process.env.GITHUB_CLIENT_ID?.trim() && process.env.GITHUB_CLIENT_SECRET?.trim());
 }
 
 export function buildAuthorizeUrl({ state, scope } = {}) {

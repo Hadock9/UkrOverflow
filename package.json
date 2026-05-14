@@ -13,6 +13,8 @@
     "build": "cd packages/frontend && npm run build",
     "migrate": "cd packages/backend && npm run migrate",
     "seed": "cd packages/backend && npm run seed",
+    "seed:user": "cd packages/backend && npm run seed:user",
+    "seed:notifications": "cd packages/backend && node src/scripts/seedNotifications.js",
     "test": "npm run test -w @ukroverflow/backend && npm run test -w frontend",
     "docker:up": "docker compose --env-file .env up -d --build",
     "docker:down": "docker compose --env-file .env down",

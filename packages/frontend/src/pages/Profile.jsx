@@ -174,14 +174,15 @@ export function Profile() {
     }
   };
 
-  // Паралельно: увесь хаб одним запитом /api/content + відповіді
+  // Паралельно: увесь хаб одним запитом /api/content + відповіді + пости спільнот
   const loadAllContent = async () => {
     setContentLoading(true);
-    const params = { authorId: userId, limit: 100 };
+    const aid = parseInt(userId, 10);
+    const params = { authorId: aid, limit: 100 };
 
     const tasks = [
       api
-        .get('/content', { params: { authorId: userId, contentType: 'all', limit: 300, page: 1 } })
+        .get('/content', { params: { authorId: aid, contentType: 'all', limit: 300, page: 1 } })
         .then((r) => {
           const items = r.data?.data?.items || [];
           setQuestions(items.filter((i) => i.type === 'question'));
@@ -196,6 +197,10 @@ export function Profile() {
       api.get('/answers', { params })
         .then((r) => setAnswers(extractList(r, 'answers')))
         .catch((e) => console.error('Помилка завантаження відповідей:', e)),
+      communityPosts
+        .list({ authorId: aid, limit: 100, page: 1 })
+        .then((r) => setUserCommunityPosts(r.data?.data?.posts || []))
+        .catch((e) => console.error('Помилка завантаження постів спільнот:', e)),
     ];
 
     await Promise.all(tasks);
@@ -433,6 +438,44 @@ export function Profile() {
           </div>
         );
       })()}
+
+      {isOwnProfile && import.meta.env.DEV && !contentLoading &&
+        questions.length === 0 &&
+        answers.length === 0 &&
+        userCommunityPosts.length === 0 &&
+        articles.length === 0 &&
+        guides.length === 0 &&
+        snippets.length === 0 &&
+        roadmaps.length === 0 &&
+        bestPractices.length === 0 &&
+        faqs.length === 0 && (
+        <div
+          className="card"
+          style={{
+            marginBottom: 'var(--space-4)',
+            padding: 'var(--space-3)',
+            fontSize: '0.9rem',
+            border: '2px dashed var(--border-color)',
+          }}
+        >
+          <strong>Локально:</strong> після загального <code>npm run seed</code> питання та статті розподілені між десятьма
+          тестовими користувачами, а не під одним акаунтом. Зареєстрований профіль може лишатися порожнім.
+          Щоб згенерувати питання на різні теми та хаб-контент саме для <strong>цього</strong> користувача, у
+          {' '}<code>packages/backend</code> виконайте:
+          <pre
+            style={{
+              marginTop: 'var(--space-2)',
+              marginBottom: 0,
+              padding: 'var(--space-2)',
+              overflow: 'auto',
+              background: 'var(--color-gray-100)',
+              border: '2px solid var(--border-color)',
+            }}
+          >
+            {`npm run seed:user -- --user=${userId}`}
+          </pre>
+        </div>
+      )}
 
       {/* Вкладки */}
       <div className="filters" style={{ flexWrap: 'wrap' }}>

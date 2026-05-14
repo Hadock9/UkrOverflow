@@ -6,7 +6,8 @@
  * POST /api/auth/github/unlink   → відключити GitHub від акаунта
  *
  * Параметри середовища:
- *   GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_CALLBACK_URL
+ *   GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET (обов’язково)
+ *   GITHUB_CALLBACK_URL або PUBLIC_API_URL або FRONTEND_URL — для callback (див. resolveGithubCallbackUrl)
  *   FRONTEND_URL (для post-callback редіректу)
  */
 
@@ -64,7 +65,7 @@ router.get('/', (req, res) => {
   if (!isGitHubConfigured()) {
     return res.status(503).json({
       success: false,
-      message: 'GitHub OAuth не налаштовано на сервері. Задайте GITHUB_CLIENT_ID/SECRET/CALLBACK_URL.',
+      message: 'GitHub OAuth не налаштовано на сервері. Задайте GITHUB_CLIENT_ID і GITHUB_CLIENT_SECRET (див. .env.example). Callback URL за замовчуванням будується з FRONTEND_URL / PUBLIC_API_URL / dev localhost.',
     });
   }
 

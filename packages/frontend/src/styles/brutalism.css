@@ -928,24 +928,6 @@ tr:nth-child(even) {
   text-decoration: underline;
 }
 
-.test-credentials {
-  margin-top: var(--space-4);
-  padding: var(--space-3);
-  background: var(--color-gray-100);
-  border: 2px solid var(--border-color);
-  font-family: var(--font-mono);
-  font-size: 0.875rem;
-}
-
-.test-credentials h3 {
-  font-size: 1rem;
-  margin-bottom: var(--space-2);
-}
-
-.test-credentials p {
-  margin-bottom: var(--space-1);
-}
-
 /* Question Form */
 .question-form {
   margin-bottom: var(--space-5);

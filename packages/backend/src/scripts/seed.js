@@ -6,9 +6,21 @@
  * тож повторний запуск дає той самий контент.
  */
 
+import dotenv from 'dotenv';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import crypto from 'node:crypto';
 import bcrypt from 'bcrypt';
 import pool from '../config/database.js';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const backendRoot = path.resolve(__dirname, '../..');
+const repoRoot = path.resolve(backendRoot, '../..');
+dotenv.config({ path: path.join(repoRoot, '.env') });
+dotenv.config({ path: path.join(backendRoot, '.env'), override: true });
+
+/** Якщо паролі згенеровані цим запуском — показати в кінці (не зберігаються в репозиторії). */
+let generatedSeedPasswords = null;
 const PER_TYPE = 70;
 const ANSWERS_PER_QUESTION = 10;
 
@@ -240,8 +252,27 @@ async function clear(connection) {
 
 async function createUsers(connection) {
   console.log('👤 Створення користувачів...');
-  const adminHash = await bcrypt.hash('admin123', 10);
-  const userHash = await bcrypt.hash('password123', 10);
+  generatedSeedPasswords = null;
+
+  let adminPass = process.env.SEED_ADMIN_PASSWORD?.trim();
+  let userPass = process.env.SEED_USER_PASSWORD?.trim();
+
+  if (!adminPass || !userPass) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'У production задайте SEED_ADMIN_PASSWORD та SEED_USER_PASSWORD у змінних оточення перед seed.'
+      );
+    }
+    if (!adminPass) adminPass = crypto.randomBytes(16).toString('base64url');
+    if (!userPass) userPass = crypto.randomBytes(16).toString('base64url');
+    generatedSeedPasswords = { admin: adminPass, user: userPass };
+    console.warn(
+      '⚠️  SEED_ADMIN_PASSWORD / SEED_USER_PASSWORD не знайдено в .env — згенеровано паролі для локального запуску (див. кінець логу).\n'
+    );
+  }
+
+  const adminHash = await bcrypt.hash(adminPass, 10);
+  const userHash = await bcrypt.hash(userPass, 10);
 
   const seedUsers = [
     { username: 'admin', email: 'admin@ukroverflow.com', password: adminHash, reputation: 5000, role: 'admin', bio: 'Головний адмін платформи', location: 'Київ' },
@@ -615,9 +646,13 @@ async function seed() {
     console.log(`   🗺️  Roadmaps:        ${PER_TYPE}`);
     console.log(`   🛡️  Best practices:  ${PER_TYPE}`);
     console.log(`   ❔ FAQs:            ${PER_TYPE}`);
-    console.log('\n🔑 Тестові облікові дані:');
-    console.log('   admin@ukroverflow.com / admin123');
-    console.log('   taras@ukroverflow.com / password123');
+    if (generatedSeedPasswords) {
+      console.log('\n🔑 Паролі цього запуску — скопіюйте в `.env` (корінь репо або packages/backend), щоб наступні входи збігалися:');
+      console.log(`   SEED_ADMIN_PASSWORD=${generatedSeedPasswords.admin}`);
+      console.log(`   SEED_USER_PASSWORD=${generatedSeedPasswords.user}`);
+    } else {
+      console.log('\n🔑 Паролі відповідають SEED_ADMIN_PASSWORD / SEED_USER_PASSWORD у .env.');
+    }
   } catch (error) {
     console.error('❌ Помилка заповнення:', error);
     throw error;
