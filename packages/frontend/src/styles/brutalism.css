@@ -334,19 +334,17 @@ tr:nth-child(even) {
   background: var(--color-gray-100);
 }
 
-/* Loading */
+/* Loading — без обертання, лише статичний текст/рамка */
 .loading {
-  display: inline-block;
-  width: 40px;
-  height: 40px;
+  display: block;
+  padding: var(--space-3) var(--space-4);
   border: var(--border-width) solid var(--color-gray-300);
-  border-top-color: var(--color-black);
   border-radius: 0;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
+  background: var(--color-gray-100);
+  color: var(--color-black);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-align: center;
 }
 
 /* Utilities */
@@ -949,6 +947,34 @@ tr:nth-child(even) {
 }
 
 .form-input.error {
+  border-color: var(--color-error);
+}
+
+.form-textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 120px;
+  padding: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--color-black);
+  background: var(--color-white);
+  border: var(--border-width) solid var(--border-color);
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.1);
+}
+
+.form-textarea:focus {
+  border-color: var(--color-black);
+  box-shadow: var(--shadow-brutal);
+  transform: translate(-2px, -2px);
+}
+
+.form-textarea.error {
   border-color: var(--color-error);
 }
 

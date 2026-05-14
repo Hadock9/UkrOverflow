@@ -43,10 +43,6 @@ export function Header() {
           <div className="header-right">
             {isAuthenticated ? (
               <>
-                <Link to="/ask" className="btn btn-primary">
-                  ЗАДАТИ ПИТАННЯ
-                </Link>
-
                 <div className="user-menu">
                   <Link to="/profile" className="user-link">
                     <span className="badge">{user?.reputation || 0}</span>

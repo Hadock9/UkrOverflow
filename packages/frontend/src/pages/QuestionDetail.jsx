@@ -82,16 +82,30 @@ export function QuestionDetail() {
         entityId
       }, 'QuestionDetail');
 
-      await api.post('/votes', {
+      const response = await api.post('/votes', {
         entityType,
         entityId,
         voteType: type
       });
 
-      // Оновити дані
+      // Бекенд повертає актуальні лічильники { upvotes, downvotes, total }
+      const voteData = response.data?.data?.votes;
+      const newTotal = typeof voteData?.total === 'number'
+        ? voteData.total
+        : (Number(voteData?.upvotes) || 0) - (Number(voteData?.downvotes) || 0);
+
       if (entityType === 'question') {
+        setQuestion(prev => prev
+          ? { ...prev, votes: newTotal, upvotes: voteData?.upvotes ?? prev.upvotes, downvotes: voteData?.downvotes ?? prev.downvotes }
+          : prev
+        );
         loadQuestion();
       } else {
+        setAnswers(prev => prev.map(a =>
+          a.id === entityId
+            ? { ...a, votes: newTotal, upvotes: voteData?.upvotes ?? a.upvotes, downvotes: voteData?.downvotes ?? a.downvotes }
+            : a
+        ));
         loadAnswers();
       }
 
@@ -333,7 +347,9 @@ export function QuestionDetail() {
                 ▲
               </button>
               <div className="vote-count">
-                {(answer.upvotes || 0) - (answer.downvotes || 0)}
+                {typeof answer.votes === 'number'
+                  ? answer.votes
+                  : (Number(answer.upvotes) || 0) - (Number(answer.downvotes) || 0)}
               </div>
               <button
                 className="vote-btn vote-down"

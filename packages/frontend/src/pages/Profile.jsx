@@ -350,40 +350,53 @@ export function Profile() {
       />
 
       {/* Статистика */}
-      <div className="grid grid-4" style={{ marginBottom: 'var(--space-5)' }}>
-        <div className="card">
-          <div className="stat">
-            <div className="stat-value" style={{ color: 'var(--color-success)' }}>
-              {user.reputation || 0}
+      {(() => {
+        const totalPosts =
+          questions.length +
+          articles.length +
+          guides.length +
+          snippets.length +
+          roadmaps.length +
+          bestPractices.length +
+          faqs.length;
+        const breakdown = `Питання: ${questions.length} · Статті: ${articles.length} · Гайди: ${guides.length} · Snippets: ${snippets.length} · Roadmaps: ${roadmaps.length} · Best practices: ${bestPractices.length} · FAQ: ${faqs.length}`;
+        return (
+          <div className="grid grid-4" style={{ marginBottom: 'var(--space-5)' }}>
+            <div className="card">
+              <div className="stat">
+                <div className="stat-value" style={{ color: 'var(--color-success)' }}>
+                  {user.reputation || 0}
+                </div>
+                <div className="stat-label">РЕПУТАЦІЯ</div>
+              </div>
             </div>
-            <div className="stat-label">РЕПУТАЦІЯ</div>
-          </div>
-        </div>
-        <div className="card">
-          <div className="stat">
-            <div className="stat-value">{user.questions_count || 0}</div>
-            <div className="stat-label">ПИТАНЬ</div>
-          </div>
-        </div>
-        <div className="card">
-          <div className="stat">
-            <div className="stat-value">{user.answers_count || 0}</div>
-            <div className="stat-label">ВІДПОВІДЕЙ</div>
-          </div>
-        </div>
-        <div className="card">
-          <div className="stat">
-            <div className="stat-value">
-              {user.role === 'admin' ? (
-                <span className="badge badge-primary">АДМІН</span>
-              ) : (
-                <span className="badge">КОРИСТУВАЧ</span>
-              )}
+            <div className="card" title={breakdown}>
+              <div className="stat">
+                <div className="stat-value">{totalPosts}</div>
+                <div className="stat-label">ДОПИСІВ</div>
+              </div>
             </div>
-            <div className="stat-label">РОЛЬ</div>
+            <div className="card">
+              <div className="stat">
+                <div className="stat-value">{answers.length || user.answers_count || 0}</div>
+                <div className="stat-label">ВІДПОВІДЕЙ</div>
+              </div>
+            </div>
+            <div className="card">
+              <div className="stat">
+                <div className="stat-value">
+                  {user.role === 'admin' ? (
+                    <span className="badge badge-primary">АДМІН</span>
+                  ) : (
+                    <span className="badge">КОРИСТУВАЧ</span>
+                  )}
+                </div>
+                <div className="stat-label">РОЛЬ</div>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Вкладки */}
       <div className="filters" style={{ flexWrap: 'wrap' }}>
@@ -487,7 +500,9 @@ export function Profile() {
                 <div className="question-stats">
                   <div className="stat">
                     <div className="stat-value">
-                      {(answer.upvotes || 0) - (answer.downvotes || 0)}
+                      {typeof answer.votes === 'number'
+                        ? answer.votes
+                        : (Number(answer.upvotes) || 0) - (Number(answer.downvotes) || 0)}
                     </div>
                     <div className="stat-label">ГОЛОСІВ</div>
                   </div>

@@ -34,6 +34,9 @@ import contentRoutes from './routes/content.js';
 import githubAuthRoutes from './routes/githubAuth.js';
 import githubRoutes from './routes/github.js';
 import githubWebhookRoutes from './routes/githubWebhook.js';
+import communitiesRoutes from './routes/communities.js';
+import communityPostsRoutes from './routes/communityPosts.js';
+import mentorsRoutes from './routes/mentors.js';
 
 // Завантаження змінних оточення
 dotenv.config();
@@ -132,6 +135,9 @@ app.use('/api/faqs', faqsRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/auth/github', githubAuthRoutes);
 app.use('/api/github', githubRoutes);
+app.use('/api/communities', communitiesRoutes);
+app.use('/api/community-posts', communityPostsRoutes);
+app.use('/api/mentors', mentorsRoutes);
 
 // WebSocket з'єднання
 const clients = new Map();

@@ -28,6 +28,9 @@ import { SnippetDetail } from './pages/SnippetDetail'
 import { NewSnippet } from './pages/NewSnippet'
 import { EditSnippet } from './pages/EditSnippet'
 import { RoadmapDetail, BestPracticeDetail, FaqDetail } from './pages/HubItemDetail'
+import { NewRoadmap } from './pages/NewRoadmap'
+import { NewBestPractice } from './pages/NewBestPractice'
+import { NewFaq } from './pages/NewFaq'
 import { AuthCallback } from './pages/AuthCallback'
 
 function App() {
@@ -113,13 +116,16 @@ function App() {
             <Route path="/snippets/:id" element={<SnippetDetail />} />
 
             <Route path="/roadmaps" element={<Home />} />
+            <Route path="/roadmaps/new" element={<NewRoadmap />} />
             <Route path="/roadmaps/:id" element={<RoadmapDetail />} />
 
             <Route path="/best-practices" element={<Home />} />
+            <Route path="/best-practices/new" element={<NewBestPractice />} />
             <Route path="/best-practices/:id" element={<BestPracticeDetail />} />
 
             <Route path="/faq" element={<Home />} />
             <Route path="/faqs" element={<Home />} />
+            <Route path="/faqs/new" element={<NewFaq />} />
             <Route path="/faqs/:id" element={<FaqDetail />} />
           </Routes>
         </main>

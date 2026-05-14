@@ -623,6 +623,114 @@ async function migrate() {
     `);
     console.log('✓ content_linked_repos\n');
 
+    // === COMMUNITY HUB (спільноти, ментори, пости) ===
+
+    console.log('📝 communities...');
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS communities (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        slug VARCHAR(120) UNIQUE NOT NULL,
+        name VARCHAR(160) NOT NULL,
+        type ENUM('city','university','dev_club','project_team','study_group','company','online') NOT NULL DEFAULT 'dev_club',
+        description TEXT,
+        location VARCHAR(120) NULL,
+        website VARCHAR(255) NULL,
+        banner_url VARCHAR(500) NULL,
+        avatar_url VARCHAR(500) NULL,
+        owner_id INT NOT NULL,
+        member_count INT DEFAULT 0,
+        post_count INT DEFAULT 0,
+        is_public TINYINT(1) DEFAULT 1,
+        tags JSON NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_type (type),
+        INDEX idx_location (location),
+        FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log('✓ communities\n');
+
+    console.log('📝 community_memberships...');
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS community_memberships (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        community_id INT NOT NULL,
+        user_id INT NOT NULL,
+        role ENUM('owner','admin','member') NOT NULL DEFAULT 'member',
+        joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uniq_member (community_id, user_id),
+        FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log('✓ community_memberships\n');
+
+    console.log('📝 community_posts...');
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS community_posts (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        community_id INT NOT NULL,
+        author_id INT NOT NULL,
+        type ENUM('discussion','pet_project','code_review','mentor_request','roadmap_request','team_search','event','announcement') NOT NULL DEFAULT 'discussion',
+        title VARCHAR(255) NOT NULL,
+        body TEXT NOT NULL,
+        metadata JSON NULL,
+        stack JSON NULL,
+        votes INT DEFAULT 0,
+        views INT DEFAULT 0,
+        comment_count INT DEFAULT 0,
+        status ENUM('open','closed','filled') DEFAULT 'open',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_community_type (community_id, type),
+        INDEX idx_author (author_id),
+        INDEX idx_created (created_at),
+        FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE,
+        FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log('✓ community_posts\n');
+
+    console.log('📝 community_post_comments...');
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS community_post_comments (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        post_id INT NOT NULL,
+        author_id INT NOT NULL,
+        parent_id INT NULL,
+        body TEXT NOT NULL,
+        votes INT DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX idx_post (post_id),
+        FOREIGN KEY (post_id) REFERENCES community_posts(id) ON DELETE CASCADE,
+        FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (parent_id) REFERENCES community_post_comments(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log('✓ community_post_comments\n');
+
+    console.log('📝 mentor_profiles...');
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS mentor_profiles (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        user_id INT UNIQUE NOT NULL,
+        is_active TINYINT(1) DEFAULT 1,
+        bio TEXT,
+        stack JSON NULL,
+        topics JSON NULL,
+        languages JSON NULL,
+        availability_hours_week INT DEFAULT 0,
+        price_note VARCHAR(160) NULL,
+        contact_method VARCHAR(160) NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log('✓ mentor_profiles\n');
+
     console.log('✅ Міграція завершена успішно!');
   } catch (error) {
     console.error('❌ Помилка міграції:', error);
