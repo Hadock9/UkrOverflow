@@ -45,6 +45,27 @@ function isBareIpv4(hostname) {
   return /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname);
 }
 
+/**
+ * Host / X-Forwarded-Host → лише hostname (без порту).
+ * Підтримує [IPv6]:port, звичайний домен із :port та IPv4 з портом (не розбивати лише перший ':').
+ */
+function hostWithoutPort(headerValue) {
+  const raw = String(headerValue ?? '').trim();
+  if (!raw) return '';
+  if (raw.startsWith('[')) {
+    const end = raw.indexOf(']');
+    return end > 1 ? raw.slice(1, end) : '';
+  }
+  const idx = raw.lastIndexOf(':');
+  if (idx !== -1) {
+    const after = raw.slice(idx + 1);
+    if (/^\d+$/.test(after)) {
+      return raw.slice(0, idx);
+    }
+  }
+  return raw;
+}
+
 /** Куди підміняти IPv4-callback: явний домен або вибір із FRONTEND_URL. */
 function resolveCanonicalOAuthOrigin(allowed) {
   const forced = process.env.GITHUB_OAUTH_PUBLIC_ORIGIN?.trim();
@@ -98,7 +119,10 @@ function coerceAwayFromIpv4LiteralCallback(candidateUrl, allowed) {
   }
 }
 
-/** Host із запиту → callback тільки для доменних імен (не голий IPv4). */
+/**
+ * Якщо запит прийшов з Host, що збігається з одним із origin у FRONTEND_URL —
+ * побудуємо відповідний redirect_uri без жорсткого відсікання голого IPv4.
+ */
 function githubCallbackFromRequestHost(req, allowed) {
   if (!req || !allowed.length) return null;
 
@@ -108,8 +132,7 @@ function githubCallbackFromRequestHost(req, allowed) {
   const hostHeader = forwardedHost || req.get('Host') || '';
   if (!hostHeader) return null;
 
-  const hostname = hostHeader.split(':')[0];
-  if (isBareIpv4(hostname) || hostname.includes(':')) return null;
+  const hostname = hostWithoutPort(hostHeader).toLowerCase();
 
   const candidates = [`${proto}://${hostHeader}`.replace(/\/$/, '')];
   if (proto === 'http') candidates.push(`https://${hostHeader}`.replace(/\/$/, ''));
@@ -119,11 +142,12 @@ function githubCallbackFromRequestHost(req, allowed) {
     if (allowed.includes(norm)) return `${norm}/api/auth/github/callback`;
   }
 
-  const hostLower = hostname.toLowerCase();
+  if (!hostname) return null;
+
   for (const origin of allowed) {
     try {
       const u = new URL(origin.startsWith('http') ? origin : `http://${origin}`);
-      if (u.hostname.toLowerCase() === hostLower) {
+      if (u.hostname.toLowerCase() === hostname) {
         return `${origin.replace(/\/$/, '')}/api/auth/github/callback`;
       }
     } catch {

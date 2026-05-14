@@ -57,7 +57,21 @@ function pickPrimaryEmail(emails) {
 }
 
 router.get('/status', (req, res) => {
-  res.json({ success: true, data: { enabled: isGitHubConfigured() } });
+  let redirect_uri = null;
+  let redirect_uri_error = null;
+  try {
+    redirect_uri = resolveGithubCallbackUrlFromRequest(req);
+  } catch (e) {
+    redirect_uri_error = e?.message ?? String(e);
+  }
+  res.json({
+    success: true,
+    data: {
+      enabled: isGitHubConfigured(),
+      redirect_uri,
+      ...(redirect_uri_error ? { redirect_uri_error } : {}),
+    },
+  });
 });
 
 /** GET /api/auth/github/resolved-callback — діагностика redirect_uri для GitHub (без секретів). */
