@@ -1,0 +1,52 @@
+/* AI Question Summary Styles - Brutalism Design */
+
+.ai-summary-loading {
+  background: #fffacd;
+  border: 2px dashed #000;
+  padding: 12px;
+  margin: 16px 0;
+  text-align: center;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: bold;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.ai-question-summary {
+  background: #fffacd;
+  border: 3px solid #000;
+  padding: 0;
+  margin: 16px 0;
+  box-shadow: 4px 4px 0 #ffd700;
+}
+
+.ai-summary-badge {
+  background: #000;
+  color: #fff;
+  padding: 8px 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+  border-bottom: 3px solid #000;
+  display: inline-block;
+}
+
+.ai-summary-text {
+  padding: 16px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #000;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .ai-question-summary {
+    box-shadow: 2px 2px 0 #ffd700;
+  }
+
+  .ai-summary-text {
+    font-size: 13px;
+  }
+}

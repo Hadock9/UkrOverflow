@@ -1,0 +1,176 @@
+/* AI Assistant Styles - Brutalism Design */
+
+.ai-assistant {
+  margin: 20px 0;
+}
+
+.ai-btn {
+  background: #000;
+  color: #fff;
+  border: 3px solid #000;
+  padding: 12px 24px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: bold;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 #ff0000;
+  transition: all 0.1s;
+}
+
+.ai-btn:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 #ff0000;
+}
+
+.ai-btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 #ff0000;
+}
+
+.ai-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ai-error {
+  background: #fff;
+  border: 3px solid #ff0000;
+  padding: 16px;
+  margin-top: 12px;
+  font-family: 'Courier New', monospace;
+  color: #ff0000;
+  font-weight: bold;
+}
+
+.ai-suggestion-box {
+  background: #fff;
+  border: 6px solid #000;
+  padding: 0;
+  margin-top: 20px;
+  box-shadow: 8px 8px 0 #000;
+}
+
+.ai-suggestion-header {
+  background: #000;
+  color: #fff;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 3px solid #000;
+}
+
+.ai-badge {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  background: #ff0000;
+  padding: 4px 8px;
+  border: 2px solid #fff;
+}
+
+.ai-close-btn {
+  background: transparent;
+  color: #fff;
+  border: 2px solid #fff;
+  padding: 4px 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.ai-close-btn:hover {
+  background: #fff;
+  color: #000;
+}
+
+.ai-suggestion-content {
+  padding: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+  background: #f5f5f5;
+  border-bottom: 3px solid #000;
+}
+
+.ai-suggestion-content pre {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0;
+  color: #000;
+}
+
+.ai-suggestion-actions {
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+  background: #fff;
+  border-bottom: 3px solid #000;
+}
+
+.ai-use-btn,
+.ai-discard-btn {
+  flex: 1;
+  padding: 12px 24px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: bold;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 3px solid #000;
+  transition: all 0.1s;
+}
+
+.ai-use-btn {
+  background: #000;
+  color: #fff;
+  box-shadow: 4px 4px 0 #00ff00;
+}
+
+.ai-use-btn:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 #00ff00;
+}
+
+.ai-discard-btn {
+  background: #fff;
+  color: #000;
+  box-shadow: 4px 4px 0 #ff0000;
+}
+
+.ai-discard-btn:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 #ff0000;
+}
+
+.ai-disclaimer {
+  padding: 12px 16px;
+  background: #fffacd;
+  border-top: 3px solid #000;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #000;
+  text-align: center;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .ai-suggestion-box {
+    box-shadow: 4px 4px 0 #000;
+  }
+
+  .ai-suggestion-actions {
+    flex-direction: column;
+  }
+
+  .ai-use-btn,
+  .ai-discard-btn {
+    width: 100%;
+  }
+}

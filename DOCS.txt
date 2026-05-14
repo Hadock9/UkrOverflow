@@ -1,0 +1,541 @@
+UKROVERFLOW 2.0 - ДОКУМЕНТАЦІЯ
+
+СИСТЕМА ЗАПУЩЕНА І ПРАЦЮЄ
+
+URLs:
+- Frontend: http://localhost:5175
+- Backend API: http://localhost:3338
+- WebSocket: ws://localhost:3338/ws
+- API Health: http://localhost:3338/health
+
+Тестовий акаунт:
+Email: taras@ukroverflow.com
+Пароль: password123
+
+АРХІТЕКТУРА
+
+UkrOverflow/
+├── packages/
+│   ├── backend/          Express.js API + WebSocket
+│   │   ├── src/
+│   │   │   ├── models/   User, Question, Answer, Vote
+│   │   │   ├── routes/   REST API endpoints
+│   │   │   ├── config/   Database, JWT
+│   │   │   └── scripts/  migrate.js, seed.js
+│   │   └── .env          Конфігурація
+│   │
+│   ├── frontend/         React 18 + Vite
+│   │   ├── src/
+│   │   │   ├── pages/    Home, QuestionDetail, NewQuestion
+│   │   │   ├── components/ Header, MarkdownEditor
+│   │   │   ├── contexts/ Auth, Mediator
+│   │   │   ├── services/ api.js, websocket.js
+│   │   │   └── styles/   brutalism.css
+│   │   └── .env          VITE_API_URL
+│   │
+│   └── mediator/         Event Bus + Visualizer
+│       └── src/
+│           ├── index.js      Mediator class
+│           └── visualizer.js Debug panel (Ctrl+Shift+M)
+│
+└── .env                  Загальна конфігурація
+
+ОСОБЛИВОСТІ
+
+- Без Strapi - власна система авторизації
+- Без хардкодів - все через змінні оточення
+- Візуалізований Mediator - панель розробника з графом взаємодії
+- Brutalism Design - сирий, чесний, функціональний дизайн
+- Модульна архітектура - Monorepo з packages
+- WebSocket - повідомлення в реальному часі
+- Повна українська локалізація
+
+BRUTALISM DESIGN SYSTEM
+
+- Палітра: Монохром (чорний/білий) + акцент #00ff00
+- Рамки: 3px, 6px (товсті)
+- Тіні: 8px 8px 0 (brutal shadows)
+- Шрифти: Courier New (monospace)
+- Стиль: Великі літери, без заокруглень
+
+MEDIATOR PATTERN
+
+Централізована система комунікації між компонентами з візуалізацією.
+
+Event Bus:
+- Підписка на події (on, once)
+- Відправка подій (emit)
+- Відписка (off)
+- Async обробка
+- Error handling
+
+Metrics System:
+- Підрахунок подій
+- Середній час обробки
+- Підрахунок помилок
+- Статистика по компонентам
+
+History:
+- Зберігання останніх 1000 подій
+- Фільтрація за типом/джерелом
+- Timestamp для кожної події
+
+Visualizer:
+- Події - список в реальному часі
+- Метрики - статистика роботи
+- Граф - візуалізація компонентів
+- Компоненти - список зареєстрованих
+
+Відкрити Mediator Visualizer: Ctrl+Shift+M
+
+ТИПИ ПОДІЙ
+
+Користувач:
+- USER_LOGIN
+- USER_LOGOUT
+- USER_REGISTER
+- USER_PROFILE_UPDATE
+- USER_ACTION
+
+Питання:
+- QUESTION_CREATE
+- QUESTION_UPDATE
+- QUESTION_DELETE
+- QUESTION_VIEW
+- QUESTION_VOTE
+
+Відповіді:
+- ANSWER_CREATE
+- ANSWER_UPDATE
+- ANSWER_DELETE
+- ANSWER_VOTE
+- ANSWER_ACCEPT
+
+Система:
+- ERROR
+- LOADING_START
+- LOADING_END
+- NOTIFICATION
+- NAVIGATION_CHANGE
+- SEARCH_QUERY
+- API_REQUEST
+- API_SUCCESS
+- API_ERROR
+
+BACKEND API
+
+Архітектура шарів:
+
+┌─────────────────────────────────────┐
+│         HTTP / WebSocket            │
+├─────────────────────────────────────┤
+│           Middleware                │
+│  (Auth, Validation, Rate Limit)     │
+├─────────────────────────────────────┤
+│            Routes                   │
+│   (Request → Response mapping)      │
+├─────────────────────────────────────┤
+│            Models                   │
+│  (Business Logic + DB queries)      │
+├─────────────────────────────────────┤
+│           Database                  │
+│        (MySQL Pool)                 │
+└─────────────────────────────────────┘
+
+API ENDPOINTS
+
+Auth:
+- POST /api/auth/register - реєстрація
+- POST /api/auth/login - вхід
+- GET /api/auth/me - профіль
+
+Questions (публічні):
+- GET /api/questions - список питань (params: sortBy, page, limit, tag)
+- GET /api/questions/:id - одне питання
+- GET /api/questions/tags/all - всі теги з статистикою
+
+Questions (потребують авторизації):
+- POST /api/questions - створити питання
+- PUT /api/questions/:id - оновити питання (тільки автор)
+- DELETE /api/questions/:id - видалити питання (автор або admin)
+
+Answers (публічні):
+- GET /api/answers?questionId=X - відповіді на питання
+- GET /api/answers?authorId=X - відповіді користувача
+
+Answers (потребують авторизації):
+- POST /api/answers - створити відповідь
+- PUT /api/answers/:id - оновити відповідь (тільки автор)
+- DELETE /api/answers/:id - видалити відповідь (автор або admin)
+- PUT /api/answers/:id/accept - прийняти відповідь (автор питання)
+
+Votes (потребують авторизації):
+- POST /api/votes - проголосувати (body: {entityType, entityId, voteType})
+
+Users:
+- GET /api/users - список користувачів (params: sortBy, page, limit)
+- GET /api/users/:id - профіль користувача
+- POST /api/users/:id/block - заблокувати (admin)
+- POST /api/users/:id/unblock - розблокувати (admin)
+
+Search:
+- GET /api/search?q=text - пошук питань
+
+БАЗА ДАНИХ
+
+MySQL (127.0.0.1:3306)
+- База: ukroverflow
+- Користувач: root
+- Пароль: 1111
+
+Таблиці:
+
+users
+  ├─ id (PK)
+  ├─ username (UNIQUE)
+  ├─ email (UNIQUE)
+  ├─ password (hashed bcrypt)
+  ├─ reputation
+  ├─ role (user|admin)
+  ├─ blocked
+  ├─ blocked_at
+  └─ timestamps (created_at, updated_at)
+
+questions
+  ├─ id (PK)
+  ├─ title
+  ├─ body (FULLTEXT)
+  ├─ tags (JSON array)
+  ├─ author_id (FK → users)
+  ├─ views
+  ├─ document_id
+  └─ timestamps (created_at, updated_at, published_at)
+
+answers
+  ├─ id (PK)
+  ├─ body (FULLTEXT)
+  ├─ question_id (FK → questions)
+  ├─ author_id (FK → users)
+  ├─ is_accepted
+  └─ timestamps (created_at, updated_at)
+
+votes
+  ├─ id (PK)
+  ├─ user_id (FK → users)
+  ├─ entity_type (question|answer)
+  ├─ entity_id
+  ├─ vote_type (up|down)
+  └─ created_at
+  └─ UNIQUE(user_id, entity_type, entity_id)
+
+Індекси:
+
+Users:
+- INDEX idx_username (username)
+- INDEX idx_email (email)
+- INDEX idx_reputation (reputation)
+
+Questions:
+- INDEX idx_author (author_id)
+- INDEX idx_created (created_at)
+- INDEX idx_views (views)
+- FULLTEXT idx_search (title, body)
+
+Answers:
+- INDEX idx_question (question_id)
+- INDEX idx_author (author_id)
+- INDEX idx_accepted (is_accepted)
+- FULLTEXT idx_search (body)
+
+Votes:
+- INDEX idx_entity (entity_type, entity_id)
+- UNIQUE idx_unique_vote (user_id, entity_type, entity_id)
+
+FRONTEND
+
+Структура компонентів:
+
+App (Root)
+├── AuthProvider (Context)
+├── MediatorContext (Context)
+├── Header
+│   ├── Navigation
+│   ├── Search
+│   └── UserMenu
+├── Router
+│   ├── Home - список питань
+│   ├── QuestionDetail - питання + відповіді
+│   ├── NewQuestion - створення питання
+│   ├── EditQuestion - редагування питання
+│   ├── Tags - всі теги
+│   ├── Users - всі користувачі (admin)
+│   ├── Profile - профіль користувача
+│   ├── Login - вхід
+│   └── Register - реєстрація
+└── Footer
+
+Управління станом:
+
+Global State (Context):
+- AuthContext - user, loading, login(), register(), logout()
+- MediatorContext - mediator instance
+
+Server State:
+- useEffect + useState для API запитів
+
+Local State:
+- useState для форм, UI станів
+
+БЕЗПЕКА
+
+Шари безпеки:
+
+┌─────────────────────────────────┐
+│     CORS (Origin check)         │
+├─────────────────────────────────┤
+│     JWT Verification            │
+├─────────────────────────────────┤
+│     Input Validation            │
+├─────────────────────────────────┤
+│     SQL Parameterization        │
+├─────────────────────────────────┤
+│     XSS Protection (DOMPurify)  │
+└─────────────────────────────────┘
+
+JWT токени:
+- Термін дії: 7 днів
+- Алгоритм: HS256
+- Зберігання: localStorage (frontend)
+- Передача: Authorization: Bearer {token}
+
+Паролі:
+- Bcrypt хешування
+- Salt rounds: 10
+- Мінімальна довжина: 6 символів
+
+SQL захист:
+- Prepared statements (pool.execute)
+- Параметризовані запити
+- Валідація вхідних даних
+
+XSS захист:
+- DOMPurify для Markdown
+- React автоматичне екранування
+
+КОМАНДИ
+
+Backend:
+cd packages/backend
+npm run dev         - Запустити сервер
+npm run migrate     - Міграція БД
+npm run seed        - Тестові дані
+
+Frontend:
+cd packages/frontend
+npm run dev         - Запустити Vite
+npm run build       - Збірка для production
+
+Корінь:
+npm run dev         - Запустити все разом
+
+ТЕСТОВІ ДАНІ
+
+Після npm run seed створюються:
+
+Користувачі:
+1. taras_shevchenko (taras@ukroverflow.com) - admin
+2. lesya_ukrainka (lesya@ukroverflow.com) - moderator
+3. ivan_franko (ivan@ukroverflow.com) - user
+
+Пароль для всіх: password123
+
+Дані:
+- 4 питання з різними тегами
+- 3+ відповіді
+- Голоси на питання та відповіді
+
+ЩО МОЖНА ЗРОБИТИ
+
+1. Переглянути питання - відкрити http://localhost:5175
+2. Увійти - натиснути "УВІЙТИ" і використати тестовий акаунт
+3. Створити питання - кнопка "+ НОВЕ ПИТАННЯ"
+4. Відповісти на питання - вибрати питання і написати відповідь
+5. Голосувати - кнопки ▲ ▼ на питаннях і відповідях
+6. Прийняти відповідь - автор питання може прийняти відповідь
+7. Редагувати/видаляти - автор може редагувати свій контент
+8. Фільтрувати за тегами - клікнути на тег
+9. Переглядати профілі - клікнути на ім'я користувача
+10. Mediator Visualizer - натиснути Ctrl+Shift+M
+
+ОСОБЛИВОСТІ РЕАЛІЗАЦІЇ
+
+Система голосування:
+- Один користувач може голосувати тільки раз за сутність
+- Можна змінити голос (з up на down і навпаки)
+- Підрахунок голосів динамічний через COUNT в SQL запитах
+- Перевірка авторизації на бекенді
+
+Система тегів:
+- Теги зберігаються як JSON масив
+- Автоматичне підрахування кількості питань для кожного тегу
+- Фільтрація питань за тегом
+- Підтримка кирилиці
+
+Система репутації:
+- Автоматичне нарахування/зменшення при голосуванні
+- Відображення в профілі користувача
+- Впливає на можливості користувача (планується)
+
+Права доступу:
+- Публічний перегляд контенту
+- Авторизовані користувачі можуть створювати контент
+- Автори можуть редагувати/видаляти свій контент
+- Адміни можуть видаляти будь-який контент
+- Тільки автор питання може прийняти відповідь
+
+WEBSOCKET
+
+Підключення:
+const ws = new WebSocket('ws://localhost:3338/ws')
+
+Події:
+- questions - нове питання створено
+- answers - нова відповідь створена
+- votes - новий голос
+- users - зміни користувачів
+
+Використання:
+wsClient.on('questions', (data) => {
+  console.log('Нове питання:', data)
+})
+
+Автоматичне перепідключення при розриві з'єднання.
+
+АДАПТИВНИЙ ДИЗАЙН
+
+Breakpoints:
+- Mobile: max-width 480px
+- Tablet: max-width 768px
+- Desktop: min-width 769px
+
+Адаптації:
+- Стек-лейаут на мобільних
+- Зменшені шрифти
+- Горизонтальний скрол для таблиць
+- Повноширинні кнопки
+- Скорочені тексти
+
+МАЙБУТНІ ПОКРАЩЕННЯ
+
+- Система репутації користувачів з рівнями
+- Приватні повідомлення між користувачами
+- Сповіщення про нові відповіді на питання
+- Розширений пошук по контенту
+- Завантаження зображень до питань/відповідей
+- OAuth авторизація (Google, GitHub)
+- Email підтвердження
+- Відновлення паролю
+- Модерація контенту
+- Система значків і досягнень
+
+УСУНЕННЯ ПРОБЛЕМ
+
+Помилка підключення до БД:
+- Перевірити DB_HOST, DB_USER, DB_PASSWORD, DB_NAME в .env
+- Переконатися що MySQL запущений
+- Перевірити що база ukroverflow створена
+
+Помилка JWT:
+- Згенерувати JWT_SECRET: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+- Додати в .env файл
+
+Frontend не запускається:
+- Встановити залежності: npm install в packages/frontend
+- Перевірити VITE_API_URL в .env
+
+WebSocket не підключається:
+- Backend працює на порту 3338
+- VITE_WS_URL правильний в .env
+- Перевірити консоль браузера
+
+Кеш браузера:
+- Жорстка перезагрузка: Ctrl+Shift+R
+- Очистити кеш: Ctrl+Shift+Delete
+
+КОРИСНІ ПОСИЛАННЯ
+
+Frontend: http://localhost:5175
+Backend API: http://localhost:3338/api
+Health check: http://localhost:3338/health
+Mediator: Ctrl+Shift+M в браузері
+
+СТРУКТУРА ПРОЕКТУ
+
+packages/mediator/
+├── src/
+│   ├── index.js         - Core Mediator class
+│   └── visualizer.js    - UI Visualizer component
+└── package.json
+
+packages/backend/
+├── src/
+│   ├── config/
+│   │   ├── database.js  - MySQL connection pool
+│   │   └── jwt.js       - JWT config
+│   ├── models/
+│   │   ├── User.js      - User CRUD + authentication
+│   │   ├── Question.js  - Question CRUD + search
+│   │   ├── Answer.js    - Answer CRUD
+│   │   └── Vote.js      - Vote system
+│   ├── routes/
+│   │   ├── auth.js      - /api/auth/*
+│   │   ├── questions.js - /api/questions/*
+│   │   ├── answers.js   - /api/answers/*
+│   │   ├── votes.js     - /api/votes/*
+│   │   ├── users.js     - /api/users/*
+│   │   └── search.js    - /api/search/*
+│   ├── middleware/
+│   │   ├── auth.js      - JWT verification
+│   │   ├── validation.js - Input validation
+│   │   └── errorHandler.js - Error handling
+│   ├── scripts/
+│   │   ├── migrate.js   - Database migration
+│   │   └── seed.js      - Test data seeding
+│   └── index.js         - HTTP + WebSocket server
+└── package.json
+
+packages/frontend/
+├── src/
+│   ├── components/
+│   │   ├── Header.jsx   - Navigation header
+│   │   ├── Header.css
+│   │   └── MarkdownEditor.jsx - Markdown input
+│   ├── contexts/
+│   │   ├── AuthContext.jsx - Authentication state
+│   │   └── MediatorContext.jsx - Mediator provider
+│   ├── services/
+│   │   ├── api.js       - Axios API client
+│   │   └── websocket.js - WebSocket client
+│   ├── pages/
+│   │   ├── Home.jsx     - Questions list
+│   │   ├── QuestionDetail.jsx - Question + answers
+│   │   ├── NewQuestion.jsx - Create question
+│   │   ├── EditQuestion.jsx - Edit question
+│   │   ├── Login.jsx    - Login form
+│   │   ├── Register.jsx - Registration form
+│   │   ├── Tags.jsx     - All tags
+│   │   ├── Users.jsx    - All users (admin)
+│   │   └── Profile.jsx  - User profile
+│   ├── styles/
+│   │   └── brutalism.css - Brutalism design system
+│   ├── App.jsx          - Root component
+│   └── main.jsx         - Entry point
+└── package.json
+
+ВЕРСІЯ
+
+UkrOverflow 2.0
+Дата оновлення: 2025-11-14
+Платформа: Win32
+Node.js: >= 18.0.0
+MySQL: >= 5.7

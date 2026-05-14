@@ -1,0 +1,121 @@
+/* AI Tag Suggester Styles - Brutalism Design */
+
+.ai-tag-suggester {
+  margin: 12px 0;
+}
+
+.ai-tag-btn {
+  background: #fff;
+  color: #000;
+  border: 3px solid #000;
+  padding: 10px 20px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 #000;
+  transition: all 0.1s;
+}
+
+.ai-tag-btn:hover:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 #000;
+}
+
+.ai-tag-btn:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 #000;
+}
+
+.ai-tag-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-tag-error {
+  background: #fff;
+  border: 2px solid #ff0000;
+  padding: 12px;
+  margin-top: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #ff0000;
+}
+
+.ai-tag-suggestions {
+  background: #f5f5f5;
+  border: 3px solid #000;
+  padding: 16px;
+  margin-top: 12px;
+  box-shadow: 4px 4px 0 #000;
+}
+
+.ai-tag-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #000;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.ai-tag-select-all {
+  background: #000;
+  color: #fff;
+  border: 2px solid #000;
+  padding: 6px 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.ai-tag-select-all:hover {
+  background: #fff;
+  color: #000;
+}
+
+.ai-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ai-tag-item {
+  background: #fff;
+  color: #000;
+  border: 2px solid #000;
+  padding: 8px 16px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.1s;
+  text-transform: lowercase;
+}
+
+.ai-tag-item:hover {
+  background: #000;
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 2px 2px 0 #ff0000;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .ai-tag-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .ai-tag-select-all {
+    width: 100%;
+  }
+}

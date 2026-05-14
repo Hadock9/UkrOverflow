@@ -1,0 +1,35 @@
+{
+  "name": "@ukroverflow/backend",
+  "version": "1.0.0",
+  "description": "Backend API для UkrOverflow без Strapi",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "NODE_OPTIONS=--dns-result-order=ipv4first node src/index.js",
+    "start": "node src/index.js",
+    "migrate": "node src/scripts/migrate.js",
+    "seed": "node src/scripts/seed.js"
+  },
+  "keywords": [
+    "api",
+    "rest",
+    "websocket"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.6.0",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

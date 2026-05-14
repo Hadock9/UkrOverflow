@@ -1,0 +1,29 @@
+{
+  "name": "ukroverflow",
+  "version": "2.0.0",
+  "description": "Українська платформа питань та відповідей",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd packages/backend && npm run dev",
+    "dev:frontend": "cd packages/frontend && npm run dev",
+    "build": "cd packages/frontend && npm run build",
+    "migrate": "cd packages/backend && npm run migrate",
+    "seed": "cd packages/backend && npm run seed"
+  },
+  "keywords": [
+    "stackoverflow",
+    "ukraine",
+    "qa",
+    "mediator",
+    "brutalism"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

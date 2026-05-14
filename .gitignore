@@ -1,0 +1,78 @@
+# Залежності
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Змінні оточення
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env*.local
+
+# Виробничі збірки
+/dist
+/build
+/.next
+/out
+
+# Кеш та тимчасові файли
+.cache/
+.temp/
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# IDE та редактори
+.vscode/
+.vs/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Тести та покриття
+coverage/
+.nyc_output/
+*.lcov
+
+# TypeScript
+*.tsbuildinfo
+
+# База даних
+*.sqlite
+*.sqlite3
+*.db
+
+# Strapi (видаляємо)
+strapi-new/
+.strapi/
+
+# Системні файли Windows
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+
+# Резервні копії
+*.bak
+*.backup
+*~
+
+# Windows cmd artifact
+nul
+**/nul
