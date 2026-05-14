@@ -4,6 +4,7 @@
 
 import express from 'express';
 import Bookmark from '../models/Bookmark.js';
+import Notification from '../models/Notification.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -62,6 +63,8 @@ router.post('/:questionId', authenticateToken, async (req, res) => {
         message: 'Це питання вже в закладках',
       });
     }
+
+    await Notification.notifyQuestionBookmarked(questionId, userId);
 
     res.status(201).json({
       success: true,

@@ -32,7 +32,9 @@ function HubItemDetail({ endpoint, dataKey, label, kind }) {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+    queueMicrotask(() => {
+      if (!cancelled) setLoading(true);
+    });
     api
       .get(`${endpoint}/${id}`, { headers: { 'X-Record-View': '1' } })
       .then((r) => {

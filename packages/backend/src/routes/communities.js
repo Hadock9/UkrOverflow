@@ -6,6 +6,7 @@ import express from 'express';
 import { body, query, param } from 'express-validator';
 import Community from '../models/Community.js';
 import CommunityMembership from '../models/CommunityMembership.js';
+import Notification from '../models/Notification.js';
 import { authenticateToken, optionalAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validation.js';
 
@@ -141,6 +142,7 @@ router.post(
         return res.json({ success: true, message: 'Ви вже учасник', data: { role: existingRole } });
       }
       const m = await CommunityMembership.join(id, req.user.id, 'member');
+      await Notification.notifyCommunityJoin(id, req.user.id);
       res.json({ success: true, data: { membership: m } });
     } catch (e) { next(e); }
   }

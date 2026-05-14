@@ -10,6 +10,7 @@ import Community from '../models/Community.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { validate } from '../middleware/validation.js';
 import { LINKABLE_HUB_TYPES } from '../constants/contentTypes.js';
+import Notification from '../models/Notification.js';
 
 const router = express.Router();
 
@@ -132,6 +133,7 @@ router.post(
         linkedContentType,
         linkedContentId,
       });
+      await Notification.notifyNewCommunityPost(communityId, post.id, req.user.id);
       res.status(201).json({ success: true, data: { post } });
     } catch (e) { next(e); }
   }
@@ -232,6 +234,12 @@ router.post(
         parentId: req.body.parentId || null,
         body: req.body.body,
       });
+      await Notification.notifyCommunityCommentActivity(
+        id,
+        req.user.id,
+        comment.id,
+        req.body.parentId ? parseInt(req.body.parentId, 10) : null
+      );
       res.status(201).json({ success: true, data: { comment } });
     } catch (e) { next(e); }
   }

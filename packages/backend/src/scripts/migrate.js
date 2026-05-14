@@ -251,6 +251,17 @@ async function migrate() {
     }
     console.log('✓ notifications\n');
 
+    await ensureColumn(connection, 'notifications', 'actor_id', 'INT NULL');
+    try {
+      await connection.execute(`
+        ALTER TABLE notifications
+        MODIFY COLUMN type VARCHAR(64) NOT NULL,
+        MODIFY COLUMN entity_type VARCHAR(64) NOT NULL
+      `);
+    } catch (e) {
+      console.warn('⚠ notifications VARCHAR upgrade:', e.message);
+    }
+
     // 6. bookmarks (legacy)
     console.log('📝 bookmarks (legacy)...');
     await connection.execute(`

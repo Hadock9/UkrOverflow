@@ -2,7 +2,7 @@
  * Markdown Editor з preview та Brutalism дизайном
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import './MarkdownEditor.css';
@@ -24,16 +24,11 @@ export function MarkdownEditor({
   showToolbar = true
 }) {
   const [activeTab, setActiveTab] = useState('write');
-  const [previewHtml, setPreviewHtml] = useState('');
 
-  useEffect(() => {
-    if (value) {
-      const rawHtml = marked(value);
-      const cleanHtml = DOMPurify.sanitize(rawHtml);
-      setPreviewHtml(cleanHtml);
-    } else {
-      setPreviewHtml('');
-    }
+  const previewHtml = useMemo(() => {
+    if (!value) return '';
+    const rawHtml = marked(value);
+    return DOMPurify.sanitize(rawHtml);
   }, [value]);
 
   const insertMarkdown = (before, after = '') => {

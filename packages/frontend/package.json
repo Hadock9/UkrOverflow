@@ -12,6 +12,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@ukroverflow/shared": "*",
     "@tanstack/react-query": "^5.90.9",
     "axios": "^1.13.2",
     "dompurify": "^3.3.0",

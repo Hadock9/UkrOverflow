@@ -1,12 +1,11 @@
+import { CONTENT_TYPES as SHARED_TYPES, getContentDetailPath } from '@ukroverflow/shared';
+
+export { getContentDetailPath };
+
+/** @type {typeof SHARED_TYPES & { ALL: 'all' }} */
 export const CONTENT_TYPES = {
   ALL: 'all',
-  QUESTION: 'question',
-  ARTICLE: 'article',
-  GUIDE: 'guide',
-  SNIPPET: 'snippet',
-  ROADMAP: 'roadmap',
-  BEST_PRACTICE: 'best_practice',
-  FAQ: 'faq',
+  ...SHARED_TYPES,
 };
 
 export const CONTENT_TYPE_DEFINITIONS = [
@@ -14,7 +13,7 @@ export const CONTENT_TYPE_DEFINITIONS = [
     id: CONTENT_TYPES.ALL,
     label: 'УСЕ',
     shortLabel: 'Усе',
-    description: 'Уся база знань в одному потоці.',
+    description: 'Уся база знань і пости спільнот в одному потоці.',
     available: true,
   },
   {
@@ -64,6 +63,13 @@ export const CONTENT_TYPE_DEFINITIONS = [
     label: 'ЧАСТІ ЗАПИТАННЯ',
     shortLabel: 'ЧаП',
     description: 'Часті запитання про технології.',
+    available: true,
+  },
+  {
+    id: CONTENT_TYPES.COMMUNITY_POST,
+    label: 'СПІЛЬНОТА',
+    shortLabel: 'Спільнота',
+    description: 'Пости в тематичних та локальних спільнотах.',
     available: true,
   },
 ];

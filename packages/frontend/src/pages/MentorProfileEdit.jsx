@@ -84,7 +84,8 @@ export function MentorProfileEdit() {
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    if (profile) {
+    if (!profile) return;
+    queueMicrotask(() => {
       setBio(profile.bio || '');
       setStack(Array.isArray(profile.stack) ? profile.stack : []);
       setTopics(Array.isArray(profile.topics) ? profile.topics : []);
@@ -93,7 +94,7 @@ export function MentorProfileEdit() {
       setPriceNote(profile.price_note || '');
       setContact(profile.contact_method || '');
       setIsActive(!!profile.is_active);
-    }
+    });
   }, [profile]);
 
   const saveMutation = useMutation({

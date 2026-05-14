@@ -8,7 +8,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useMediator } from '../contexts/MediatorContext';
 import { EventTypes } from '../../../mediator/src/index';
 import { api } from '../services/api';
-import { CONTENT_TYPE_DEFINITIONS, CONTENT_TYPES, getContentTypeMeta } from '../constants/contentTypes';
+import { CONTENT_TYPE_DEFINITIONS, CONTENT_TYPES, getContentTypeMeta, getContentDetailPath } from '../constants/contentTypes';
 import '../styles/brutalism.css';
 
 const TYPE_BADGE_STYLE = {
@@ -19,6 +19,7 @@ const TYPE_BADGE_STYLE = {
   [CONTENT_TYPES.ROADMAP]: { background: '#ffb3c7', border: '2px solid #000' },
   [CONTENT_TYPES.BEST_PRACTICE]: { background: '#c9b8ff', border: '2px solid #000' },
   [CONTENT_TYPES.FAQ]: { background: '#ffd699', border: '2px solid #000' },
+  [CONTENT_TYPES.COMMUNITY_POST]: { background: '#b8f4e8', border: '2px solid #000' },
 };
 
 // Куди веде кожен пункт dropdown "+ СТВОРИТИ ▾".
@@ -67,15 +68,7 @@ const CREATE_MENU_ITEMS = [
 ];
 
 function detailHrefFor(item) {
-  switch (item.type) {
-    case CONTENT_TYPES.ARTICLE: return `/articles/${item.id}`;
-    case CONTENT_TYPES.GUIDE: return `/guides/${item.id}`;
-    case CONTENT_TYPES.SNIPPET: return `/snippets/${item.id}`;
-    case CONTENT_TYPES.ROADMAP: return `/roadmaps/${item.id}`;
-    case CONTENT_TYPES.BEST_PRACTICE: return `/best-practices/${item.id}`;
-    case CONTENT_TYPES.FAQ: return `/faqs/${item.id}`;
-    default: return `/questions/${item.id}`;
-  }
+  return getContentDetailPath(item.type, item.id);
 }
 
 export function Home() {
@@ -298,7 +291,9 @@ export function Home() {
           {items.map((item) => {
             const meta = getContentTypeMeta(item.type);
             const badgeStyle = TYPE_BADGE_STYLE[item.type] || TYPE_BADGE_STYLE[CONTENT_TYPES.QUESTION];
-            const excerpt = (item.excerpt || item.body || item.description || '').toString();
+            const excerptRaw = (item.excerpt || item.body || item.description || '').toString();
+            const isCommunityPost = item.type === CONTENT_TYPES.COMMUNITY_POST;
+            const middleStat = isCommunityPost ? (item.comment_count ?? 0) : (item.answers_count || 0);
             return (
               <div key={`${item.type}-${item.id}`} className="question-card">
                 <div className="question-stats">
@@ -307,8 +302,8 @@ export function Home() {
                     <div className="stat-label">ГОЛОСИ</div>
                   </div>
                   <div className="stat">
-                    <div className="stat-value">{item.answers_count || 0}</div>
-                    <div className="stat-label">ВІДПОВІДІ</div>
+                    <div className="stat-value">{middleStat}</div>
+                    <div className="stat-label">{isCommunityPost ? 'КОМЕНТАРІ' : 'ВІДПОВІДІ'}</div>
                   </div>
                   <div className="stat">
                     <div className="stat-value">{item.views || 0}</div>
@@ -334,9 +329,16 @@ export function Home() {
                   <Link to={detailHrefFor(item)} className="question-title">
                     {item.title}
                   </Link>
+                  {isCommunityPost && item.community_slug && (
+                    <div style={{ marginTop: 6, fontSize: 12 }}>
+                      <Link to={`/communities/${item.community_slug}`} className="tag">
+                        {item.community_name || item.community_slug}
+                      </Link>
+                    </div>
+                  )}
                   <p className="question-excerpt">
-                    {excerpt.substring(0, 200)}
-                    {excerpt.length > 200 ? '...' : ''}
+                    {excerptRaw.substring(0, 200)}
+                    {excerptRaw.length > 200 ? '...' : ''}
                   </p>
 
                   <div className="question-tags">

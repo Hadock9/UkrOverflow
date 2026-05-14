@@ -1,0 +1,14 @@
+{
+  "name": "@ukroverflow/shared",
+  "version": "1.0.0",
+  "description": "Спільні константи та утиліти фронт/бек DevFlow",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "src"
+  ],
+  "license": "MIT"
+}

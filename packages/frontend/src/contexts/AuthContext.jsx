@@ -2,7 +2,7 @@
  * Auth Context з інтеграцією Mediator
  */
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { auth } from '../services/api';
 import { getMediator, EventTypes } from '../../../mediator/src/index';
 
@@ -12,6 +12,14 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const mediator = getMediator();
+
+  const logout = useCallback(async () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+
+    await mediator.emit(EventTypes.USER_LOGOUT, {}, 'AuthProvider');
+  }, [mediator]);
 
   useEffect(() => {
     mediator.register('AuthProvider', { name: 'AuthProvider' });
@@ -31,7 +39,7 @@ export function AuthProvider({ children }) {
           localStorage.setItem('user', JSON.stringify(response.data.data.user));
         } catch (error) {
           console.error('Помилка завантаження профілю:', error);
-          logout();
+          await logout();
         }
       }
 
@@ -43,7 +51,7 @@ export function AuthProvider({ children }) {
     return () => {
       mediator.unregister('AuthProvider');
     };
-  }, []);
+  }, [logout, mediator]);
 
   const login = async (credentials) => {
     try {
@@ -95,14 +103,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const logout = async () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
-
-    await mediator.emit(EventTypes.USER_LOGOUT, {}, 'AuthProvider');
-  };
-
   const updateProfile = async (data) => {
     try {
       const response = await auth.updateProfile(data);
@@ -139,6 +139,8 @@ export function AuthProvider({ children }) {
   );
 }
 
+/** Хук поруч з провайдером — стандартний патерн для контексту. */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {

@@ -7,6 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getMediator, EventTypes } from '../../../mediator/src/index';
 import './Header.css';
+import { NotificationBell } from './NotificationBell';
 
 export function Header() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -89,6 +90,7 @@ export function Header() {
           <div className="header-right">
             {isAuthenticated ? (
               <>
+                <NotificationBell />
                 <div className="user-menu">
                   <Link to="/profile" className="user-link">
                     <span className="badge">{user?.reputation || 0}</span>

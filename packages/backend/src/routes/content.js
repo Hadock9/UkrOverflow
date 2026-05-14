@@ -1,8 +1,8 @@
 /**
- * Уніфікований фід knowledge hub: агрегує всі 7 типів контенту.
+ * Уніфікований фід: knowledge hub (7 типів) + пости спільнот (community_post).
  *
  * GET /api/content
- *   ?contentType=all|question|article|guide|snippet|roadmap|best_practice|faq
+ *   ?contentType=all|question|article|…|faq|community_post
  *   ?sortBy=created_at|views|votes
  *   ?tag, ?authorId, ?search, ?page, ?limit
  */
@@ -16,6 +16,7 @@ import Snippet from '../models/Snippet.js';
 import Roadmap from '../models/Roadmap.js';
 import BestPractice from '../models/BestPractice.js';
 import Faq from '../models/Faq.js';
+import CommunityPost from '../models/CommunityPost.js';
 import { CONTENT_TYPES } from '../constants/contentTypes.js';
 import { validate } from '../middleware/validation.js';
 
@@ -30,7 +31,31 @@ const SUPPORTED_TYPES = [
   CONTENT_TYPES.ROADMAP,
   CONTENT_TYPES.BEST_PRACTICE,
   CONTENT_TYPES.FAQ,
+  CONTENT_TYPES.COMMUNITY_POST,
 ];
+
+function mapCommunityPostToFeedItem(p) {
+  const stack = Array.isArray(p.stack) ? p.stack : [];
+  const body = typeof p.body === 'string' ? p.body : '';
+  return {
+    type: CONTENT_TYPES.COMMUNITY_POST,
+    id: p.id,
+    title: p.title,
+    body,
+    excerpt: body.length > 320 ? `${body.substring(0, 320)}…` : body,
+    tags: stack,
+    votes: p.votes ?? 0,
+    views: p.views ?? 0,
+    answers_count: p.comment_count ?? 0,
+    comment_count: p.comment_count ?? 0,
+    author_id: p.author_id,
+    author_name: p.author_name,
+    created_at: p.created_at,
+    community_slug: p.community_slug,
+    community_name: p.community_name,
+    post_subtype: p.type,
+  };
+}
 
 function sortItems(items, sortBy) {
   return [...items].sort((a, b) => {
@@ -69,6 +94,21 @@ async function loadByType(type, opts) {
     case CONTENT_TYPES.FAQ: {
       const r = await Faq.list({ ...opts, sortBy: opts.sortBy === 'votes' ? 'created_at' : opts.sortBy });
       return { items: r.faqs, total: r.pagination.total };
+    }
+    case CONTENT_TYPES.COMMUNITY_POST: {
+      const sortField = opts.sortBy === 'votes' || opts.sortBy === 'views' ? opts.sortBy : 'created_at';
+      const r = await CommunityPost.list({
+        page: opts.page,
+        limit: opts.limit,
+        sort: sortField,
+        search: opts.search || undefined,
+        authorId: opts.authorId ?? undefined,
+        stack: opts.tag ? [opts.tag] : undefined,
+      });
+      return {
+        items: r.posts.map(mapCommunityPostToFeedItem),
+        total: r.pagination.total,
+      };
     }
     default:
       return { items: [], total: 0 };

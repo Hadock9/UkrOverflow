@@ -3,6 +3,7 @@
  */
 
 import pool from '../config/database.js';
+import Notification from './Notification.js';
 
 export class Vote {
   /**
@@ -10,6 +11,8 @@ export class Vote {
    */
   static async vote({ userId, entityType, entityId, voteType }) {
     const connection = await pool.getConnection();
+
+    let notifyUpvote = false;
 
     try {
       await connection.beginTransaction();
@@ -35,6 +38,7 @@ export class Vote {
             'UPDATE votes SET vote_type = ? WHERE id = ?',
             [voteType, currentVote.id]
           );
+          notifyUpvote = voteType === 'up';
         }
       } else {
         // Новий голос
@@ -42,12 +46,17 @@ export class Vote {
           'INSERT INTO votes (user_id, entity_type, entity_id, vote_type, created_at) VALUES (?, ?, ?, ?, NOW())',
           [userId, entityType, entityId, voteType]
         );
+        notifyUpvote = voteType === 'up';
       }
 
       await connection.commit();
 
       // Оновлення репутації автора
       await this._updateAuthorReputation(entityType, entityId, voteType);
+
+      if (notifyUpvote) {
+        await Notification.notifyVote(entityType, entityId, 'up', userId);
+      }
 
       return this.getVotes(entityType, entityId);
     } catch (error) {

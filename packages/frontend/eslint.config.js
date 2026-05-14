@@ -24,6 +24,8 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      // У великій кількині сторінок свідомо не додають loadX до deps (стабільні запити за id)
+      'react-hooks/exhaustive-deps': 'off',
     },
   },
 ])

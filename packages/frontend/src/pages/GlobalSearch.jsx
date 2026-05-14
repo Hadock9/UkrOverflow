@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { search } from '../services/api';
-import { CONTENT_TYPES } from '../constants/contentTypes';
+import { CONTENT_TYPES, getContentDetailPath } from '../constants/contentTypes';
 import '../styles/brutalism.css';
 
 const TYPE_LABELS = {
@@ -16,22 +16,12 @@ const TYPE_LABELS = {
   [CONTENT_TYPES.ROADMAP]: 'Маршрут',
   [CONTENT_TYPES.BEST_PRACTICE]: 'Практика',
   [CONTENT_TYPES.FAQ]: 'ЧаП',
-  community_post: 'Спільнота',
+  [CONTENT_TYPES.COMMUNITY_POST]: 'Спільнота',
 };
 
 function hitHref(hit) {
-  switch (hit.type) {
-    case CONTENT_TYPES.ARTICLE: return `/articles/${hit.id}`;
-    case CONTENT_TYPES.GUIDE: return `/guides/${hit.id}`;
-    case CONTENT_TYPES.SNIPPET: return `/snippets/${hit.id}`;
-    case CONTENT_TYPES.ROADMAP: return `/roadmaps/${hit.id}`;
-    case CONTENT_TYPES.BEST_PRACTICE: return `/best-practices/${hit.id}`;
-    case CONTENT_TYPES.FAQ: return `/faqs/${hit.id}`;
-    case 'community_post':
-      return `/community-posts/${hit.id}`;
-    default:
-      return `/questions/${hit.id}`;
-  }
+  const t = hit.type === 'community_post' ? CONTENT_TYPES.COMMUNITY_POST : hit.type;
+  return getContentDetailPath(t, hit.id);
 }
 
 export function GlobalSearch() {

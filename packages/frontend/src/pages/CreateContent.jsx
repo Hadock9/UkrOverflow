@@ -25,7 +25,7 @@ export function CreateContent() {
           gap: 'var(--space-4)',
         }}
       >
-        {CONTENT_TYPE_DEFINITIONS.filter((item) => item.id !== CONTENT_TYPES.ALL).map((item) => {
+        {CONTENT_TYPE_DEFINITIONS.filter((item) => item.id !== CONTENT_TYPES.ALL && item.id !== CONTENT_TYPES.COMMUNITY_POST).map((item) => {
           const link = ACTIVE_LINKS[item.id];
 
           return (

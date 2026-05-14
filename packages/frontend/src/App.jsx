@@ -3,7 +3,7 @@
  * Головний компонент з інтеграцією Mediator
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { getMediator, EventTypes } from '../../mediator/src/index'
@@ -41,9 +41,9 @@ import { Mentors } from './pages/Mentors'
 import { MentorProfileEdit } from './pages/MentorProfileEdit'
 import { DevCatalog } from './pages/DevCatalog'
 import { GlobalSearch } from './pages/GlobalSearch'
+import { NotificationsPage } from './pages/Notifications'
 
 function App() {
-  const [initialized, setInitialized] = useState(false)
   const mediator = getMediator()
 
   useEffect(() => {
@@ -67,24 +67,11 @@ function App() {
       console.error('Системна помилка:', data)
     }, 'App')
 
-    setInitialized(true)
-
     return () => {
       mediator.unregister('App')
       wsClient.disconnect()
     }
-  }, [])
-
-  if (!initialized) {
-    return (
-      <div className="container" style={{ textAlign: 'center', padding: '100px 20px' }}>
-        <div className="loading"></div>
-        <p style={{ marginTop: '20px', fontFamily: 'var(--font-mono)' }}>
-          ЗАВАНТАЖЕННЯ DEVFLOW...
-        </p>
-      </div>
-    )
-  }
+  }, [mediator])
 
   return (
     <AuthProvider>
@@ -101,6 +88,7 @@ function App() {
             <Route path="/ask" element={<NewQuestion />} />
             <Route path="/tags" element={<Tags />} />
             <Route path="/search" element={<GlobalSearch />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/tags/:tag" element={<Home />} />
             <Route path="/users" element={<Users />} />
             <Route path="/users/:id" element={<Profile />} />
