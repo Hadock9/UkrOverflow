@@ -16,28 +16,69 @@ const GITHUB_API = 'https://api.github.com';
 const GITHUB_OAUTH = 'https://github.com/login/oauth';
 const USER_AGENT = 'DevFlow-Knowledge-Hub/1.0';
 
+/**
+ * GitHub порівнює redirect_uri з Authorization callback URL побайтово (після декодування).
+ * Прибираємо пробіли й зайві слеші в кінці шляху.
+ */
+export function normalizeGithubRedirectUri(raw) {
+  const s = String(raw ?? '').trim().replace(/\s+/g, '');
+  if (!s) return s;
+  try {
+    const u = new URL(s);
+    let p = u.pathname;
+    while (p.length > 1 && p.endsWith('/')) {
+      p = p.slice(0, -1);
+    }
+    u.pathname = p;
+    return u.toString();
+  } catch {
+    return s.replace(/\/+$/, '');
+  }
+}
+
+function finalizeRedirectUri(candidate) {
+  return normalizeGithubRedirectUri(candidate);
+}
+
 /** Публічна URL редіректу GitHub OAuth (має збігатися з "Authorization callback URL" у GitHub App). */
 export function resolveGithubCallbackUrl() {
   const explicit = process.env.GITHUB_CALLBACK_URL?.trim();
-  if (explicit) return explicit;
+  if (explicit) return finalizeRedirectUri(explicit);
 
   const publicApi = process.env.PUBLIC_API_URL?.trim();
   if (publicApi) {
-    return `${publicApi.replace(/\/$/, '')}/api/auth/github/callback`;
+    return finalizeRedirectUri(`${publicApi.replace(/\/$/, '')}/api/auth/github/callback`);
   }
 
   if (process.env.NODE_ENV === 'development') {
     const port = process.env.API_PORT || '3338';
-    return `http://localhost:${port}/api/auth/github/callback`;
+    return finalizeRedirectUri(`http://localhost:${port}/api/auth/github/callback`);
   }
 
   const origins = parseFrontendOrigins();
   if (origins.length > 0) {
-    return `${origins[0].replace(/\/$/, '')}/api/auth/github/callback`;
+    return finalizeRedirectUri(`${origins[0].replace(/\/$/, '')}/api/auth/github/callback`);
   }
 
   const port = process.env.API_PORT || '3338';
-  return `http://localhost:${port}/api/auth/github/callback`;
+  return finalizeRedirectUri(`http://localhost:${port}/api/auth/github/callback`);
+}
+
+/** Лог для продакшен-налагодження: має збігатися з полем Authorization callback URL у OAuth App. */
+export function logGithubOAuthRedirectUriHint() {
+  if (!process.env.GITHUB_CLIENT_ID?.trim() || !process.env.GITHUB_CLIENT_SECRET?.trim()) return;
+  try {
+    const uri = resolveGithubCallbackUrl();
+    console.log(`[GitHub OAuth] redirect_uri → ${uri}`);
+    const origins = parseFrontendOrigins();
+    if (origins.length > 1 && !process.env.GITHUB_CALLBACK_URL?.trim()) {
+      console.warn(
+        '[GitHub OAuth] Кілька значень у FRONTEND_URL без GITHUB_CALLBACK_URL: redirect_uri береться з першого origin. Краще задати GITHUB_CALLBACK_URL так само, як у GitHub → OAuth App → Authorization callback URL.'
+      );
+    }
+  } catch (e) {
+    console.warn('[GitHub OAuth] Callback URL:', e.message);
+  }
 }
 
 function requireEnv() {

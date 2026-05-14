@@ -39,6 +39,7 @@ import githubWebhookRoutes from './routes/githubWebhook.js';
 import communitiesRoutes from './routes/communities.js';
 import communityPostsRoutes from './routes/communityPosts.js';
 import mentorsRoutes from './routes/mentors.js';
+import { logGithubOAuthRedirectUriHint } from './services/githubService.js';
 
 // Завантаження змінних оточення
 dotenv.config();
@@ -268,6 +269,8 @@ async function start() {
   try {
     // Перевірка з'єднання з БД
     await testConnection();
+
+    logGithubOAuthRedirectUriHint();
 
     server.listen(PORT, HOST, () => {
       console.log('\n' + '='.repeat(50));
