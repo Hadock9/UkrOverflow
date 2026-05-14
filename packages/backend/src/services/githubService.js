@@ -7,7 +7,7 @@
  * Очікувані env (обов’язково для вмикання OAuth):
  *   GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET
  * Callback URL для GitHub App повинен збігатися з тим, що повертає
- * resolveGithubCallbackUrl() — або задайте явно GITHUB_CALLBACK_URL.
+ * resolveGithubCallbackUrlFromRequest(req) — або задайте явно GITHUB_CALLBACK_URL.
  */
 
 import { parseFrontendOrigins, pickOriginForGithubOAuthCallback } from '../utils/frontendOrigin.js';
@@ -40,14 +40,84 @@ function finalizeRedirectUri(candidate) {
   return normalizeGithubRedirectUri(candidate);
 }
 
-/** Публічна URL редіректу GitHub OAuth (має збігатися з "Authorization callback URL" у GitHub App). */
-export function resolveGithubCallbackUrl() {
+function isBareIpv4(hostname) {
+  return /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname);
+}
+
+/** Якщо callback заданий як http://IP, а у FRONTEND_URL є https-домен — використовуємо домен (під OAuth App на GitHub). */
+function coerceAwayFromIpHttpCallback(candidateUrl, allowed) {
+  if (!candidateUrl || !allowed?.length) return finalizeRedirectUri(candidateUrl);
+  try {
+    const fin = finalizeRedirectUri(candidateUrl);
+    const u = new URL(fin);
+    const ipHttp = u.protocol === 'http:' && isBareIpv4(u.hostname);
+    if (!ipHttp) return fin;
+
+    const canonical = pickOriginForGithubOAuthCallback(allowed) ?? allowed[0];
+    const cu = new URL(canonical.startsWith('http') ? canonical : `https://${canonical}`);
+    const useCanon = cu.protocol === 'https:' && !isBareIpv4(cu.hostname);
+    if (!useCanon) return fin;
+
+    console.warn(
+      '[GitHub OAuth] Callback був на http://IP — замінено на канонічний https-домен із FRONTEND_URL. Приберіть застарілий GITHUB_CALLBACK_URL/PUBLIC_API_URL на IP з .env.'
+    );
+    return finalizeRedirectUri(`${canonical.replace(/\/$/, '')}/api/auth/github/callback`);
+  } catch {
+    return finalizeRedirectUri(candidateUrl);
+  }
+}
+
+/** Host із запиту → callback тільки для доменних імен (не голий IPv4). */
+function githubCallbackFromRequestHost(req, allowed) {
+  if (!req || !allowed.length) return null;
+
+  const forwardedProto = (req.get('X-Forwarded-Proto') || '').split(',')[0]?.trim();
+  const proto = forwardedProto || (req.protocol === 'https' ? 'https' : 'http');
+  const forwardedHost = (req.get('X-Forwarded-Host') || '').split(',')[0]?.trim();
+  const hostHeader = forwardedHost || req.get('Host') || '';
+  if (!hostHeader) return null;
+
+  const hostname = hostHeader.split(':')[0];
+  if (isBareIpv4(hostname) || hostname.includes(':')) return null;
+
+  const candidates = [`${proto}://${hostHeader}`.replace(/\/$/, '')];
+  if (proto === 'http') candidates.push(`https://${hostHeader}`.replace(/\/$/, ''));
+
+  for (const base of candidates) {
+    const norm = base.replace(/\/$/, '');
+    if (allowed.includes(norm)) return `${norm}/api/auth/github/callback`;
+  }
+
+  const hostLower = hostname.toLowerCase();
+  for (const origin of allowed) {
+    try {
+      const u = new URL(origin.startsWith('http') ? origin : `http://${origin}`);
+      if (u.hostname.toLowerCase() === hostLower) {
+        return `${origin.replace(/\/$/, '')}/api/auth/github/callback`;
+      }
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+/**
+ * Callback URL для GitHub OAuth з урахуванням запиту (authorize і token exchange мають бути однакові).
+ * @param {import('express').Request | null | undefined} req
+ */
+export function resolveGithubCallbackUrlFromRequest(req) {
+  const allowed = parseFrontendOrigins();
+
   const explicit = process.env.GITHUB_CALLBACK_URL?.trim();
-  if (explicit) return finalizeRedirectUri(explicit);
+  if (explicit) {
+    return coerceAwayFromIpHttpCallback(explicit, allowed);
+  }
 
   const publicApi = process.env.PUBLIC_API_URL?.trim();
   if (publicApi) {
-    return finalizeRedirectUri(`${publicApi.replace(/\/$/, '')}/api/auth/github/callback`);
+    const built = `${publicApi.replace(/\/$/, '')}/api/auth/github/callback`;
+    return coerceAwayFromIpHttpCallback(built, allowed);
   }
 
   if (process.env.NODE_ENV === 'development') {
@@ -55,15 +125,23 @@ export function resolveGithubCallbackUrl() {
     return finalizeRedirectUri(`http://localhost:${port}/api/auth/github/callback`);
   }
 
-  const origins = parseFrontendOrigins();
-  if (origins.length > 0) {
-    const base =
-      pickOriginForGithubOAuthCallback(origins) ?? origins[0];
+  if (req && allowed.length > 0) {
+    const fromHost = githubCallbackFromRequestHost(req, allowed);
+    if (fromHost) return finalizeRedirectUri(fromHost);
+  }
+
+  if (allowed.length > 0) {
+    const base = pickOriginForGithubOAuthCallback(allowed) ?? allowed[0];
     return finalizeRedirectUri(`${base.replace(/\/$/, '')}/api/auth/github/callback`);
   }
 
   const port = process.env.API_PORT || '3338';
   return finalizeRedirectUri(`http://localhost:${port}/api/auth/github/callback`);
+}
+
+/** Статичний callback (старту, логів) без Host запиту. */
+export function resolveGithubCallbackUrl() {
+  return resolveGithubCallbackUrlFromRequest(null);
 }
 
 /** Лог для продакшен-налагодження: має збігатися з полем Authorization callback URL у OAuth App. */
@@ -83,13 +161,13 @@ export function logGithubOAuthRedirectUriHint() {
   }
 }
 
-function requireEnv() {
+function requireOAuth(req) {
   const id = process.env.GITHUB_CLIENT_ID?.trim();
   const secret = process.env.GITHUB_CLIENT_SECRET?.trim();
-  const callback = resolveGithubCallbackUrl();
+  const callback = resolveGithubCallbackUrlFromRequest(req ?? null);
   if (!id || !secret) {
     throw new Error(
-      'GitHub OAuth не налаштовано. Задайте GITHUB_CLIENT_ID та GITHUB_CLIENT_SECRET у .env (callback за замовчуванням: див. resolveGithubCallbackUrl).'
+      'GitHub OAuth не налаштовано. Задайте GITHUB_CLIENT_ID та GITHUB_CLIENT_SECRET у .env (callback за замовчуванням: див. resolveGithubCallbackUrlFromRequest).'
     );
   }
   return { id, secret, callback };
@@ -99,8 +177,8 @@ export function isGitHubConfigured() {
   return Boolean(process.env.GITHUB_CLIENT_ID?.trim() && process.env.GITHUB_CLIENT_SECRET?.trim());
 }
 
-export function buildAuthorizeUrl({ state, scope } = {}) {
-  const { id, callback } = requireEnv();
+export function buildAuthorizeUrl({ state, scope, req } = {}) {
+  const { id, callback } = requireOAuth(req);
   const params = new URLSearchParams({
     client_id: id,
     redirect_uri: callback,
@@ -111,8 +189,8 @@ export function buildAuthorizeUrl({ state, scope } = {}) {
   return `${GITHUB_OAUTH}/authorize?${params.toString()}`;
 }
 
-export async function exchangeCodeForToken(code) {
-  const { id, secret, callback } = requireEnv();
+export async function exchangeCodeForToken(code, req) {
+  const { id, secret, callback } = requireOAuth(req);
   const res = await fetch(`${GITHUB_OAUTH}/access_token`, {
     method: 'POST',
     headers: {

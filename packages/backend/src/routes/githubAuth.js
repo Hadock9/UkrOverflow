@@ -82,7 +82,7 @@ router.get('/', (req, res) => {
   const state = makeState({ link: !!linkUserId, userId: linkUserId, nonce: Math.random().toString(36).slice(2) });
 
   try {
-    const url = buildAuthorizeUrl({ state });
+    const url = buildAuthorizeUrl({ state, req });
     res.redirect(url);
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -108,7 +108,7 @@ router.get('/callback', async (req, res, next) => {
   const parsedState = state ? readState(state) : null;
 
   try {
-    const { accessToken } = await exchangeCodeForToken(code);
+    const { accessToken } = await exchangeCodeForToken(code, req);
     const ghUser = await fetchAuthenticatedUser(accessToken);
     const emails = await fetchUserEmails(accessToken);
     const primaryEmail = pickPrimaryEmail(emails);
