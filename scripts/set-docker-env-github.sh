@@ -8,6 +8,7 @@
 # Опційно (якщо задати змінну — старий рядок із .env буде замінено):
 #   FRONTEND_URL
 #   GITHUB_CALLBACK_URL, GITHUB_OAUTH_REDIRECT_URI  (за замовчуванням дорівнюють {FRONTEND_URL}/api/auth/github/callback, якщо заданий FRONTEND_URL)
+#   GITHUB_OAUTH_PUBLIC_ORIGIN  (щоб у production прибрати fallback на IP і примусити HTTPS-домен)
 #   VITE_FRONTEND_CANONICAL_ORIGIN  (для збірки web: редірект після логіну на HTTPS-домен)
 #
 # Використання на сервері (у каталозі з docker-compose.yml і .env):
@@ -23,6 +24,7 @@
 #   FRONTEND_URL=https://devflow.info \
 #   GITHUB_CALLBACK_URL=https://devflow.info/api/auth/github/callback \
 #   GITHUB_OAUTH_REDIRECT_URI=https://devflow.info/api/auth/github/callback \
+#   GITHUB_OAUTH_PUBLIC_ORIGIN=https://devflow.info \
 #   VITE_FRONTEND_CANONICAL_ORIGIN=https://devflow.info \
 #   ./scripts/set-docker-env-github.sh
 #
@@ -70,6 +72,7 @@ should_skip_line() {
   [[ -n "${FRONTEND_URL:-}" && "$line" =~ ^FRONTEND_URL= ]] && return 0
   [[ -n "${CALLBACK:-}" && "$line" =~ ^GITHUB_CALLBACK_URL= ]] && return 0
   [[ -n "${REDIRECT_URI:-}" && "$line" =~ ^GITHUB_OAUTH_REDIRECT_URI= ]] && return 0
+  [[ -n "${GITHUB_OAUTH_PUBLIC_ORIGIN:-}" && "$line" =~ ^GITHUB_OAUTH_PUBLIC_ORIGIN= ]] && return 0
   [[ -n "${VITE_FRONTEND_CANONICAL_ORIGIN:-}" && "$line" =~ ^VITE_FRONTEND_CANONICAL_ORIGIN= ]] && return 0
   return 1
 }
@@ -95,6 +98,9 @@ done < "$ENV_FILE" >"$tmp"
   fi
   if [[ -n "$REDIRECT_URI" ]]; then
     echo "GITHUB_OAUTH_REDIRECT_URI=${REDIRECT_URI}"
+  fi
+  if [[ -n "${GITHUB_OAUTH_PUBLIC_ORIGIN:-}" ]]; then
+    echo "GITHUB_OAUTH_PUBLIC_ORIGIN=${GITHUB_OAUTH_PUBLIC_ORIGIN}"
   fi
   if [[ -n "${VITE_FRONTEND_CANONICAL_ORIGIN:-}" ]]; then
     echo "VITE_FRONTEND_CANONICAL_ORIGIN=${VITE_FRONTEND_CANONICAL_ORIGIN}"
