@@ -4,9 +4,13 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 COPY packages/frontend/package.json packages/frontend/
+COPY packages/shared/package.json packages/shared/
+COPY packages/mediator/package.json packages/mediator/
 RUN npm ci -w frontend
 
 COPY packages/frontend ./packages/frontend
+COPY packages/shared ./packages/shared
+COPY packages/mediator ./packages/mediator
 
 WORKDIR /app/packages/frontend
 
