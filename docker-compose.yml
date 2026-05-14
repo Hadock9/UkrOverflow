@@ -58,6 +58,13 @@ services:
     restart: unless-stopped
     ports:
       - '${HTTP_PORT:-80}:80'
+      - '${HTTPS_PORT:-443}:443'
+    volumes:
+      # Сертифікати Let's Encrypt на хості VPS — інакше nginx у контейнері не бачить
+      # /etc/letsencrypt/live/... і падає з BIO_new_file / no such file.
+      - '${LETSENCRYPT_HOST_PATH:-/etc/letsencrypt}:/etc/letsencrypt:ro'
+      # ACME webroot (якщо certbot оновлює через webroot у /var/www/certbot)
+      - '${CERTBOT_WEBROOT_HOST_PATH:-/var/www/certbot}:/var/www/certbot:ro'
     depends_on:
       - api
 
