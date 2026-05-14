@@ -14,6 +14,42 @@ export function primaryFrontendOrigin() {
 }
 
 /**
+ * Для GitHub OAuth потрібен один точний redirect_uri.
+ * Якщо у FRONTEND_URL кілька origin без GITHUB_CALLBACK_URL — не беремо сліпо перший
+ * (часто там IP по http), а пріоритизуємо https і звичайне ім’я хоста.
+ */
+export function pickOriginForGithubOAuthCallback(origins) {
+  if (!origins?.length) return null;
+  const list = origins.map((o) => o.replace(/\/$/, ''));
+  if (list.length === 1) return list[0];
+
+  const tryParse = (raw) => {
+    try {
+      return new URL(raw.startsWith('http') ? raw : `https://${raw}`);
+    } catch {
+      return null;
+    }
+  };
+
+  const isIpLiteral = (hostname) =>
+    /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname) || hostname.includes(':');
+
+  for (const raw of list) {
+    const u = tryParse(raw);
+    if (u && u.protocol === 'https:' && !isIpLiteral(u.hostname)) return raw;
+  }
+  for (const raw of list) {
+    const u = tryParse(raw);
+    if (u && u.protocol === 'https:') return raw;
+  }
+  for (const raw of list) {
+    const u = tryParse(raw);
+    if (u && !isIpLiteral(u.hostname)) return raw;
+  }
+  return list[0];
+}
+
+/**
  * Базовий URL фронта для редіректів після OAuth тощо:
  * підбираємо origin із whitelist за Host / Referer, інакше — перший із FRONTEND_URL.
  */

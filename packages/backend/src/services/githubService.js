@@ -10,7 +10,7 @@
  * resolveGithubCallbackUrl() — або задайте явно GITHUB_CALLBACK_URL.
  */
 
-import { parseFrontendOrigins } from '../utils/frontendOrigin.js';
+import { parseFrontendOrigins, pickOriginForGithubOAuthCallback } from '../utils/frontendOrigin.js';
 
 const GITHUB_API = 'https://api.github.com';
 const GITHUB_OAUTH = 'https://github.com/login/oauth';
@@ -57,7 +57,9 @@ export function resolveGithubCallbackUrl() {
 
   const origins = parseFrontendOrigins();
   if (origins.length > 0) {
-    return finalizeRedirectUri(`${origins[0].replace(/\/$/, '')}/api/auth/github/callback`);
+    const base =
+      pickOriginForGithubOAuthCallback(origins) ?? origins[0];
+    return finalizeRedirectUri(`${base.replace(/\/$/, '')}/api/auth/github/callback`);
   }
 
   const port = process.env.API_PORT || '3338';
@@ -73,7 +75,7 @@ export function logGithubOAuthRedirectUriHint() {
     const origins = parseFrontendOrigins();
     if (origins.length > 1 && !process.env.GITHUB_CALLBACK_URL?.trim()) {
       console.warn(
-        '[GitHub OAuth] Кілька значень у FRONTEND_URL без GITHUB_CALLBACK_URL: redirect_uri береться з першого origin. Краще задати GITHUB_CALLBACK_URL так само, як у GitHub → OAuth App → Authorization callback URL.'
+        '[GitHub OAuth] Декілька origin у FRONTEND_URL без GITHUB_CALLBACK_URL — для redirect_uri обрано канонічний (пріоритет: https і доменне ім’я). Надійніше задати GITHUB_CALLBACK_URL як у GitHub OAuth App.'
       );
     }
   } catch (e) {
