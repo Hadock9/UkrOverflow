@@ -1,12 +1,12 @@
 /**
  * Міграція бази даних
- * Створення нової схеми без Strapi
+ * Knowledge Hub: ядро content_items + спеціалізовані таблиці.
+ * Старі таблиці questions/answers лишаються (legacy) для сумісності з існуючими сторінками.
  */
 
 import mysql from 'mysql2/promise';
 import pool from '../config/database.js';
 
-/** Підключення без вибору БД — створюємо схему, якщо її ще немає */
 async function ensureDatabaseExists() {
   const dbName = process.env.DB_NAME;
   if (!dbName || !/^[a-zA-Z0-9_]+$/.test(dbName)) {
@@ -38,8 +38,8 @@ async function migrate() {
   try {
     console.log('🔄 Початок міграції бази даних...\n');
 
-    // 1. Створення таблиці users
-    console.log('📝 Створення таблиці users...');
+    // 1. users
+    console.log('📝 users...');
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS users (
         id INT PRIMARY KEY AUTO_INCREMENT,
@@ -58,10 +58,10 @@ async function migrate() {
         INDEX idx_reputation (reputation)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
-    console.log('✓ Таблиця users створена\n');
+    console.log('✓ users\n');
 
-    // 2. Створення таблиці questions
-    console.log('📝 Створення таблиці questions...');
+    // 2. legacy questions
+    console.log('📝 questions (legacy)...');
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS questions (
         id INT PRIMARY KEY AUTO_INCREMENT,
@@ -81,10 +81,10 @@ async function migrate() {
         FULLTEXT INDEX idx_search (title, body)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
-    console.log('✓ Таблиця questions створена\n');
+    console.log('✓ questions\n');
 
-    // 3. Створення таблиці answers
-    console.log('📝 Створення таблиці answers...');
+    // 3. legacy answers
+    console.log('📝 answers (legacy)...');
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS answers (
         id INT PRIMARY KEY AUTO_INCREMENT,
@@ -104,15 +104,15 @@ async function migrate() {
         FULLTEXT INDEX idx_search (body)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
-    console.log('✓ Таблиця answers створена\n');
+    console.log('✓ answers\n');
 
-    // 4. Створення таблиці votes
-    console.log('📝 Створення таблиці votes...');
+    // 4. votes
+    console.log('📝 votes...');
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS votes (
         id INT PRIMARY KEY AUTO_INCREMENT,
         user_id INT NOT NULL,
-        entity_type ENUM('question', 'answer') NOT NULL,
+        entity_type ENUM('question', 'answer', 'content', 'content_answer') NOT NULL,
         entity_id INT NOT NULL,
         vote_type ENUM('up', 'down') NOT NULL,
         created_at DATETIME NOT NULL,
@@ -121,16 +121,27 @@ async function migrate() {
         INDEX idx_entity (entity_type, entity_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
-    console.log('✓ Таблиця votes створена\n');
+    // Якщо таблиця існувала зі старим enum — мовчки розширюємо
+    try {
+      await connection.execute(`
+        ALTER TABLE votes
+        MODIFY COLUMN entity_type ENUM('question','answer','content','content_answer') NOT NULL
+      `);
+    } catch (e) {
+      if (!String(e?.message || '').includes('cannot be null')) {
+        // ігноруємо
+      }
+    }
+    console.log('✓ votes\n');
 
-    // 5. Створення таблиці notifications
-    console.log('📝 Створення таблиці notifications...');
+    // 5. notifications
+    console.log('📝 notifications...');
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS notifications (
         id INT PRIMARY KEY AUTO_INCREMENT,
         user_id INT NOT NULL,
-        type ENUM('question_answer', 'answer_comment', 'answer_accepted', 'vote', 'mention') NOT NULL,
-        entity_type ENUM('question', 'answer') NOT NULL,
+        type ENUM('question_answer', 'answer_comment', 'answer_accepted', 'vote', 'mention', 'content_answer') NOT NULL,
+        entity_type ENUM('question', 'answer', 'content', 'content_answer') NOT NULL,
         entity_id INT NOT NULL,
         data JSON,
         is_read BOOLEAN DEFAULT FALSE,
@@ -141,10 +152,22 @@ async function migrate() {
         INDEX idx_created (created_at)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
-    console.log('✓ Таблиця notifications створена\n');
+    try {
+      await connection.execute(`
+        ALTER TABLE notifications
+        MODIFY COLUMN type ENUM('question_answer','answer_comment','answer_accepted','vote','mention','content_answer') NOT NULL
+      `);
+      await connection.execute(`
+        ALTER TABLE notifications
+        MODIFY COLUMN entity_type ENUM('question','answer','content','content_answer') NOT NULL
+      `);
+    } catch {
+      /* ігноруємо */
+    }
+    console.log('✓ notifications\n');
 
-    // 6. Створення таблиці bookmarks
-    console.log('📝 Створення таблиці bookmarks...');
+    // 6. bookmarks (legacy)
+    console.log('📝 bookmarks (legacy)...');
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS bookmarks (
         id INT PRIMARY KEY AUTO_INCREMENT,
@@ -158,10 +181,10 @@ async function migrate() {
         INDEX idx_question (question_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
-    console.log('✓ Таблиця bookmarks створена\n');
+    console.log('✓ bookmarks\n');
 
-    // 7. Унікальні перегляди питань (дедуплікація за користувачем / анонімним id)
-    console.log('📝 Створення таблиці question_views...');
+    // 7. question_views (legacy)
+    console.log('📝 question_views (legacy)...');
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS question_views (
         id INT PRIMARY KEY AUTO_INCREMENT,
@@ -173,7 +196,96 @@ async function migrate() {
         FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
-    console.log('✓ Таблиця question_views створена\n');
+    console.log('✓ question_views\n');
+
+    // === KNOWLEDGE HUB CORE ===
+
+    // 8. content_items — універсальне ядро (питання, статті, гайди, snippets, roadmaps, best_practices, faq)
+    console.log('📝 content_items (knowledge hub)...');
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS content_items (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        type ENUM('question','article','guide','snippet','roadmap','best_practice','faq') NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        slug VARCHAR(280) NOT NULL,
+        body MEDIUMTEXT NOT NULL,
+        excerpt VARCHAR(500) NULL,
+        tags JSON NULL,
+        author_id INT NOT NULL,
+        status ENUM('draft','published','archived') DEFAULT 'published',
+        difficulty ENUM('beginner','intermediate','advanced') NULL,
+        technology VARCHAR(80) NULL,
+        estimated_read_time INT NULL,
+        meta JSON NULL,
+        views INT DEFAULT 0,
+        is_featured BOOLEAN DEFAULT FALSE,
+        created_at DATETIME NOT NULL,
+        updated_at DATETIME NOT NULL,
+        published_at DATETIME NULL,
+        FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE KEY uq_slug (slug),
+        INDEX idx_type (type),
+        INDEX idx_type_published (type, published_at),
+        INDEX idx_author (author_id),
+        INDEX idx_views (views),
+        INDEX idx_technology (technology),
+        FULLTEXT INDEX idx_search (title, body, excerpt)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log('✓ content_items\n');
+
+    // 9. content_answers — відповіді лише на content_items типу 'question'
+    console.log('📝 content_answers...');
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS content_answers (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        content_id INT NOT NULL,
+        body MEDIUMTEXT NOT NULL,
+        author_id INT NOT NULL,
+        is_accepted BOOLEAN DEFAULT FALSE,
+        created_at DATETIME NOT NULL,
+        updated_at DATETIME NOT NULL,
+        FOREIGN KEY (content_id) REFERENCES content_items(id) ON DELETE CASCADE,
+        FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_content (content_id),
+        INDEX idx_author (author_id),
+        INDEX idx_accepted (is_accepted),
+        FULLTEXT INDEX idx_search (body)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log('✓ content_answers\n');
+
+    // 10. content_views — унікальні перегляди (дедуплікація)
+    console.log('📝 content_views...');
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS content_views (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        content_id INT NOT NULL,
+        viewer_key VARCHAR(96) NOT NULL,
+        viewed_at DATETIME NOT NULL,
+        UNIQUE KEY uq_content_viewer (content_id, viewer_key),
+        INDEX idx_content (content_id),
+        FOREIGN KEY (content_id) REFERENCES content_items(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log('✓ content_views\n');
+
+    // 11. content_bookmarks
+    console.log('📝 content_bookmarks...');
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS content_bookmarks (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        content_id INT NOT NULL,
+        created_at DATETIME NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (content_id) REFERENCES content_items(id) ON DELETE CASCADE,
+        UNIQUE KEY unique_bookmark (user_id, content_id),
+        INDEX idx_user (user_id),
+        INDEX idx_content (content_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log('✓ content_bookmarks\n');
 
     console.log('✅ Міграція завершена успішно!');
   } catch (error) {

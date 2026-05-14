@@ -22,13 +22,10 @@ export function Header() {
         <div className="header-content">
           <div className="header-left">
             <Link to="/" className="header-logo">
-              <h1>KNOWLEDGE HUB</h1>
+              <h1>UKROVERFLOW</h1>
             </Link>
 
             <nav className="nav">
-              <Link to="/" className="nav-item">
-                HUB
-              </Link>
               <Link to="/questions" className="nav-item">
                 ПИТАННЯ
               </Link>
@@ -46,8 +43,8 @@ export function Header() {
           <div className="header-right">
             {isAuthenticated ? (
               <>
-                <Link to="/create" className="btn btn-primary">
-                  СТВОРИТИ КОНТЕНТ
+                <Link to="/ask" className="btn btn-primary">
+                  ЗАДАТИ ПИТАННЯ
                 </Link>
 
                 <div className="user-menu">

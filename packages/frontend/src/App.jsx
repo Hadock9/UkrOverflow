@@ -12,7 +12,6 @@ import { Header } from './components/Header'
 import { Home } from './pages/Home'
 import { QuestionDetail } from './pages/QuestionDetail'
 import { NewQuestion } from './pages/NewQuestion'
-import { CreateContent } from './pages/CreateContent'
 import { EditQuestion } from './pages/EditQuestion'
 import { Login } from './pages/Login'
 import { Register } from './pages/Register'
@@ -58,7 +57,7 @@ function App() {
       <div className="container" style={{ textAlign: 'center', padding: '100px 20px' }}>
         <div className="loading"></div>
         <p style={{ marginTop: '20px', fontFamily: 'var(--font-mono)' }}>
-          ЗАВАНТАЖЕННЯ KNOWLEDGE HUB...
+          ЗАВАНТАЖЕННЯ UKROVERFLOW...
         </p>
       </div>
     )
@@ -73,12 +72,10 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/questions" element={<Home />} />
-            <Route path="/create" element={<CreateContent />} />
-            <Route path="/content/new" element={<CreateContent />} />
             <Route path="/questions/new" element={<NewQuestion />} />
             <Route path="/questions/:id/edit" element={<EditQuestion />} />
             <Route path="/questions/:id" element={<QuestionDetail />} />
-            <Route path="/ask" element={<CreateContent />} />
+            <Route path="/ask" element={<NewQuestion />} />
             <Route path="/tags" element={<Tags />} />
             <Route path="/tags/:tag" element={<Home />} />
             <Route path="/users" element={<Users />} />
@@ -97,7 +94,7 @@ function App() {
           fontSize: '0.875rem'
         }}>
           <div className="container">
-            UKR KNOWLEDGE HUB
+            UKROVERFLOW 2.0
           </div>
         </footer>
       </div>

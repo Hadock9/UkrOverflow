@@ -16,14 +16,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: var(--space-4);
-  margin-bottom: var(--space-2);
+  gap: var(--space-3);
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
 .header-logo {
@@ -33,9 +32,10 @@
 
 .header-logo h1 {
   font-family: var(--font-mono);
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   margin: 0;
   letter-spacing: 2px;
+  line-height: 1;
 }
 
 .header-logo:hover h1 {
@@ -46,7 +46,7 @@
 
 .nav {
   display: flex;
-  gap: var(--space-3);
+  gap: var(--space-2);
   list-style: none;
 }
 
@@ -77,21 +77,27 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  flex-shrink: 0;
 }
 
 .header .btn {
   font-size: 0.875rem;
-  padding: var(--space-1) var(--space-3);
+  padding: var(--space-1) var(--space-2);
   box-shadow: 4px 4px 0 rgba(255, 255, 255, 0.2);
   background: var(--color-black);
   color: var(--color-white);
   border-color: var(--color-white);
+  white-space: nowrap;
 }
 
 .header .btn-primary {
   background: var(--color-primary);
   color: var(--color-white);
   border-color: var(--color-white);
+}
+
+.header-create-btn {
+  min-width: max-content;
 }
 
 .header .btn:hover {
@@ -115,6 +121,7 @@
   font-size: 0.875rem;
   padding: var(--space-1) var(--space-2);
   border: 2px solid transparent;
+  white-space: nowrap;
 }
 
 .user-link:hover {
@@ -170,6 +177,10 @@
 
   .header .btn {
     flex: 1;
+  }
+
+  .header-create-btn {
+    min-width: 0;
   }
 
   .user-menu {

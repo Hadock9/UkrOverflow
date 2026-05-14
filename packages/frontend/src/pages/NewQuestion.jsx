@@ -138,27 +138,8 @@ export function NewQuestion() {
       <div className="page-header">
         <h1 className="page-title">НОВЕ ПИТАННЯ</h1>
         <p className="page-subtitle">
-          Формат knowledge hub для проблем, обговорень і відповідей від спільноти
+          Поставте якісне питання і отримайте корисні відповіді
         </p>
-      </div>
-
-      <div className="question-card" style={{ marginBottom: 'var(--space-4)' }}>
-        <div className="question-content">
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 'var(--space-2)', alignItems: 'center' }}>
-            <span className="tag">Питання</span>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => navigate('/create')}
-              disabled={submitting}
-            >
-              ІНШІ ФОРМАТИ
-            </button>
-          </div>
-          <p style={{ marginTop: 'var(--space-2)', marginBottom: 0 }}>
-            Далі тут з’являться окремі форми для статей, міні-гайдів, snippets, roadmap-ів, best practices та FAQ.
-          </p>
-        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="question-form">
