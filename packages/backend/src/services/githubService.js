@@ -7,7 +7,8 @@
  * Очікувані env (обов’язково для вмикання OAuth):
  *   GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET
  * Callback URL для GitHub App повинен збігатися з тим, що повертає
- * resolveGithubCallbackUrlFromRequest(req) — або GITHUB_CALLBACK_URL / GITHUB_OAUTH_PUBLIC_ORIGIN.
+ * resolveGithubCallbackUrlFromRequest(req) — GITHUB_CALLBACK_URL, GITHUB_OAUTH_PUBLIC_ORIGIN,
+ * або GITHUB_OAUTH_REDIRECT_URI (повний URL 1:1 як у GitHub OAuth App — найнадійніше).
  */
 
 import { parseFrontendOrigins, pickOriginForGithubOAuthCallback } from '../utils/frontendOrigin.js';
@@ -151,11 +152,39 @@ function upgradeHttpDomainGithubCallbackToHttps(urlStr) {
   }
 }
 
+/** Якщо лишився http:// (часто IP або localhost у проді), підміняємо на https://… з GITHUB_OAUTH_PUBLIC_ORIGIN. */
+function forceHttpsGithubCallbackUsingPublicOriginIfStillHttp(urlStr) {
+  const pub = process.env.GITHUB_OAUTH_PUBLIC_ORIGIN?.trim()?.replace(/\/$/, '');
+  if (!pub || process.env.NODE_ENV === 'development') return urlStr;
+  try {
+    const fin = finalizeRedirectUri(urlStr);
+    const u = new URL(fin);
+    if (u.protocol === 'https:') return fin;
+    const bu = new URL(pub.startsWith('http') ? pub : `https://${pub}`);
+    const httpsOrigin = `https://${bu.host}`;
+    console.warn('[GitHub OAuth] redirect_uri зведено до https через GITHUB_OAUTH_PUBLIC_ORIGIN');
+    return finalizeRedirectUri(`${httpsOrigin}/api/auth/github/callback`);
+  } catch {
+    return urlStr;
+  }
+}
+
+function ensureProductionGithubRedirectUsesHttps(urlStr) {
+  return forceHttpsGithubCallbackUsingPublicOriginIfStillHttp(
+    upgradeHttpDomainGithubCallbackToHttps(urlStr)
+  );
+}
+
 /**
  * Callback URL для GitHub OAuth з урахуванням запиту (authorize і token exchange мають бути однакові).
  * @param {import('express').Request | null | undefined} req
  */
 export function resolveGithubCallbackUrlFromRequest(req) {
+  const strictFull = process.env.GITHUB_OAUTH_REDIRECT_URI?.trim();
+  if (strictFull) {
+    return ensureProductionGithubRedirectUsesHttps(finalizeRedirectUri(strictFull));
+  }
+
   const allowed = parseFrontendOrigins();
 
   let resolved;
@@ -183,11 +212,30 @@ export function resolveGithubCallbackUrlFromRequest(req) {
   }
 
   if (resolved === undefined) {
-    const port = process.env.API_PORT || '3338';
-    resolved = finalizeRedirectUri(`http://localhost:${port}/api/auth/github/callback`);
+    if (process.env.NODE_ENV === 'development') {
+      const port = process.env.API_PORT || '3338';
+      resolved = finalizeRedirectUri(`http://localhost:${port}/api/auth/github/callback`);
+    } else {
+      const pub = process.env.GITHUB_OAUTH_PUBLIC_ORIGIN?.trim()?.replace(/\/$/, '');
+      if (pub) {
+        try {
+          const bu = new URL(pub.startsWith('http') ? pub : `https://${pub}`);
+          resolved = finalizeRedirectUri(`https://${bu.host}/api/auth/github/callback`);
+        } catch {
+          resolved = undefined;
+        }
+      }
+      if (resolved === undefined) {
+        console.error(
+          '[GitHub OAuth] У продакшені не зібрано redirect_uri — задайте FRONTEND_URL, GITHUB_CALLBACK_URL, GITHUB_OAUTH_PUBLIC_ORIGIN або GITHUB_OAUTH_REDIRECT_URI (найкраще повний URL як у GitHub).'
+        );
+        const port = process.env.API_PORT || '3338';
+        resolved = finalizeRedirectUri(`http://localhost:${port}/api/auth/github/callback`);
+      }
+    }
   }
 
-  return upgradeHttpDomainGithubCallbackToHttps(resolved);
+  return ensureProductionGithubRedirectUsesHttps(resolved);
 }
 
 /** Статичний callback (старту, логів) без Host запиту. */

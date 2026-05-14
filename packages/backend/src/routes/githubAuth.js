@@ -7,8 +7,9 @@
  *
  * Параметри середовища:
  *   GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET (обов’язково)
- *   GITHUB_CALLBACK_URL або PUBLIC_API_URL або FRONTEND_URL — для callback (див. resolveGithubCallbackUrl)
- *   FRONTEND_URL (для post-callback редіректу)
+ *   GITHUB_OAUTH_REDIRECT_URI — повний callback URL як у GitHub OAuth App (найнадійніше).
+ *   GITHUB_CALLBACK_URL або PUBLIC_API_URL або FRONTEND_URL / GITHUB_OAUTH_PUBLIC_ORIGIN — інакше.
+ *   FRONTEND_URL (для post-callback редіректу та CORS)
  */
 
 import express from 'express';
@@ -23,8 +24,9 @@ import {
   fetchAuthenticatedUser,
   fetchUserEmails,
   pickPublicProfile,
+  resolveGithubCallbackUrlFromRequest,
 } from '../services/githubService.js';
-import { resolveFrontendBaseUrl } from '../utils/frontendOrigin.js';
+import { resolveFrontendBaseUrl, parseFrontendOrigins } from '../utils/frontendOrigin.js';
 
 const router = express.Router();
 
@@ -56,6 +58,26 @@ function pickPrimaryEmail(emails) {
 
 router.get('/status', (req, res) => {
   res.json({ success: true, data: { enabled: isGitHubConfigured() } });
+});
+
+/** GET /api/auth/github/resolved-callback — діагностика redirect_uri для GitHub (без секретів). */
+router.get('/resolved-callback', (req, res) => {
+  try {
+    const redirect_uri = resolveGithubCallbackUrlFromRequest(req);
+    res.json({
+      success: true,
+      data: {
+        redirect_uri,
+        node_env: process.env.NODE_ENV ?? null,
+        has_github_oauth_redirect_uri: Boolean(process.env.GITHUB_OAUTH_REDIRECT_URI?.trim()),
+        has_github_callback_url: Boolean(process.env.GITHUB_CALLBACK_URL?.trim()),
+        has_oauth_public_origin: Boolean(process.env.GITHUB_OAUTH_PUBLIC_ORIGIN?.trim()),
+        frontend_origin_count: parseFrontendOrigins().length,
+      },
+    });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
 });
 
 router.get('/', (req, res) => {
