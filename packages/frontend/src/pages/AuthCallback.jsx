@@ -19,8 +19,14 @@ export function AuthCallback() {
     const errorParam = params.get('error');
 
     if (errorParam) {
-      setError(errorParam);
-      const t = setTimeout(() => navigate('/login'), 2500);
+      const decoded = decodeURIComponent(errorParam.replace(/\+/g, ' '));
+      let msg = decoded;
+      if (/redirect_uri|oauth|github|associated|misconfigured/i.test(decoded)) {
+        msg =
+          `${decoded} Переконайтесь, що в OAuth Apps на GitHub у полі «Authorization callback URL» указано точно той самий рядок, що й «redirect_uri» у відповіді GET /api/auth/github/status (перевірте з того самого браузера/домену).`;
+      }
+      setError(msg);
+      const t = setTimeout(() => navigate('/login'), 8000);
       return () => clearTimeout(t);
     }
 

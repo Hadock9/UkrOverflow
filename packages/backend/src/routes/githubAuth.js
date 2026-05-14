@@ -12,6 +12,8 @@
  *   FRONTEND_URL (для post-callback редіректу та CORS)
  *
  * Поля OAuth App на GitHub (Homepage, Authorization callback) — повні URL із http:// або https://.
+ */
+
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { jwtConfig } from '../config/jwt.js';
@@ -70,6 +72,9 @@ router.get('/status', (req, res) => {
       enabled: isGitHubConfigured(),
       redirect_uri,
       ...(redirect_uri_error ? { redirect_uri_error } : {}),
+      oauth_apps_url: 'https://github.com/settings/developers',
+      oauth_docs_url:
+        'https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#redirect-urls-and-loopback',
     },
   });
 });

@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useMediator } from '../contexts/MediatorContext';
 import { EventTypes } from '../../../mediator/src/index';
 import { githubLoginUrl } from '../services/api';
+import { GitHubOAuthHint } from '../components/GitHubOAuthHint';
 import '../styles/brutalism.css';
 
 export function Login() {
@@ -123,6 +124,7 @@ export function Login() {
         >
           УВІЙТИ ЧЕРЕЗ GITHUB
         </a>
+        <GitHubOAuthHint />
 
         <div className="auth-footer">
           <p>
