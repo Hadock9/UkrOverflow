@@ -28,7 +28,9 @@ import {
 const router = express.Router();
 
 function frontendUrl() {
-  return process.env.FRONTEND_URL || 'http://localhost:5173';
+  const raw = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const first = raw.split(',').map((s) => s.trim()).filter(Boolean)[0];
+  return first || 'http://localhost:5173';
 }
 
 function makeState(payload) {
