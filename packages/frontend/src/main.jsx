@@ -5,24 +5,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import './styles/brutalism.css'
 import App from './App.jsx'
 
-// Mediator
+// Mediator (візуалізатор вимкнено — не показувати плаваючу панель на проді)
 import { createMediator } from '../../mediator/src/index.js'
-import { createVisualizer } from '../../mediator/src/visualizer.js'
 
-// Створення медіатора
-const mediator = createMediator({
-  debug: true,
-  visualization: true,
-  logLevel: 'info'
+createMediator({
+  debug: import.meta.env.DEV,
+  visualization: false,
+  logLevel: import.meta.env.DEV ? 'info' : 'warn',
 })
-
-// Створення візуалізатора
-const visualizer = createVisualizer({
-  position: 'bottom-right',
-  autoOpen: false
-})
-
-mediator.setVisualizer(visualizer)
 
 // React Query
 const queryClient = new QueryClient({

@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useMediator } from '../contexts/MediatorContext';
 import { EventTypes } from '../../../mediator/src/index';
 import { api } from '../services/api';
@@ -44,6 +44,17 @@ const CREATE_ITEM_LABEL = {
   [CONTENT_TYPES.FAQ]: 'ЧаП',
 };
 
+const PATH_CONTENT_TYPE = {
+  '/questions': CONTENT_TYPES.QUESTION,
+  '/articles': CONTENT_TYPES.ARTICLE,
+  '/guides': CONTENT_TYPES.GUIDE,
+  '/snippets': CONTENT_TYPES.SNIPPET,
+  '/roadmaps': CONTENT_TYPES.ROADMAP,
+  '/best-practices': CONTENT_TYPES.BEST_PRACTICE,
+  '/faq': CONTENT_TYPES.FAQ,
+  '/faqs': CONTENT_TYPES.FAQ,
+};
+
 const CREATE_MENU_ITEMS = [
   ...CONTENT_TYPE_DEFINITIONS
     .filter((item) => item.id !== CONTENT_TYPES.ALL && CREATE_LINKS[item.id])
@@ -73,6 +84,7 @@ function detailHrefFor(item) {
 
 export function Home() {
   const { tag } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -119,6 +131,17 @@ export function Home() {
   useEffect(() => {
     setPage(1);
   }, [contentType, tag, sortBy]);
+
+  useEffect(() => {
+    if (tag) return;
+    const path = location.pathname.replace(/\/$/, '') || '/';
+    const mapped = PATH_CONTENT_TYPE[path];
+    if (mapped) {
+      setContentType(mapped);
+    } else if (path === '/hub') {
+      setContentType(CONTENT_TYPES.ALL);
+    }
+  }, [location.pathname, tag]);
 
   const loadFeed = async () => {
     setLoading(true);

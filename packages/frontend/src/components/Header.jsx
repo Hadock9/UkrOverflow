@@ -71,6 +71,9 @@ export function Header() {
 
             <nav className="nav">
               <Link to="/" className="nav-item">
+                ГОЛОВНА
+              </Link>
+              <Link to="/hub" className="nav-item">
                 ХАБ
               </Link>
               <Link to="/tags" className="nav-item">

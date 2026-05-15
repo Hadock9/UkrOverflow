@@ -10,6 +10,7 @@ import { getMediator, EventTypes } from '../../mediator/src/index'
 import wsClient from './services/websocket'
 import { Header } from './components/Header'
 import { Home } from './pages/Home'
+import { MainPage } from './pages/MainPage'
 import { QuestionDetail } from './pages/QuestionDetail'
 import { NewQuestion } from './pages/NewQuestion'
 import { EditQuestion } from './pages/EditQuestion'
@@ -80,7 +81,8 @@ function App() {
 
         <main style={{ marginTop: 'var(--space-5)', marginBottom: 'var(--space-6)' }}>
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<MainPage />} />
+            <Route path="/hub" element={<Home />} />
             <Route path="/questions" element={<Home />} />
             <Route path="/questions/new" element={<NewQuestion />} />
             <Route path="/questions/:id/edit" element={<EditQuestion />} />
