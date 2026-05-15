@@ -14,6 +14,8 @@
     "migrate": "cd packages/backend && npm run migrate",
     "seed": "cd packages/backend && npm run seed",
     "seed:user": "cd packages/backend && npm run seed:user",
+    "seed:communities": "cd packages/backend && npm run seed:communities",
+    "seed:communities:large": "cd packages/backend && node src/scripts/seedCommunities.js --user 11 --large",
     "seed:notifications": "cd packages/backend && node src/scripts/seedNotifications.js",
     "test": "npm run test -w @ukroverflow/backend && npm run test -w frontend",
     "docker:up": "docker compose --env-file .env up -d --build",

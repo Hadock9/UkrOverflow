@@ -3,6 +3,7 @@
  *
  * Використання:
  *   node src/scripts/seedCommunities.js --user 11
+ *   node src/scripts/seedCommunities.js --user 11 --large
  *
  * Лише INSERT, без TRUNCATE. Скрипт ідемпотентний на рівні slug-ів:
  * вставляється з ON DUPLICATE KEY UPDATE, тож повторні запуски не падають.
@@ -12,7 +13,7 @@ import 'dotenv/config';
 import pool from '../config/database.js';
 
 function parseArgs(argv) {
-  const args = { user: 11 };
+  const args = { user: 11, large: false };
   for (let i = 2; i < argv.length; i += 1) {
     const a = argv[i];
     if (a === '--user' || a === '-u') {
@@ -22,6 +23,8 @@ function parseArgs(argv) {
     } else if (a.startsWith('--user=')) {
       const n = parseInt(a.slice('--user='.length), 10);
       if (Number.isFinite(n)) args.user = n;
+    } else if (a === '--large' || a === '-l') {
+      args.large = true;
     }
   }
   return args;
@@ -101,6 +104,96 @@ const COMMUNITIES = [
     website: 'https://oss.org.ua',
     description: 'Український open-source. Координуємо контриб’юції, перекладаємо доку, ведемо власні бібліотеки і шукаємо мейнтейнерів.',
     tags: ['oss', 'collaboration'],
+  },
+  {
+    slug: 'devhub-kyiv',
+    name: 'DevFlow Київ',
+    type: 'city',
+    location: 'Київ',
+    website: 'https://devhub.ua/kyiv',
+    description: 'Київська спільнота fullstack-розробників. Щотижневі мітинги, code review nights і спільні pet-проєкти.',
+    tags: ['kyiv', 'fullstack', 'meetup'],
+  },
+  {
+    slug: 'devhub-kharkiv',
+    name: 'DevFlow Харків',
+    type: 'city',
+    location: 'Харків',
+    website: 'https://devhub.ua/kharkiv',
+    description: 'Харківські розробники: алгоритми, embedded, web. Ділимось вакансіями, менторимо студентів, запускаємо хакатони.',
+    tags: ['kharkiv', 'algorithms', 'embedded'],
+  },
+  {
+    slug: 'devhub-odesa',
+    name: 'DevFlow Одеса',
+    type: 'city',
+    location: 'Одеса',
+    website: 'https://devhub.ua/odesa',
+    description: 'Одеська IT-спільнота. Mobile, backend, DevOps — зустрічі біля моря та онлайн-стріми з розборами коду.',
+    tags: ['odesa', 'mobile', 'devops'],
+  },
+  {
+    slug: 'kpi-code',
+    name: 'КПІ Code Society',
+    type: 'university',
+    location: 'Київ',
+    website: 'https://kpi.devclub.ua',
+    description: 'Студенти КПІ: конкурси програмування, лабораторні проєкти, підготовка до співбесід у FAANG-стилі компаніях.',
+    tags: ['kpi', 'students', 'cp'],
+  },
+  {
+    slug: 'naukma-dev',
+    name: 'NaUKMA Developers',
+    type: 'university',
+    location: 'Київ',
+    website: 'https://naukma.dev',
+    description: 'Розробники НаУКМА: open lectures, summer schools, спільні репозиторії з курсами та менторські пари.',
+    tags: ['naukma', 'students'],
+  },
+  {
+    slug: 'python-ua',
+    name: 'Python Ukraine',
+    type: 'online',
+    location: null,
+    website: 'https://python.org.ua',
+    description: 'Django, FastAPI, data science, automation. Обговорюємо PEP, asyncio, типізацію та кар’єру в Python-екосистемі.',
+    tags: ['python', 'django', 'fastapi'],
+  },
+  {
+    slug: 'gamedev-ua',
+    name: 'GameDev Ukraine',
+    type: 'dev_club',
+    location: null,
+    website: 'https://gamedev.ua',
+    description: 'Unity, Unreal, Godot — інді та AA-студії. Шейдери, геймдизайн, оптимізація та портфоліо для джунів.',
+    tags: ['gamedev', 'unity', 'unreal'],
+  },
+  {
+    slug: 'devops-ua',
+    name: 'DevOps & Platform UA',
+    type: 'online',
+    location: null,
+    website: 'https://devops.ua',
+    description: 'Kubernetes, Terraform, observability. Ділимось runbook-ами, SRE-практиками та досвідом міграцій у хмару.',
+    tags: ['devops', 'kubernetes', 'terraform'],
+  },
+  {
+    slug: 'women-in-tech-ua',
+    name: 'Women in Tech UA',
+    type: 'online',
+    location: null,
+    website: 'https://wit.ua',
+    description: 'Підтримка жінок у IT: менторство, кар’єрні консультації, безпечний простір для питань і нетворкінгу.',
+    tags: ['diversity', 'mentorship', 'career'],
+  },
+  {
+    slug: 'blockchain-kyiv',
+    name: 'Blockchain Kyiv',
+    type: 'dev_club',
+    location: 'Київ',
+    website: 'https://blockchain.kyiv.dev',
+    description: 'Web3, Solidity, security audits. Розбираємо смарт-контракти, DeFi-архітектуру та регуляторний контекст в Україні.',
+    tags: ['web3', 'solidity', 'security'],
   },
 ];
 
@@ -287,6 +380,69 @@ const MENTOR_TEMPLATES = [
     contact: 'Email mobile.mentor@devhub.ua',
     price: 'PWYW',
   },
+  {
+    bio: 'Product designer + UX researcher у B2B SaaS. Допомагаю розробникам говорити з дизайнерами однією мовою і будувати usable UI.',
+    stack: ['figma', 'ux', 'design-systems'],
+    topics: ['design', 'ux', 'product'],
+    languages: ['ua', 'en'],
+    availability: 4,
+    contact: 'Telegram @ux_mentor_ua',
+    price: 'Безкоштовно для студентів',
+  },
+  {
+    bio: 'Security engineer: OWASP, pentest, secure SDLC. Проводжу через threat modeling і code review з фокусом на вразливості.',
+    stack: ['security', 'owasp', 'nodejs'],
+    topics: ['security', 'appsec', 'compliance'],
+    languages: ['ua', 'en'],
+    availability: 2,
+    contact: 'Email security@devhub.ua',
+    price: 'Donation-based',
+  },
+  {
+    bio: 'Data engineer: Spark, Airflow, dbt. Будую пайплайни від raw data до аналітичних вітрин у продуктових компаніях.',
+    stack: ['python', 'spark', 'airflow'],
+    topics: ['data-engineering', 'etl', 'analytics'],
+    languages: ['ua'],
+    availability: 5,
+    contact: 'Linkedin /in/data-mentor-ua',
+    price: 'Безкоштовно',
+  },
+  {
+    bio: 'QA lead з автоматизацією на Playwright і Cypress. Допомагаю командам будувати піраміду тестів і CI для регресії.',
+    stack: ['playwright', 'cypress', 'typescript'],
+    topics: ['qa', 'automation', 'ci'],
+    languages: ['ua', 'en'],
+    availability: 6,
+    contact: 'Telegram @qa_mentor_ua',
+    price: 'Free для open-source проєктів',
+  },
+  {
+    bio: 'Rust-розробник у systems/low-latency. Допомагаю з ownership, async runtime і інтеграцією Rust у існуючі стеки.',
+    stack: ['rust', 'tokio', 'wasm'],
+    topics: ['rust', 'systems', 'performance'],
+    languages: ['ua', 'en'],
+    availability: 3,
+    contact: 'Email rust@devhub.ua',
+    price: 'PWYW',
+  },
+  {
+    bio: 'Tech recruiter + career coach для українських розробників. CV, співбесіди, salary negotiation, перехід між ролями.',
+    stack: ['career', 'interviews', 'leadership'],
+    topics: ['career', 'interviews', 'soft-skills'],
+    languages: ['ua', 'en'],
+    availability: 8,
+    contact: 'Telegram @career_mentor_ua',
+    price: 'Безкоштовно для junior',
+  },
+  {
+    bio: 'Embedded / IoT інженер. C, RTOS, прошивки, протоколи. Допомагаю студентам і джуніорам з hardware-adjacent проєктами.',
+    stack: ['c', 'embedded', 'iot'],
+    topics: ['embedded', 'firmware', 'hardware'],
+    languages: ['ua'],
+    availability: 4,
+    contact: 'Email embedded@devhub.ua',
+    price: 'Безкоштовно',
+  },
 ];
 
 // ── Допоміжне ────────────────────────────────────────────────────────────────
@@ -298,7 +454,7 @@ async function ensureOwnerExists(ownerId) {
   }
 }
 
-async function loadCandidateUserIds(limit = 30) {
+async function loadCandidateUserIds(limit = 50) {
   const [rows] = await pool.query(`SELECT id FROM users ORDER BY id ASC LIMIT ${limit}`);
   return rows.map((r) => r.id);
 }
@@ -398,11 +554,17 @@ async function upsertMentor(userId, m) {
 // ── Запуск ───────────────────────────────────────────────────────────────────
 
 async function main() {
-  const { user: ownerId } = parseArgs(process.argv);
-  console.log(`🌱 seedCommunities — owner_id=${ownerId}\n`);
+  const { user: ownerId, large } = parseArgs(process.argv);
+  const postsMin = large ? 14 : 8;
+  const postsMax = large ? 22 : 12;
+  const maxExtraMembers = large ? 22 : 12;
+  const commentChance = large ? 0.85 : 0.7;
+  const userPoolLimit = large ? 50 : 30;
+
+  console.log(`🌱 seedCommunities — owner_id=${ownerId}${large ? ' (large)' : ''}\n`);
 
   await ensureOwnerExists(ownerId);
-  const candidateUserIds = await loadCandidateUserIds(30);
+  const candidateUserIds = await loadCandidateUserIds(userPoolLimit);
   if (!candidateUserIds.includes(ownerId)) candidateUserIds.push(ownerId);
 
   const utils = makeUtils(ownerId * 17 + 11);
@@ -413,13 +575,15 @@ async function main() {
   let mentorsTotal = 0;
 
   for (const base of COMMUNITIES) {
-    const memberCount = utils.intBetween(8, 150);
+    const memberCount = utils.intBetween(large ? 25 : 8, large ? 280 : 150);
     const communityId = await insertCommunity({ ...base, memberCount }, ownerId);
 
     await ensureMembership(communityId, ownerId, 'owner');
 
-    // додатково кілька випадкових учасників (max 12, щоб не роздувати)
-    const extraMembers = utils.pickN(candidateUserIds.filter((u) => u !== ownerId), Math.min(12, candidateUserIds.length - 1));
+    const extraMembers = utils.pickN(
+      candidateUserIds.filter((u) => u !== ownerId),
+      Math.min(maxExtraMembers, candidateUserIds.length - 1)
+    );
     for (const uid of extraMembers) {
       await ensureMembership(communityId, uid, utils.rand() < 0.15 ? 'admin' : 'member');
     }
@@ -427,8 +591,7 @@ async function main() {
     // Створимо стабільний пул авторів: owner + extraMembers
     const authorPool = [ownerId, ...extraMembers];
 
-    // 8-12 постів, гарантовано один з кожного типу
-    const targetCount = utils.intBetween(8, 12);
+    const targetCount = utils.intBetween(postsMin, postsMax);
     const types = [...POST_TYPES];
     while (types.length < targetCount) {
       types.push(utils.pick(POST_TYPES));
@@ -451,9 +614,8 @@ async function main() {
       const postId = await insertPost(communityId, post);
       postsTotal += 1;
 
-      // ~70% постів мають 3-5 коментарів
-      if (utils.rand() < 0.7) {
-        const cn = utils.intBetween(3, 5);
+      if (utils.rand() < commentChance) {
+        const cn = utils.intBetween(large ? 4 : 3, large ? 8 : 5);
         for (let j = 0; j < cn; j += 1) {
           const author = utils.pick(authorPool);
           const body = utils.pick(COMMENT_TEMPLATES);
@@ -468,8 +630,15 @@ async function main() {
     createdCommunities.push({ id: communityId, ...base });
   }
 
-  // Mentor profiles: owner + 6-7 інших
-  const mentorUserPool = [ownerId, ...candidateUserIds.filter((u) => u !== ownerId)].slice(0, MENTOR_TEMPLATES.length);
+  const mentorSlots = large
+    ? Math.min(MENTOR_TEMPLATES.length, candidateUserIds.length)
+    : Math.min(7, MENTOR_TEMPLATES.length, candidateUserIds.length);
+  const mentorUserPool = utils.pickN(
+    [ownerId, ...candidateUserIds.filter((u) => u !== ownerId)],
+    mentorSlots
+  );
+  if (!mentorUserPool.includes(ownerId)) mentorUserPool[0] = ownerId;
+
   for (let i = 0; i < mentorUserPool.length; i += 1) {
     const uid = mentorUserPool[i];
     const tpl = MENTOR_TEMPLATES[i % MENTOR_TEMPLATES.length];

@@ -59,6 +59,12 @@ if (missingVars.length > 0) {
 const app = express();
 const PORT = parseInt(process.env.API_PORT || '3338');
 const HOST = process.env.API_HOST || 'localhost';
+const isProduction = process.env.NODE_ENV === 'production';
+
+/** За nginx / docker compose — щоб rate limit рахувався по реальному IP клієнта. */
+if (isProduction) {
+  app.set('trust proxy', 1);
+}
 
 function productionCorsOrigin() {
   const list = parseFrontendOrigins();
@@ -93,19 +99,30 @@ app.use('/api/github', githubWebhookRoutes);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 хвилин
-  max: 100, // максимум 100 запитів
-  message: {
-    success: false,
-    message: 'Забагато запитів з цієї IP, спробуйте пізніше'
-  },
-  standardHeaders: true,
-  legacyHeaders: false
-});
+// Rate limiting (лічильник у пам’яті процесу — після рестарту API скидається)
+const rateLimitDisabled = ['1', 'true', 'yes'].includes(
+  String(process.env.API_RATE_LIMIT_DISABLED || '').trim().toLowerCase()
+);
+const rateLimitWindowMs = parseInt(process.env.API_RATE_LIMIT_WINDOW_MS || String(15 * 60 * 1000), 10);
+const defaultRateMax = isProduction ? 400 : 2000;
+const rateLimitMax = parseInt(process.env.API_RATE_LIMIT_MAX || String(defaultRateMax), 10);
 
-app.use('/api/', limiter);
+if (!rateLimitDisabled) {
+  const limiter = rateLimit({
+    windowMs: Number.isFinite(rateLimitWindowMs) && rateLimitWindowMs > 0 ? rateLimitWindowMs : 15 * 60 * 1000,
+    max: Number.isFinite(rateLimitMax) && rateLimitMax > 0 ? rateLimitMax : defaultRateMax,
+    message: {
+      success: false,
+      message: 'Забагато запитів з цієї IP, спробуйте пізніше',
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use('/api/', limiter);
+  if (!isProduction) {
+    console.log(`[rate-limit] max=${rateLimitMax} / ${rateLimitWindowMs}ms`);
+  }
+}
 
 // Логування запитів в dev режимі
 if (process.env.NODE_ENV === 'development') {
