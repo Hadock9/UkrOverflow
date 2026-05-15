@@ -2,8 +2,9 @@
  * Seed: спільноти, пости, коментарі, mentor_profiles.
  *
  * Використання:
- *   node src/scripts/seedCommunities.js --user 11
- *   node src/scripts/seedCommunities.js --user 11 --large
+ *   node src/scripts/seedCommunities.js              # усі користувачі в БД (за замовчуванням)
+ *   node src/scripts/seedCommunities.js --large      # більше постів / учасників
+ *   node src/scripts/seedCommunities.js --user 11    # лише один owner усіх спільнот (legacy)
  *
  * Лише INSERT, без TRUNCATE. Скрипт ідемпотентний на рівні slug-ів:
  * вставляється з ON DUPLICATE KEY UPDATE, тож повторні запуски не падають.
@@ -13,7 +14,7 @@ import 'dotenv/config';
 import pool from '../config/database.js';
 
 function parseArgs(argv) {
-  const args = { user: 11, large: false };
+  const args = { user: null, large: false };
   for (let i = 2; i < argv.length; i += 1) {
     const a = argv[i];
     if (a === '--user' || a === '-u') {
@@ -447,16 +448,21 @@ const MENTOR_TEMPLATES = [
 
 // ── Допоміжне ────────────────────────────────────────────────────────────────
 
-async function ensureOwnerExists(ownerId) {
-  const [rows] = await pool.execute('SELECT id FROM users WHERE id = ?', [ownerId]);
-  if (rows.length === 0) {
-    throw new Error(`Користувача з id=${ownerId} не знайдено. Спершу запустіть seed.js або вкажіть валідний --user.`);
-  }
+async function loadAllUsers(limit = 500) {
+  const [rows] = await pool.query(
+    `SELECT id, username FROM users ORDER BY id ASC LIMIT ${parseInt(limit, 10) || 500}`
+  );
+  return rows;
 }
 
-async function loadCandidateUserIds(limit = 50) {
-  const [rows] = await pool.query(`SELECT id FROM users ORDER BY id ASC LIMIT ${limit}`);
-  return rows.map((r) => r.id);
+function mentorTemplateForUser(user, index) {
+  const tpl = MENTOR_TEMPLATES[index % MENTOR_TEMPLATES.length];
+  const uname = user.username || `user${user.id}`;
+  return {
+    ...tpl,
+    contact: tpl.contact.includes('@') ? tpl.contact : `Telegram @${uname}`,
+    bio: `${tpl.bio} (@${uname})`,
+  };
 }
 
 async function insertCommunity(c, ownerId) {
@@ -554,42 +560,56 @@ async function upsertMentor(userId, m) {
 // ── Запуск ───────────────────────────────────────────────────────────────────
 
 async function main() {
-  const { user: ownerId, large } = parseArgs(process.argv);
+  const { user: singleOwnerId, large } = parseArgs(process.argv);
   const postsMin = large ? 14 : 8;
   const postsMax = large ? 22 : 12;
-  const maxExtraMembers = large ? 22 : 12;
+  const maxExtraMembers = large ? 40 : 20;
   const commentChance = large ? 0.85 : 0.7;
-  const userPoolLimit = large ? 50 : 30;
 
-  console.log(`🌱 seedCommunities — owner_id=${ownerId}${large ? ' (large)' : ''}\n`);
+  const allUsers = await loadAllUsers(large ? 500 : 200);
+  if (allUsers.length === 0) {
+    throw new Error('У таблиці users немає жодного користувача. Спочатку: npm run seed');
+  }
 
-  await ensureOwnerExists(ownerId);
-  const candidateUserIds = await loadCandidateUserIds(userPoolLimit);
-  if (!candidateUserIds.includes(ownerId)) candidateUserIds.push(ownerId);
+  const allUserIds = allUsers.map((u) => u.id);
+  const modeLabel = singleOwnerId
+    ? `один owner (id=${singleOwnerId}), ментори для всіх ${allUsers.length} users`
+    : `усі ${allUsers.length} users (ротація owner спільнот)`;
 
-  const utils = makeUtils(ownerId * 17 + 11);
+  console.log(`🌱 seedCommunities — ${modeLabel}${large ? ' (large)' : ''}\n`);
+
+  if (singleOwnerId && !allUserIds.includes(singleOwnerId)) {
+    throw new Error(`Користувача id=${singleOwnerId} не знайдено. Запустіть seed.js або приберіть --user.`);
+  }
+
+  const utils = makeUtils((singleOwnerId ?? allUserIds[0]) * 17 + 11);
 
   const createdCommunities = [];
   let postsTotal = 0;
   let commentsTotal = 0;
   let mentorsTotal = 0;
+  let communityIndex = 0;
 
   for (const base of COMMUNITIES) {
+    const ownerId = singleOwnerId ?? allUserIds[communityIndex % allUserIds.length];
+    communityIndex += 1;
+
     const memberCount = utils.intBetween(large ? 25 : 8, large ? 280 : 150);
     const communityId = await insertCommunity({ ...base, memberCount }, ownerId);
 
     await ensureMembership(communityId, ownerId, 'owner');
 
-    const extraMembers = utils.pickN(
-      candidateUserIds.filter((u) => u !== ownerId),
-      Math.min(maxExtraMembers, candidateUserIds.length - 1)
-    );
+    const others = allUserIds.filter((u) => u !== ownerId);
+    const memberSlots = Math.min(maxExtraMembers, others.length);
+    const extraMembers = utils.pickN(others, memberSlots);
+
     for (const uid of extraMembers) {
-      await ensureMembership(communityId, uid, utils.rand() < 0.15 ? 'admin' : 'member');
+      await ensureMembership(communityId, uid, utils.rand() < 0.12 ? 'admin' : 'member');
     }
 
-    // Створимо стабільний пул авторів: owner + extraMembers
-    const authorPool = [ownerId, ...extraMembers];
+    const authorPool = singleOwnerId
+      ? [ownerId, ...extraMembers]
+      : utils.pickN(allUserIds, Math.min(large ? 35 : 18, allUserIds.length));
 
     const targetCount = utils.intBetween(postsMin, postsMax);
     const types = [...POST_TYPES];
@@ -630,27 +650,31 @@ async function main() {
     createdCommunities.push({ id: communityId, ...base });
   }
 
-  const mentorSlots = large
-    ? Math.min(MENTOR_TEMPLATES.length, candidateUserIds.length)
-    : Math.min(7, MENTOR_TEMPLATES.length, candidateUserIds.length);
-  const mentorUserPool = utils.pickN(
-    [ownerId, ...candidateUserIds.filter((u) => u !== ownerId)],
-    mentorSlots
-  );
-  if (!mentorUserPool.includes(ownerId)) mentorUserPool[0] = ownerId;
+  if (!singleOwnerId && createdCommunities.length > 0) {
+    const communityIds = createdCommunities.map((c) => c.id);
+    for (const uid of allUserIds) {
+      const joinCount = Math.min(utils.intBetween(2, 5), communityIds.length);
+      for (const cid of utils.pickN(communityIds, joinCount)) {
+        await ensureMembership(cid, uid, 'member');
+      }
+    }
+    for (const c of createdCommunities) {
+      await syncMemberAndPostCounts(c.id);
+    }
+  }
 
-  for (let i = 0; i < mentorUserPool.length; i += 1) {
-    const uid = mentorUserPool[i];
-    const tpl = MENTOR_TEMPLATES[i % MENTOR_TEMPLATES.length];
-    await upsertMentor(uid, tpl);
+  for (let i = 0; i < allUsers.length; i += 1) {
+    const u = allUsers[i];
+    await upsertMentor(u.id, mentorTemplateForUser(u, i));
     mentorsTotal += 1;
   }
 
   console.log('✅ seedCommunities завершено.');
+  console.log(`   Користувачів: ${allUsers.length}`);
   console.log(`   Спільнот:     ${createdCommunities.length}`);
   console.log(`   Постів:       ${postsTotal}`);
   console.log(`   Коментарів:   ${commentsTotal}`);
-  console.log(`   Mentor-ів:    ${mentorsTotal}`);
+  console.log(`   Mentor-ів:    ${mentorsTotal} (профіль для кожного user)`);
 }
 
 main()

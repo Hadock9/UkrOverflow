@@ -99,18 +99,18 @@ app.use('/api/github', githubWebhookRoutes);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Rate limiting (лічильник у пам’яті процесу — після рестарту API скидається)
-const rateLimitDisabled = ['1', 'true', 'yes'].includes(
-  String(process.env.API_RATE_LIMIT_DISABLED || '').trim().toLowerCase()
+// Rate limiting вимкнено за замовчуванням (429 на головній /content тощо).
+// Увімкнути лише явно: API_RATE_LIMIT_ENABLED=1 (+ опційно API_RATE_LIMIT_MAX, API_RATE_LIMIT_WINDOW_MS).
+const rateLimitEnabled = ['1', 'true', 'yes'].includes(
+  String(process.env.API_RATE_LIMIT_ENABLED || '').trim().toLowerCase()
 );
-const rateLimitWindowMs = parseInt(process.env.API_RATE_LIMIT_WINDOW_MS || String(15 * 60 * 1000), 10);
-const defaultRateMax = isProduction ? 400 : 2000;
-const rateLimitMax = parseInt(process.env.API_RATE_LIMIT_MAX || String(defaultRateMax), 10);
 
-if (!rateLimitDisabled) {
+if (rateLimitEnabled) {
+  const rateLimitWindowMs = parseInt(process.env.API_RATE_LIMIT_WINDOW_MS || String(15 * 60 * 1000), 10);
+  const rateLimitMax = parseInt(process.env.API_RATE_LIMIT_MAX || '400', 10);
   const limiter = rateLimit({
     windowMs: Number.isFinite(rateLimitWindowMs) && rateLimitWindowMs > 0 ? rateLimitWindowMs : 15 * 60 * 1000,
-    max: Number.isFinite(rateLimitMax) && rateLimitMax > 0 ? rateLimitMax : defaultRateMax,
+    max: Number.isFinite(rateLimitMax) && rateLimitMax > 0 ? rateLimitMax : 400,
     message: {
       success: false,
       message: 'Забагато запитів з цієї IP, спробуйте пізніше',
@@ -119,9 +119,7 @@ if (!rateLimitDisabled) {
     legacyHeaders: false,
   });
   app.use('/api/', limiter);
-  if (!isProduction) {
-    console.log(`[rate-limit] max=${rateLimitMax} / ${rateLimitWindowMs}ms`);
-  }
+  console.log(`[rate-limit] увімкнено: max=${rateLimitMax} / ${rateLimitWindowMs}ms`);
 }
 
 // Логування запитів в dev режимі
