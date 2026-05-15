@@ -304,3 +304,63 @@ export async function globalSearch(q, opts = {}) {
     typesSearched: allow ? [...allow] : [...HUB_TYPES, 'community_post'],
   };
 }
+
+async function searchNews(needle, limit = 4) {
+  const like = `%${needle}%`;
+  try {
+    const [rows] = await pool.execute(
+      `SELECT id, title, slug, summary
+       FROM news_posts
+       WHERE title LIKE ? OR summary LIKE ?
+       ORDER BY views DESC, published_at DESC
+       LIMIT ${Math.min(limit, 8)}`,
+      [like, like],
+    );
+    return rows.map((r) =>
+      rowToHit('news', r.id, r.title, r.summary, {
+        slug: r.slug,
+      }),
+    );
+  } catch {
+    return [];
+  }
+}
+
+let tagSuggestCache = { at: 0, list: [] };
+
+async function findTagSuggestions(needle, limit = 6) {
+  const q = needle.toLowerCase();
+  if (Date.now() - tagSuggestCache.at > 120_000 || !tagSuggestCache.list.length) {
+    const { aggregateAllTags } = await import('./tagsAggregateService.js');
+    tagSuggestCache.list = await aggregateAllTags();
+    tagSuggestCache.at = Date.now();
+  }
+  return tagSuggestCache.list
+    .filter((t) => t.name.includes(q))
+    .slice(0, limit)
+    .map((t) => ({ name: t.name, count: t.count }));
+}
+
+/**
+ * Швидкий пошук для автодоповнення (хедер, сторінка пошуку).
+ */
+export async function liveSearch(q) {
+  const needle = String(q || '').trim();
+  if (needle.length < 2) {
+    return { hits: [], tags: [], news: [], query: needle };
+  }
+
+  const [{ hits }, tags, news] = await Promise.all([
+    globalSearch(needle, { limitPerType: 2 }),
+    findTagSuggestions(needle, 6),
+    searchNews(needle, 4),
+  ]);
+
+  return {
+    query: needle,
+    hits: hits.slice(0, 10),
+    tags,
+    news,
+    total: hits.length + tags.length + news.length,
+  };
+}

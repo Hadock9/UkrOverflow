@@ -7,7 +7,7 @@ import { query } from 'express-validator';
 import pool from '../config/database.js';
 import { validate } from '../middleware/validation.js';
 import { optionalAuth } from '../middleware/auth.js';
-import { globalSearch } from '../services/globalSearchService.js';
+import { globalSearch, liveSearch } from '../services/globalSearchService.js';
 
 const router = express.Router();
 
@@ -168,8 +168,29 @@ router.get(
 );
 
 /**
+ * GET /api/search/live?q=...
+ * Динамічні підказки: хаб, новини, теги (для автодоповнення).
+ */
+router.get(
+  '/live',
+  [
+    query('q').trim().isLength({ min: 2 }).withMessage('Мінімум 2 символи'),
+  ],
+  validate,
+  optionalAuth,
+  async (req, res, next) => {
+    try {
+      const data = await liveSearch(req.query.q);
+      res.json({ success: true, data });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+/**
  * GET /api/search/suggestions
- * Автодоповнення для пошуку
+ * Автодоповнення для пошуку (legacy — titles/tags з питань)
  */
 router.get(
   '/suggestions',

@@ -1,78 +1,237 @@
 /**
- * Сторінка тегів
+ * Каталог тегів — hub, новини, спільноти (глобальна агрегація).
  */
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../services/api';
+import { tagsCatalog } from '../services/api';
 import '../styles/brutalism.css';
+
+const SOURCE_FILTERS = [
+  { id: 'all', label: 'Усі' },
+  { id: 'hub', label: 'Хаб знань' },
+  { id: 'news', label: 'Новини' },
+  { id: 'question', label: 'Питання' },
+  { id: 'article', label: 'Статті' },
+  { id: 'community', label: "Спільноти" },
+];
+
+const SOURCE_LABELS = {
+  question: 'Питання',
+  article: 'Статті',
+  guide: 'Гайди',
+  snippet: 'Сніпети',
+  roadmap: 'Маршрути',
+  best_practice: 'Практики',
+  faq: 'ЧаП',
+  news: 'Новини',
+  community: "Спільноти",
+};
+
+function cloudSize(count, max) {
+  if (!max) return 1;
+  const ratio = count / max;
+  if (ratio > 0.7) return 1.45;
+  if (ratio > 0.4) return 1.2;
+  if (ratio > 0.2) return 1.05;
+  return 0.92;
+}
 
 export function Tags() {
   const [tags, setTags] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+  const [source, setSource] = useState('all');
+  const [sortBy, setSortBy] = useState('count');
 
   useEffect(() => {
-    loadTags();
-  }, []);
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await tagsCatalog.list({
+          search: search || undefined,
+          source: source || 'all',
+          sortBy,
+        });
+        if (!cancelled) {
+          setTags(res.data?.data?.tags || []);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setError(e.response?.data?.message || 'Не вдалося завантажити теги');
+          setTags([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [search, source, sortBy]);
 
-  const loadTags = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get('/questions/tags/all');
-      const tagsData = response.data.data?.tags || response.data.tags || [];
-      setTags(tagsData);
-    } catch (error) {
-      console.error('Помилка завантаження тегів:', error);
-      setTags([]);
-    } finally {
-      setLoading(false);
-    }
+  const maxCount = useMemo(
+    () => (tags.length ? Math.max(...tags.map((t) => t.count)) : 0),
+    [tags],
+  );
+
+  const cloudTags = useMemo(() => tags.slice(0, 36), [tags]);
+
+  const onSearchSubmit = (e) => {
+    e.preventDefault();
+    setSearch(searchInput.trim());
   };
 
   return (
-    <div className="container">
-      <div className="page-header">
+    <div className="container tags-page">
+      <div className="page-header page-header-split">
         <div>
-          <h1 className="page-title">ТЕГИ</h1>
+          <h1 className="page-title">ТЕГИ ПЛАТФОРМИ</h1>
           <p className="page-subtitle">
-            Всього тегів: {tags.length}
+            Теми з хабу знань, новин і спільнот — як хмара тегів на DOU, але для всього DevFlow.
           </p>
         </div>
+        <Link to="/hub" className="btn btn-primary">
+          ВІДКРИТИ ХАБ →
+        </Link>
+      </div>
+
+      <div className="tags-toolbar">
+        <form onSubmit={onSearchSubmit} className="tags-search-form">
+          <input
+            type="search"
+            className="form-input"
+            placeholder="Знайти тег (react, salary, docker…)"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            aria-label="Пошук тегів"
+          />
+          <button type="submit" className="btn btn-secondary">ШУКАТИ</button>
+        </form>
+
+        <div className="tags-sort" role="group" aria-label="Сортування">
+          <button
+            type="button"
+            className={`filter-btn ${sortBy === 'count' ? 'active' : ''}`}
+            onClick={() => setSortBy('count')}
+          >
+            ЗА ПОПУЛЯРНІСТЮ
+          </button>
+          <button
+            type="button"
+            className={`filter-btn ${sortBy === 'name' ? 'active' : ''}`}
+            onClick={() => setSortBy('name')}
+          >
+            А-Я
+          </button>
+        </div>
+      </div>
+
+      <div className="tags-source-filters" role="group" aria-label="Джерело тегів">
+        {SOURCE_FILTERS.map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            className={`news-category-chip ${source === f.id ? 'news-category-chip--active' : ''}`}
+            onClick={() => setSource(f.id)}
+            aria-pressed={source === f.id}
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
 
       {loading ? (
         <div className="loading">ЗАВАНТАЖЕННЯ...</div>
+      ) : error ? (
+        <div className="error">{error}</div>
       ) : tags.length === 0 ? (
         <div className="empty-state">
-          <p>ТЕГІВ ПОКИ НЕМАЄ</p>
+          <p>ТЕГІВ НЕ ЗНАЙДЕНО</p>
+          <p style={{ fontSize: '0.9rem', marginTop: 8 }}>
+            Спробуйте інший фільтр або запустіть сіди на сервері.
+          </p>
         </div>
       ) : (
-        <div className="grid grid-3" style={{ marginTop: 'var(--space-4)' }}>
-          {tags.map((tag, index) => (
-            <Link
-              key={index}
-              to={`/tags/${tag.name}`}
-              className="card card-hover"
-              style={{ textDecoration: 'none', color: 'inherit' }}
-            >
-              <div className="tag" style={{
-                fontSize: '1.25rem',
-                padding: 'var(--space-2) var(--space-3)',
-                marginBottom: 'var(--space-2)'
-              }}>
-                {tag.name}
-              </div>
-              <div style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.875rem',
-                color: 'var(--color-gray-700)'
-              }}>
-                {tag.count} {tag.count === 1 ? 'питання' : 'питань'}
-              </div>
-            </Link>
-          ))}
-        </div>
+        <>
+          <section className="tags-cloud-section" aria-label="Хмара тегів">
+            <h2 className="tags-section-title">ХМАРА ТЕГІВ</h2>
+            <div className="tags-cloud">
+              {cloudTags.map((tag) => (
+                <Link
+                  key={tag.name}
+                  to={`/tags/${encodeURIComponent(tag.name)}`}
+                  className="tags-cloud-item"
+                  style={{ fontSize: `${cloudSize(tag.count, maxCount)}rem` }}
+                  title={`${tag.count} згадувань`}
+                >
+                  {tag.name}
+                </Link>
+              ))}
+            </div>
+          </section>
+
+          <section className="tags-catalog-section" aria-label="Каталог тегів">
+            <h2 className="tags-section-title">
+              КАТАЛОГ ({tags.length})
+            </h2>
+            <div className="tags-catalog-grid">
+              {tags.map((tag) => (
+                <TagCard key={tag.name} tag={tag} />
+              ))}
+            </div>
+          </section>
+        </>
       )}
     </div>
   );
 }
+
+function TagCard({ tag }) {
+  const sources = Object.entries(tag.bySource || {})
+    .filter(([, n]) => n > 0)
+    .sort((a, b) => b[1] - a[1]);
+
+  return (
+    <article className="tags-catalog-card">
+      <Link to={`/tags/${encodeURIComponent(tag.name)}`} className="tags-catalog-name">
+        #{tag.name}
+      </Link>
+      <p className="tags-catalog-count">
+        <strong>{tag.count}</strong> згадувань
+        {tag.hubCount > 0 && tag.hubCount !== tag.count && (
+          <span> · хаб: {tag.hubCount}</span>
+        )}
+      </p>
+      {sources.length > 0 && (
+        <ul className="tags-catalog-sources">
+          {sources.map(([key, n]) => (
+            <li key={key}>
+              <span>{SOURCE_LABELS[key] || key}</span>
+              <span>{n}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="tags-catalog-actions">
+        {(tag.hubCount || 0) > 0 && (
+          <Link to={`/tags/${encodeURIComponent(tag.name)}`} className="btn btn-sm">
+            ХАБ →
+          </Link>
+        )}
+        {(tag.bySource?.news || 0) > 0 && (
+          <Link to={`/news?tag=${encodeURIComponent(tag.name)}`} className="btn btn-sm">
+            НОВИНИ →
+          </Link>
+        )}
+        <Link to={`/search?q=${encodeURIComponent(tag.name)}`} className="btn btn-sm btn-secondary">
+          ПОШУК
+        </Link>
+      </div>
+    </article>
+  );
+}
+
+export default Tags;

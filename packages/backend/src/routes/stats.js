@@ -4,6 +4,7 @@
 
 import express from 'express';
 import pool from '../config/database.js';
+import { sqlLimit } from '../utils/sqlLimit.js';
 
 const router = express.Router();
 
@@ -13,7 +14,6 @@ const router = express.Router();
  */
 router.get('/overview', async (req, res) => {
   try {
-    // Загальна кількість
     const [totalStats] = await pool.execute(`
       SELECT
         (SELECT COUNT(*) FROM users) as total_users,
@@ -22,7 +22,6 @@ router.get('/overview', async (req, res) => {
         (SELECT COUNT(*) FROM votes) as total_votes
     `);
 
-    // Статистика за сьогодні
     const [todayStats] = await pool.execute(`
       SELECT
         (SELECT COUNT(*) FROM questions WHERE DATE(created_at) = CURDATE()) as questions_today,
@@ -30,7 +29,6 @@ router.get('/overview', async (req, res) => {
         (SELECT COUNT(*) FROM users WHERE DATE(created_at) = CURDATE()) as users_today
     `);
 
-    // Статистика за тиждень
     const [weekStats] = await pool.execute(`
       SELECT
         (SELECT COUNT(*) FROM questions WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)) as questions_week,
@@ -61,22 +59,43 @@ router.get('/overview', async (req, res) => {
  * Топ користувачів за репутацією
  */
 router.get('/top-users', async (req, res) => {
-  try {
-    const { limit = 10 } = req.query;
+  const limit = sqlLimit(req.query.limit, 10, 50);
 
-    const [users] = await pool.execute(
-      `SELECT
-         u.id,
-         u.username,
-         u.reputation,
-         (SELECT COUNT(*) FROM questions WHERE author_id = u.id) as questions_count,
-         (SELECT COUNT(*) FROM answers WHERE author_id = u.id) as answers_count
-       FROM users u
-       WHERE u.role != 'admin'
-       ORDER BY u.reputation DESC, u.created_at ASC
-       LIMIT ?`,
-      [parseInt(limit)]
-    );
+  const queryWithRole = `
+    SELECT
+      u.id,
+      u.username,
+      COALESCE(u.reputation, 0) AS reputation,
+      (SELECT COUNT(*) FROM questions WHERE author_id = u.id) AS questions_count,
+      (SELECT COUNT(*) FROM answers WHERE author_id = u.id) AS answers_count
+    FROM users u
+    WHERE COALESCE(u.role, 'user') != 'admin'
+    ORDER BY COALESCE(u.reputation, 0) DESC, u.created_at ASC
+    LIMIT ${limit}`;
+
+  const queryFallback = `
+    SELECT
+      u.id,
+      u.username,
+      0 AS reputation,
+      (SELECT COUNT(*) FROM questions WHERE author_id = u.id) AS questions_count,
+      (SELECT COUNT(*) FROM answers WHERE author_id = u.id) AS answers_count
+    FROM users u
+    ORDER BY u.created_at ASC
+    LIMIT ${limit}`;
+
+  try {
+    let users;
+    try {
+      [users] = await pool.execute(queryWithRole);
+    } catch (inner) {
+      if (inner?.errno === 1054) {
+        console.warn('[stats/top-users] fallback query (missing role/reputation column)');
+        [users] = await pool.execute(queryFallback);
+      } else {
+        throw inner;
+      }
+    }
 
     res.json({
       success: true,
@@ -98,27 +117,32 @@ router.get('/top-users', async (req, res) => {
  */
 router.get('/top-tags', async (req, res) => {
   try {
-    const { limit = 20 } = req.query;
+    const limit = sqlLimit(req.query.limit, 20, 100);
 
-    // Отримати всі теги з питань
     const [questions] = await pool.execute('SELECT tags FROM questions');
 
-    // Підрахунок тегів
     const tagCounts = {};
-    questions.forEach(q => {
-      const tags = typeof q.tags === 'string' ? JSON.parse(q.tags) : q.tags;
-      if (Array.isArray(tags)) {
-        tags.forEach(tag => {
-          tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-        });
+    for (const q of questions) {
+      let tags = q.tags;
+      if (typeof tags === 'string') {
+        try {
+          tags = JSON.parse(tags);
+        } catch {
+          tags = [];
+        }
       }
-    });
+      if (Array.isArray(tags)) {
+        for (const tag of tags) {
+          const key = String(tag).toLowerCase();
+          if (key) tagCounts[key] = (tagCounts[key] || 0) + 1;
+        }
+      }
+    }
 
-    // Сортування та обмеження
     const topTags = Object.entries(tagCounts)
       .map(([tag, count]) => ({ tag, count }))
       .sort((a, b) => b.count - a.count)
-      .slice(0, parseInt(limit));
+      .slice(0, limit);
 
     res.json({
       success: true,
@@ -136,40 +160,35 @@ router.get('/top-tags', async (req, res) => {
 
 /**
  * GET /api/stats/recent-activity
- * Остання активність на платформі
  */
 router.get('/recent-activity', async (req, res) => {
   try {
-    const { limit = 10 } = req.query;
+    const limit = sqlLimit(req.query.limit, 10, 50);
 
-    // Останні питання
     const [recentQuestions] = await pool.execute(
       `SELECT
          q.id,
          q.title,
          q.created_at,
-         u.username as author_name
+         u.username AS author_name
        FROM questions q
        JOIN users u ON q.author_id = u.id
        ORDER BY q.created_at DESC
-       LIMIT ?`,
-      [parseInt(limit)]
+       LIMIT ${limit}`,
     );
 
-    // Останні відповіді
     const [recentAnswers] = await pool.execute(
       `SELECT
          a.id,
          a.created_at,
-         q.id as question_id,
-         q.title as question_title,
-         u.username as author_name
+         q.id AS question_id,
+         q.title AS question_title,
+         u.username AS author_name
        FROM answers a
        JOIN questions q ON a.question_id = q.id
        JOIN users u ON a.author_id = u.id
        ORDER BY a.created_at DESC
-       LIMIT ?`,
-      [parseInt(limit)]
+       LIMIT ${limit}`,
     );
 
     res.json({
@@ -191,11 +210,10 @@ router.get('/recent-activity', async (req, res) => {
 
 /**
  * GET /api/stats/unanswered
- * Питання без відповідей
  */
 router.get('/unanswered', async (req, res) => {
   try {
-    const { limit = 10 } = req.query;
+    const limit = sqlLimit(req.query.limit, 10, 50);
 
     const [questions] = await pool.execute(
       `SELECT
@@ -204,24 +222,30 @@ router.get('/unanswered', async (req, res) => {
          q.tags,
          q.views,
          q.created_at,
-         u.username as author_name,
+         u.username AS author_name,
          COALESCE(
            (SELECT SUM(CASE WHEN vote_type = 'up' THEN 1 WHEN vote_type = 'down' THEN -1 ELSE 0 END)
             FROM votes WHERE entity_type = 'question' AND entity_id = q.id),
            0
-         ) as votes
+         ) AS votes
        FROM questions q
        JOIN users u ON q.author_id = u.id
        WHERE (SELECT COUNT(*) FROM answers WHERE question_id = q.id) = 0
        ORDER BY q.created_at DESC
-       LIMIT ?`,
-      [parseInt(limit)]
+       LIMIT ${limit}`,
     );
 
-    const formattedQuestions = questions.map(q => ({
-      ...q,
-      tags: typeof q.tags === 'string' ? JSON.parse(q.tags) : q.tags,
-    }));
+    const formattedQuestions = questions.map((q) => {
+      let tags = q.tags;
+      if (typeof tags === 'string') {
+        try {
+          tags = JSON.parse(tags);
+        } catch {
+          tags = [];
+        }
+      }
+      return { ...q, tags };
+    });
 
     res.json({
       success: true,

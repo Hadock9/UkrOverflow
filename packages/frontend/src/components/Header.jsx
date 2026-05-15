@@ -3,16 +3,17 @@
  */
 
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getMediator, EventTypes } from '../../../mediator/src/index';
+import { LiveSearchBox } from './LiveSearchBox';
 import './Header.css';
+import './LiveSearchBox.css';
 import { NotificationBell } from './NotificationBell';
 
 export function Header() {
   const { user, isAuthenticated, logout } = useAuth();
   const mediator = getMediator();
-  const navigate = useNavigate();
   const [searchQ, setSearchQ] = useState('');
 
   const handleLogout = async () => {
@@ -39,35 +40,11 @@ export function Header() {
               </span>
             </Link>
 
-            <form
-              className="header-search"
-              onSubmit={(e) => {
-                e.preventDefault();
-                const q = searchQ.trim();
-                if (q.length < 2) return;
-                navigate(`/search?q=${encodeURIComponent(q)}&page=1`);
-              }}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, marginRight: 12 }}
-            >
-              <input
-                type="search"
-                value={searchQ}
-                onChange={(e) => setSearchQ(e.target.value)}
-                placeholder="Пошук…"
-                aria-label="Глобальний пошук"
-                style={{
-                  width: 160,
-                  maxWidth: '28vw',
-                  padding: '6px 10px',
-                  border: '2px solid #000',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: 13,
-                }}
-              />
-              <button type="submit" className="btn" style={{ padding: '6px 10px', fontSize: 12 }}>
-                OK
-              </button>
-            </form>
+            <LiveSearchBox
+              value={searchQ}
+              onChange={setSearchQ}
+              variant="header"
+            />
 
             <nav className="nav">
               <Link to="/" className="nav-item">

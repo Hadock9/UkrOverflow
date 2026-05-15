@@ -112,7 +112,7 @@ export function MainPage() {
       <div className="main-page-layout">
         <div className="main-page-primary">
           <section className="main-hero">
-            <p className="main-hero-kicker">UKROVERFLOW · DEVFLOW</p>
+            <p className="main-hero-kicker">DEVFLOW</p>
             <h1 className="main-hero-title">
               {isAuthenticated && user?.username
                 ? `ВІТАЄМО, ${user.username.toUpperCase()}`

@@ -121,7 +121,8 @@ export const votes = {
 export const search = {
   search: (query, params) => api.get('/search', { params: { q: query, ...params } }),
   global: (query, params) => api.get('/search/global', { params: { q: query, ...params } }),
-  suggestions: (query) => api.get('/search/suggestions', { params: { q: query } })
+  live: (query, config) => api.get('/search/live', { params: { q: query }, ...config }),
+  suggestions: (query) => api.get('/search/suggestions', { params: { q: query } }),
 };
 
 // AI Features
@@ -181,6 +182,11 @@ export const bookmarks = {
 // Knowledge hub: уніфікований фід
 export const content = {
   list: (params) => api.get('/content', { params }),
+};
+
+// Глобальний каталог тегів (hub + новини + спільноти)
+export const tagsCatalog = {
+  list: (params) => api.get('/tags', { params }),
 };
 
 // Articles

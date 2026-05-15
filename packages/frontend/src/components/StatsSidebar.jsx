@@ -21,15 +21,23 @@ export function StatsSidebar() {
   const loadStats = async () => {
     setLoading(true);
     try {
-      const [overviewRes, tagsRes, usersRes] = await Promise.all([
+      const [overviewRes, tagsRes, usersRes] = await Promise.allSettled([
         stats.overview(),
         stats.topTags(10),
         stats.topUsers(5),
       ]);
 
-      setOverview(overviewRes.data.data);
-      setTopTags(tagsRes.data.data.tags || []);
-      setTopUsers(usersRes.data.data.users || []);
+      if (overviewRes.status === 'fulfilled') {
+        setOverview(overviewRes.value.data.data);
+      }
+      if (tagsRes.status === 'fulfilled') {
+        setTopTags(tagsRes.value.data.data.tags || []);
+      }
+      if (usersRes.status === 'fulfilled') {
+        setTopUsers(usersRes.value.data.data.users || []);
+      } else {
+        console.error('Error loading top users:', usersRes.reason);
+      }
     } catch (error) {
       console.error('Error loading stats:', error);
     } finally {

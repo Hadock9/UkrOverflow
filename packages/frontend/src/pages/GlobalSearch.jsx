@@ -1,11 +1,13 @@
 /**
- * Глобальний пошук по хабу та постах спільнот (/api/search/global).
+ * Глобальний пошук — результати оновлюються під час введення.
  */
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { search } from '../services/api';
+import { LiveSearchBox } from '../components/LiveSearchBox';
 import { CONTENT_TYPES, getContentDetailPath } from '../constants/contentTypes';
+import '../components/LiveSearchBox.css';
 import '../styles/brutalism.css';
 
 const TYPE_LABELS = {
@@ -67,10 +69,17 @@ export function GlobalSearch() {
     return () => { cancelled = true; };
   }, [q0, searchParams]);
 
-  const onSubmit = (e) => {
-    e.preventDefault();
-    const q = input.trim();
-    if (q.length < 2) return;
+  useEffect(() => {
+    if (input.trim().length < 2) return;
+    const t = setTimeout(() => {
+      const trimmed = input.trim();
+      if (trimmed === q0) return;
+      setSearchParams({ q: trimmed, page: '1' }, { replace: true });
+    }, 450);
+    return () => clearTimeout(t);
+  }, [input, q0, setSearchParams]);
+
+  const onSubmitQuery = (q) => {
     setSearchParams({ q, page: '1' });
   };
 
@@ -78,25 +87,25 @@ export function GlobalSearch() {
     <div className="container">
       <div className="page-header">
         <h1 className="page-title">ПОШУК</h1>
-        <p className="page-subtitle">Питання, матеріали хабу та пости спільнот</p>
+        <p className="page-subtitle">
+          Результати зʼявляються під час введення — хаб, спільноти, новини, теги
+        </p>
       </div>
 
-      <form onSubmit={onSubmit} style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
-        <input
-          type="search"
-          className="form-input"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Мінімум 2 символи…"
-          style={{ flex: 1, minWidth: 220 }}
-        />
-        <button type="submit" className="btn btn-primary">ШУКАТИ</button>
-      </form>
+      <LiveSearchBox
+        value={input}
+        onChange={setInput}
+        onSubmitQuery={onSubmitQuery}
+        variant="page"
+        showSubmitButton
+        inputClassName="form-input"
+        className="live-search-page-box"
+      />
 
-      {loading && <div className="loading">ПОШУК…</div>}
+      {loading && q0.length >= 2 && <div className="loading">ПОВНИЙ ПОШУК…</div>}
 
       {!loading && q0.length >= 2 && (
-        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}>
+        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 13, marginBottom: 16 }}>
           Запит: <strong>{queryEcho || q0}</strong>
           {pagination ? ` · знайдено: ${pagination.total}` : ''}
         </p>
@@ -111,10 +120,7 @@ export function GlobalSearch() {
           <div key={`${hit.type}-${hit.id}`} className="question-card">
             <div className="question-content">
               <div style={{ marginBottom: 6 }}>
-                <span
-                  className="tag"
-                  style={{ fontSize: 11, textTransform: 'uppercase' }}
-                >
+                <span className="tag" style={{ fontSize: 11, textTransform: 'uppercase' }}>
                   {TYPE_LABELS[hit.type] || hit.type}
                 </span>
                 {hit.community_name && (
@@ -124,9 +130,7 @@ export function GlobalSearch() {
                 )}
               </div>
               <Link to={hitHref(hit)} className="question-title">{hit.title}</Link>
-              {hit.excerpt && (
-                <p className="question-excerpt">{hit.excerpt}</p>
-              )}
+              {hit.excerpt && <p className="question-excerpt">{hit.excerpt}</p>}
               <div className="question-meta">
                 {hit.author_name && (
                   <>

@@ -89,6 +89,8 @@ async function migrate() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
     // Якщо таблиця вже існувала — додамо нові колонки/індекси неруйнівно.
+    await ensureColumn(connection, 'users', 'reputation', 'INT NOT NULL DEFAULT 0');
+    await ensureColumn(connection, 'users', 'role', "VARCHAR(20) NOT NULL DEFAULT 'user'");
     await ensureColumn(connection, 'users', 'avatar_url', 'VARCHAR(500) NULL');
     await ensureColumn(connection, 'users', 'github_id', 'BIGINT NULL');
     await ensureColumn(connection, 'users', 'github_login', 'VARCHAR(64) NULL');
