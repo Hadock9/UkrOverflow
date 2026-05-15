@@ -8,7 +8,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useMediator } from '../contexts/MediatorContext';
 import { EventTypes } from '../../../mediator/src/index';
 import { githubLoginUrl } from '../services/api';
-import { GitHubOAuthHint } from '../components/GitHubOAuthHint';
 import { redirectToCanonicalPath } from '../utils/frontendCanonical';
 import '../styles/brutalism.css';
 
@@ -215,7 +214,6 @@ export function Register() {
         >
           РЕЄСТРАЦІЯ ЧЕРЕЗ GITHUB
         </a>
-        <GitHubOAuthHint />
 
         <div className="auth-footer">
           <p>
