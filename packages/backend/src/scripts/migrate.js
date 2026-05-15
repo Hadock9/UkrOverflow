@@ -754,6 +754,91 @@ async function migrate() {
     `);
     console.log('✓ mentor_profiles\n');
 
+    console.log('📝 news_posts...');
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS news_posts (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        title VARCHAR(255) NOT NULL,
+        summary VARCHAR(500) NOT NULL,
+        body TEXT NOT NULL,
+        slug VARCHAR(280) NULL,
+        author_id INT NOT NULL,
+        published_at DATETIME NOT NULL,
+        is_pinned TINYINT(1) DEFAULT 0,
+        tags JSON NOT NULL,
+        views INT DEFAULT 0,
+        created_at DATETIME NOT NULL,
+        updated_at DATETIME NOT NULL,
+        FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE,
+        UNIQUE KEY uq_news_slug (slug),
+        INDEX idx_author (author_id),
+        INDEX idx_published (published_at),
+        INDEX idx_pinned (is_pinned),
+        INDEX idx_views (views),
+        FULLTEXT INDEX idx_news_search (title, summary, body)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS news_post_views (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        news_post_id INT NOT NULL,
+        viewer_key VARCHAR(96) NOT NULL,
+        viewed_at DATETIME NOT NULL,
+        UNIQUE KEY uq_news_viewer (news_post_id, viewer_key),
+        INDEX idx_news_post (news_post_id),
+        FOREIGN KEY (news_post_id) REFERENCES news_posts(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    await ensureColumn(connection, 'news_posts', 'category', "VARCHAR(32) NOT NULL DEFAULT 'tech'");
+    await ensureIndex(connection, 'news_posts', 'idx_news_category', 'INDEX idx_news_category (category)');
+    console.log('✓ news_posts\n');
+
+    console.log('📝 news_comments...');
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS news_comments (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        news_post_id INT NOT NULL,
+        author_id INT NOT NULL,
+        parent_id INT NULL,
+        body TEXT NOT NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (news_post_id) REFERENCES news_posts(id) ON DELETE CASCADE,
+        FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (parent_id) REFERENCES news_comments(id) ON DELETE CASCADE,
+        INDEX idx_news_comments_post (news_post_id)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log('✓ news_comments\n');
+
+    console.log('📝 news_polls...');
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS news_polls (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        slug VARCHAR(64) NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        description VARCHAR(500) NULL,
+        options JSON NOT NULL,
+        is_active TINYINT(1) DEFAULT 1,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_news_poll_slug (slug)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS news_poll_votes (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        poll_id INT NOT NULL,
+        option_id VARCHAR(32) NOT NULL,
+        voter_key VARCHAR(96) NOT NULL,
+        user_id INT NULL,
+        voted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_poll_voter (poll_id, voter_key),
+        FOREIGN KEY (poll_id) REFERENCES news_polls(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log('✓ news_polls\n');
+
     console.log('✅ Міграція завершена успішно!');
   } catch (error) {
     console.error('❌ Помилка міграції:', error);

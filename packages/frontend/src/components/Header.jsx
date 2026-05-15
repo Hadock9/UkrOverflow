@@ -76,6 +76,9 @@ export function Header() {
               <Link to="/hub" className="nav-item">
                 ХАБ
               </Link>
+              <Link to="/news" className="nav-item">
+                НОВИНИ
+              </Link>
               <Link to="/tags" className="nav-item">
                 ТЕГИ
               </Link>

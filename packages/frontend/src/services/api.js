@@ -141,8 +141,24 @@ export const ai = {
   // Пошук схожих питань (Gemini Flash)
   findSimilarQuestions: (questionId) => api.get(`/ai/similar-questions/${questionId}`),
 
+  // Резюме відповідей у дискусії
+  summarizeAnswers: (questionId) => api.post('/ai/summarize-answers', { questionId }),
+
+  // Рекомендації пов'язаного контенту хабу
+  relatedContent: (questionId) => api.get(`/ai/related-content/${questionId}`),
+
+  // Перевірка дублікатів перед публікацією
+  checkDuplicate: (title, body, excludeQuestionId) =>
+    api.post('/ai/check-duplicate', { title, body, excludeQuestionId }),
+
+  // Аналіз якості питання
+  analyzeQuestion: (title, body) => api.post('/ai/analyze-question', { title, body }),
+
+  // Генерація roadmap за стеком
+  generateRoadmap: (payload) => api.post('/ai/generate-roadmap', payload),
+
   // Статус AI сервісу
-  status: () => api.get('/ai/status')
+  status: () => api.get('/ai/status'),
 };
 
 // Notifications
@@ -215,6 +231,21 @@ export const bestPractices = {
   update: (id, data) => api.put(`/best-practices/${id}`, data),
   delete: (id) => api.delete(`/best-practices/${id}`),
   getTags: () => api.get('/best-practices/tags/all'),
+};
+
+// News feed
+export const news = {
+  list: (params) => api.get('/news', { params }),
+  digest: () => api.get('/news/digest'),
+  getPoll: () => api.get('/news/poll/active'),
+  votePoll: (pollId, optionId) => api.post(`/news/poll/${pollId}/vote`, { optionId }),
+  getComments: (id) => api.get(`/news/${id}/comments`),
+  addComment: (id, body, parentId) => api.post(`/news/${id}/comments`, { body, parentId }),
+  get: (idOrSlug, config) => api.get(`/news/${idOrSlug}`, config),
+  create: (data) => api.post('/news', data),
+  update: (id, data) => api.put(`/news/${id}`, data),
+  delete: (id) => api.delete(`/news/${id}`),
+  recordView: (id) => api.post(`/news/${id}/view`),
 };
 
 // FAQs

@@ -39,7 +39,11 @@ export function AISimilarQuestions({ questionId }) {
   return (
     <div className="ai-similar-questions">
       <div className="ai-similar-header">
-        <span>🤖 СХОЖІ ПИТАННЯ (AI)</span>
+        <span>
+          {`🤖 Твоє питання схоже на ${similarQuestions.length} вже існуюч${
+            similarQuestions.length === 1 ? 'е' : similarQuestions.length < 5 ? 'і' : 'их'
+          }`}
+        </span>
       </div>
 
       <div className="ai-similar-list">

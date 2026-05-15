@@ -12,6 +12,9 @@
     "seed:user": "node src/scripts/seedForUser.js",
     "seed:communities": "node src/scripts/seedCommunities.js",
     "seed:notifications": "node src/scripts/seedNotifications.js",
+    "seed:news": "node src/scripts/seedNews.js",
+    "seed:news:large": "node src/scripts/seedNews.js --large",
+    "seed:news-poll": "node src/scripts/seedNewsPoll.js",
     "test": "node --test 'src/**/*.test.js'"
   },
   "keywords": [

@@ -14,6 +14,8 @@ import { MarkdownEditor } from '../components/MarkdownEditor';
 import { AIAssistant } from '../components/AIAssistant';
 import { AISimilarQuestions } from '../components/AISimilarQuestions';
 import { AIQuestionSummary } from '../components/AIQuestionSummary';
+import { AIAnswersSummary } from '../components/AIAnswersSummary';
+import { AIRelatedPosts } from '../components/AIRelatedPosts';
 import { LinkedReposPanel } from '../components/LinkedReposPanel';
 import '../styles/brutalism.css';
 
@@ -344,6 +346,7 @@ export function QuestionDetail() {
 
       {/* Відповіді */}
       <div className="answers-section">
+        <AIAnswersSummary questionId={question.id} answerCount={answers.length} />
         <h2 className="section-title">
           {Array.isArray(answers) ? answers.length : 0} {Array.isArray(answers) && answers.length === 1 ? 'ВІДПОВІДЬ' : 'ВІДПОВІДЕЙ'}
         </h2>
@@ -435,6 +438,8 @@ export function QuestionDetail() {
       <div style={{ marginTop: 'var(--space-4)' }}>
         <LinkedReposPanel targetType="question" targetId={id} />
       </div>
+
+      <AIRelatedPosts questionId={id} />
 
       {/* Схожі питання (AI) */}
       <AISimilarQuestions questionId={id} />

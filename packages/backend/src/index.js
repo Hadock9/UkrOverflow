@@ -39,6 +39,7 @@ import githubWebhookRoutes from './routes/githubWebhook.js';
 import communitiesRoutes from './routes/communities.js';
 import communityPostsRoutes from './routes/communityPosts.js';
 import mentorsRoutes from './routes/mentors.js';
+import newsRoutes from './routes/news.js';
 import { logGithubOAuthRedirectUriHint } from './services/githubService.js';
 
 // Завантаження змінних оточення
@@ -163,6 +164,7 @@ app.use('/api/github', githubRoutes);
 app.use('/api/communities', communitiesRoutes);
 app.use('/api/community-posts', communityPostsRoutes);
 app.use('/api/mentors', mentorsRoutes);
+app.use('/api/news', newsRoutes);
 
 // WebSocket з'єднання
 const clients = new Map();

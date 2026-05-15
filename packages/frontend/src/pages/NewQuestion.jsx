@@ -10,6 +10,7 @@ import { EventTypes } from '../../../mediator/src/index';
 import { api } from '../services/api';
 import { MarkdownEditor } from '../components/MarkdownEditor';
 import { AITagSuggester } from '../components/AITagSuggester';
+import { AIQuestionCoach } from '../components/AIQuestionCoach';
 import '../styles/brutalism.css';
 
 export function NewQuestion() {
@@ -210,6 +211,15 @@ export function NewQuestion() {
             Додайте до 5 тегів для опису теми вашого питання (розділені комами)
           </div>
         </div>
+
+        <AIQuestionCoach
+          title={title}
+          body={body}
+          onApplyTitle={(t) => setTitle(t)}
+          onApplyBodyIntro={(intro) =>
+            setBody((prev) => (prev.trim() ? `${prev.trim()}\n\n${intro}` : intro))
+          }
+        />
 
         {/* Кнопки */}
         <div className="form-actions">

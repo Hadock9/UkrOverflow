@@ -43,6 +43,9 @@ import { MentorProfileEdit } from './pages/MentorProfileEdit'
 import { DevCatalog } from './pages/DevCatalog'
 import { GlobalSearch } from './pages/GlobalSearch'
 import { NotificationsPage } from './pages/Notifications'
+import { NewsFeed } from './pages/NewsFeed'
+import { NewsDetail } from './pages/NewsDetail'
+import { NewNews } from './pages/NewNews'
 
 function App() {
   const mediator = getMediator()
@@ -136,6 +139,10 @@ function App() {
             <Route path="/mentors" element={<Mentors />} />
             <Route path="/mentors/edit" element={<MentorProfileEdit />} />
             <Route path="/devs" element={<DevCatalog />} />
+
+            <Route path="/news" element={<NewsFeed />} />
+            <Route path="/news/new" element={<NewNews />} />
+            <Route path="/news/:idOrSlug" element={<NewsDetail />} />
           </Routes>
         </main>
 

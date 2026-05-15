@@ -8,7 +8,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useMediator } from '../contexts/MediatorContext';
 import { EventTypes } from '../../../mediator/src/index';
-import { api } from '../services/api';
+import { api, news as newsApi } from '../services/api';
 import { StatsSidebar } from '../components/StatsSidebar';
 import { getContentDetailPath, getContentTypeMeta } from '../constants/contentTypes';
 import '../styles/brutalism.css';
@@ -19,6 +19,12 @@ const FEATURES = [
     title: 'ХАБ ЗНАНЬ',
     text: 'Питання, статті, гайди, сніпети, маршрути та ЧаП в одному потоці.',
     accent: '#f5d142',
+  },
+  {
+    to: '/news',
+    title: 'СТРІЧКА НОВИН',
+    text: 'Огляди українського IT, тренди та оновлення платформи.',
+    accent: '#ff9bd3',
   },
   {
     to: '/communities',
@@ -57,6 +63,8 @@ export function MainPage() {
   const mediator = useMediator();
   const [recent, setRecent] = useState([]);
   const [recentLoading, setRecentLoading] = useState(true);
+  const [latestNews, setLatestNews] = useState([]);
+  const [newsLoading, setNewsLoading] = useState(true);
 
   useEffect(() => {
     mediator.emit(EventTypes.PAGE_VIEW, { page: 'main' }, 'MainPage');
@@ -83,6 +91,22 @@ export function MainPage() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setNewsLoading(true);
+      try {
+        const res = await newsApi.list({ page: 1, limit: 3 });
+        if (!cancelled) setLatestNews(res.data?.data?.news || []);
+      } catch {
+        if (!cancelled) setLatestNews([]);
+      } finally {
+        if (!cancelled) setNewsLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   return (
     <div className="container main-page">
       <div className="main-page-layout">
@@ -101,6 +125,9 @@ export function MainPage() {
             <div className="main-hero-actions">
               <Link to="/hub" className="btn btn-primary">
                 ВІДКРИТИ ХАБ
+              </Link>
+              <Link to="/news" className="btn">
+                НОВИНИ
               </Link>
               <Link to="/communities" className="btn">
                 СПІЛЬНОТИ
@@ -138,6 +165,40 @@ export function MainPage() {
                 <p className="main-feature-card-text">{f.text}</p>
               </Link>
             ))}
+          </section>
+
+          <section className="main-recent main-news-preview">
+            <div className="page-header page-header-split" style={{ marginBottom: 16 }}>
+              <div>
+                <h2 className="page-title" style={{ fontSize: '1.35rem' }}>
+                  СТРІЧКА НОВИН
+                </h2>
+                <p className="page-subtitle">Останні огляди українського IT</p>
+              </div>
+              <Link to="/news" className="btn">
+                УСІ НОВИНИ →
+              </Link>
+            </div>
+            {newsLoading ? (
+              <div className="loading">ЗАВАНТАЖЕННЯ...</div>
+            ) : latestNews.length > 0 ? (
+              <ul className="main-recent-list">
+                {latestNews.map((n) => (
+                  <li key={n.id} className="main-recent-item">
+                    <span className="main-recent-type">Новина</span>
+                    <Link
+                      to={n.slug ? `/news/${n.slug}` : `/news/${n.id}`}
+                      className="main-recent-link"
+                    >
+                      {n.title}
+                    </Link>
+                    {n.summary && (
+                      <p className="main-recent-excerpt">{n.summary.slice(0, 120)}…</p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
           </section>
 
           <section className="main-recent">

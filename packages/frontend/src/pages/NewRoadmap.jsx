@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { EventTypes } from '../../../mediator/src/index';
 import { roadmaps } from '../services/api';
 import { MarkdownEditor } from '../components/MarkdownEditor';
+import { AIRoadmapGenerator } from '../components/AIRoadmapGenerator';
 import '../styles/brutalism.css';
 
 const DIFFICULTIES = [
@@ -195,6 +196,28 @@ export function NewRoadmap() {
           </p>
         </div>
       </div>
+
+      <AIRoadmapGenerator
+        difficulty={difficulty}
+        onGenerated={(roadmap) => {
+          if (roadmap.title) setTitle(roadmap.title);
+          if (roadmap.summary) setSummary(roadmap.summary);
+          if (roadmap.body) setBody(roadmap.body);
+          if (roadmap.difficulty) setDifficulty(roadmap.difficulty);
+          if (roadmap.estimated_weeks) setEstimatedWeeks(roadmap.estimated_weeks);
+          if (roadmap.tags?.length) setTags(roadmap.tags);
+          if (roadmap.steps?.length >= 2) {
+            setSteps(
+              roadmap.steps.map((s, i) => ({
+                order: s.order ?? i + 1,
+                title: s.title || '',
+                description: s.description || '',
+                estimated_weeks: s.estimated_weeks ?? 1,
+              })),
+            );
+          }
+        }}
+      />
 
       <form onSubmit={handleSubmit} className="question-form">
         <div className="form-group">
