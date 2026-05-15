@@ -15,14 +15,61 @@ const TYPE_LABELS = {
   [CONTENT_TYPES.FAQ]: 'ЧаП',
   [CONTENT_TYPES.COMMUNITY_POST]: 'Спільнота',
   news: 'Новина',
+  community: 'Спільнота',
+  mentor: 'Ментор',
+  user: 'Розробник',
 };
 
 function hitPath(hit) {
   if (hit.type === 'news') {
     return hit.slug ? `/news/${hit.slug}` : `/news/${hit.id}`;
   }
+  if (hit.type === 'community') {
+    return hit.slug ? `/communities/${hit.slug}` : `/communities`;
+  }
+  if (hit.type === 'mentor' || hit.type === 'user') {
+    return `/users/${hit.id}`;
+  }
   const t = hit.type === 'community_post' ? CONTENT_TYPES.COMMUNITY_POST : hit.type;
   return getContentDetailPath(t, hit.id);
+}
+
+function viewAllHref(scope, debouncedQ) {
+  const q = encodeURIComponent(debouncedQ);
+  switch (scope) {
+    case 'news':
+      return `/news?search=${q}`;
+    case 'communities':
+      return `/communities?search=${q}`;
+    case 'tags':
+      return `/tags?search=${q}`;
+    case 'mentors':
+      return `/mentors?search=${q}`;
+    case 'users':
+      return `/devs?search=${q}`;
+    case 'hub':
+    case 'all':
+    default:
+      return `/search?q=${q}&page=1`;
+  }
+}
+
+function HitList({ items, onPick }) {
+  return (
+    <ul className="live-search-list">
+      {items.map((hit) => (
+        <li key={`${hit.type}-${hit.id}`}>
+          <Link to={hitPath(hit)} className="live-search-hit" onClick={onPick}>
+            <span className="live-search-hit-type">{TYPE_LABELS[hit.type] || hit.type}</span>
+            <span className="live-search-hit-title">{hit.title}</span>
+            {hit.excerpt && (
+              <span className="live-search-hit-excerpt">{hit.excerpt}</span>
+            )}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
 }
 
 export function LiveSearchResults({
@@ -31,22 +78,25 @@ export function LiveSearchResults({
   hits = [],
   tags = [],
   news = [],
+  communities = [],
+  mentors = [],
+  users = [],
   active,
   isEmpty,
   debouncedQ,
   onPick,
   variant = 'dropdown',
   showViewAll = true,
+  scope = 'all',
 }) {
   if (!active) return null;
 
-  const panelClass = variant === 'dropdown' ? 'live-search-panel' : 'live-search-panel live-search-panel--inline';
+  const panelClass =
+    variant === 'dropdown' ? 'live-search-panel' : 'live-search-panel live-search-panel--inline';
 
   return (
     <div className={panelClass} role="listbox" aria-label="Результати пошуку">
-      {loading && (
-        <p className="live-search-status">Пошук…</p>
-      )}
+      {loading && <p className="live-search-status">Пошук…</p>}
 
       {error && !loading && (
         <p className="live-search-status live-search-status--error">{error}</p>
@@ -79,43 +129,41 @@ export function LiveSearchResults({
       {!loading && news.length > 0 && (
         <section className="live-search-group">
           <h4 className="live-search-group-title">Новини</h4>
-          <ul className="live-search-list">
-            {news.map((item) => (
-              <li key={`news-${item.id}`}>
-                <Link to={hitPath(item)} className="live-search-hit" onClick={onPick}>
-                  <span className="live-search-hit-type">{TYPE_LABELS.news}</span>
-                  <span className="live-search-hit-title">{item.title}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <HitList items={news} onPick={onPick} />
+        </section>
+      )}
+
+      {!loading && communities.length > 0 && (
+        <section className="live-search-group">
+          <h4 className="live-search-group-title">Спільноти</h4>
+          <HitList items={communities} onPick={onPick} />
+        </section>
+      )}
+
+      {!loading && mentors.length > 0 && (
+        <section className="live-search-group">
+          <h4 className="live-search-group-title">Ментори</h4>
+          <HitList items={mentors} onPick={onPick} />
+        </section>
+      )}
+
+      {!loading && users.length > 0 && (
+        <section className="live-search-group">
+          <h4 className="live-search-group-title">Розробники</h4>
+          <HitList items={users} onPick={onPick} />
         </section>
       )}
 
       {!loading && hits.length > 0 && (
         <section className="live-search-group">
           <h4 className="live-search-group-title">Матеріали</h4>
-          <ul className="live-search-list">
-            {hits.map((hit) => (
-              <li key={`${hit.type}-${hit.id}`}>
-                <Link to={hitPath(hit)} className="live-search-hit" onClick={onPick}>
-                  <span className="live-search-hit-type">
-                    {TYPE_LABELS[hit.type] || hit.type}
-                  </span>
-                  <span className="live-search-hit-title">{hit.title}</span>
-                  {hit.excerpt && (
-                    <span className="live-search-hit-excerpt">{hit.excerpt}</span>
-                  )}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <HitList items={hits} onPick={onPick} />
         </section>
       )}
 
-      {showViewAll && debouncedQ && !loading && (
+      {showViewAll && debouncedQ && !loading && !isEmpty && (
         <Link
-          to={`/search?q=${encodeURIComponent(debouncedQ)}&page=1`}
+          to={viewAllHref(scope, debouncedQ)}
           className="live-search-view-all"
           onClick={onPick}
         >

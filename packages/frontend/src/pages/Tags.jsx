@@ -3,9 +3,11 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { LiveSearchBox } from '../components/LiveSearchBox';
 import { tagsCatalog } from '../services/api';
 import '../styles/brutalism.css';
+import '../components/LiveSearchBox.css';
 
 const SOURCE_FILTERS = [
   { id: 'all', label: 'Усі' },
@@ -38,11 +40,12 @@ function cloudSize(count, max) {
 }
 
 export function Tags() {
+  const [searchParams] = useSearchParams();
   const [tags, setTags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('search') || '');
+  const [search, setSearch] = useState(() => searchParams.get('search') || '');
   const [source, setSource] = useState('all');
   const [sortBy, setSortBy] = useState('count');
 
@@ -58,7 +61,8 @@ export function Tags() {
           sortBy,
         });
         if (!cancelled) {
-          setTags(res.data?.data?.tags || []);
+          const list = res.data?.data?.tags ?? res.data?.tags ?? [];
+          setTags(Array.isArray(list) ? list : []);
         }
       } catch (e) {
         if (!cancelled) {
@@ -79,11 +83,6 @@ export function Tags() {
 
   const cloudTags = useMemo(() => tags.slice(0, 36), [tags]);
 
-  const onSearchSubmit = (e) => {
-    e.preventDefault();
-    setSearch(searchInput.trim());
-  };
-
   return (
     <div className="container tags-page">
       <div className="page-header page-header-split">
@@ -99,17 +98,21 @@ export function Tags() {
       </div>
 
       <div className="tags-toolbar">
-        <form onSubmit={onSearchSubmit} className="tags-search-form">
-          <input
-            type="search"
-            className="form-input"
-            placeholder="Знайти тег (react, salary, docker…)"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            aria-label="Пошук тегів"
-          />
-          <button type="submit" className="btn btn-secondary">ШУКАТИ</button>
-        </form>
+        <LiveSearchBox
+          className="tags-live-search"
+          value={searchInput}
+          onChange={setSearchInput}
+          onSubmitQuery={(q) => {
+            const trimmed = q.trim();
+            setSearch(trimmed);
+            setSearchInput(trimmed);
+          }}
+          scope="tags"
+          variant="filter"
+          placeholder="Знайти тег (react, salary, docker…)"
+          ariaLabel="Пошук тегів"
+          showViewAll={false}
+        />
 
         <div className="tags-sort" role="group" aria-label="Сортування">
           <button

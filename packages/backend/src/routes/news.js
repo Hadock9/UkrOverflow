@@ -7,6 +7,7 @@ import { body, query, param } from 'express-validator';
 import News from '../models/News.js';
 import NewsComment from '../models/NewsComment.js';
 import NewsPoll from '../models/NewsPoll.js';
+import Notification from '../models/Notification.js';
 import { authenticateToken, optionalAuth, requireRole } from '../middleware/auth.js';
 import { attachViewerKeyOptional, resolveViewerKey } from '../middleware/viewerKey.js';
 import { validate } from '../middleware/validation.js';
@@ -127,6 +128,12 @@ router.post(
         parentId: req.body.parentId || null,
         body: req.body.body.trim(),
       });
+      await Notification.notifyNewsCommentActivity(
+        id,
+        req.user.id,
+        comment.id,
+        req.body.parentId ? parseInt(req.body.parentId, 10) : null
+      );
       res.status(201).json({ success: true, data: { comment } });
     } catch (e) {
       next(e);

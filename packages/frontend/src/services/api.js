@@ -121,7 +121,13 @@ export const votes = {
 export const search = {
   search: (query, params) => api.get('/search', { params: { q: query, ...params } }),
   global: (query, params) => api.get('/search/global', { params: { q: query, ...params } }),
-  live: (query, config) => api.get('/search/live', { params: { q: query }, ...config }),
+  live: (query, config = {}) => {
+    const { params: extraParams, ...rest } = config;
+    return api.get('/search/live', {
+      ...rest,
+      params: { q: query, ...extraParams },
+    });
+  },
   suggestions: (query) => api.get('/search/suggestions', { params: { q: query } }),
 };
 

@@ -11,27 +11,45 @@ export function LiveSearchBox({
   value,
   onChange,
   onSubmitQuery,
+  onDebouncedChange,
   placeholder = 'Пошук…',
   className = '',
   inputClassName = 'form-input',
   variant = 'header',
+  scope = 'all',
   showSubmitButton = true,
+  showViewAll,
   syncUrlOnType = false,
+  minChars = 2,
+  ariaLabel = 'Пошук',
 }) {
   const navigate = useNavigate();
   const listId = useId();
   const wrapRef = useRef(null);
   const [open, setOpen] = useState(false);
 
+  const isHeader = variant === 'header';
+  const isFilter = variant === 'filter';
+
   const live = useLiveSearch(value, {
     debounceMs: 280,
-    minChars: 2,
-    enabled: variant === 'page' || open || value.length >= 2,
+    minChars,
+    scope,
+    enabled: isHeader ? open || value.length >= minChars : true,
   });
 
   useEffect(() => {
-    if (value.length >= 2) setOpen(true);
-  }, [value]);
+    if (value.length >= minChars) setOpen(true);
+  }, [value, minChars]);
+
+  useEffect(() => {
+    if (!onDebouncedChange) return;
+    if (live.debouncedQ.length >= minChars) {
+      onDebouncedChange(live.debouncedQ);
+    } else if (live.debouncedQ.length < minChars) {
+      onDebouncedChange('');
+    }
+  }, [live.debouncedQ, onDebouncedChange, minChars]);
 
   useEffect(() => {
     const onDoc = (e) => {
@@ -45,7 +63,7 @@ export function LiveSearchBox({
 
   const goSearch = (q) => {
     const trimmed = q.trim();
-    if (trimmed.length < 2) return;
+    if (trimmed.length < minChars) return;
     setOpen(false);
     if (onSubmitQuery) {
       onSubmitQuery(trimmed);
@@ -60,18 +78,20 @@ export function LiveSearchBox({
   };
 
   useEffect(() => {
-    if (!syncUrlOnType || live.debouncedQ.length < 2) return;
+    if (!syncUrlOnType || live.debouncedQ.length < minChars) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get('q') === live.debouncedQ) return;
     navigate(`/search?q=${encodeURIComponent(live.debouncedQ)}&page=1`, { replace: true });
-  }, [live.debouncedQ, syncUrlOnType, navigate]);
+  }, [live.debouncedQ, syncUrlOnType, navigate, minChars]);
 
-  const isHeader = variant === 'header';
+  const showPanel = isHeader ? open && live.active : live.active;
+  const viewAll =
+    showViewAll !== undefined ? showViewAll : !isFilter && scope !== 'tags';
 
   return (
     <div
       ref={wrapRef}
-      className={`live-search-wrap ${isHeader ? 'live-search-wrap--header' : ''} ${className}`}
+      className={`live-search-wrap ${isHeader ? 'live-search-wrap--header' : ''} ${isFilter ? 'live-search-wrap--filter' : ''} ${className}`}
     >
       <form
         className={isHeader ? 'header-search' : 'live-search-form'}
@@ -86,39 +106,28 @@ export function LiveSearchBox({
             onChange(e.target.value);
             setOpen(true);
           }}
-          onFocus={() => value.length >= 2 && setOpen(true)}
+          onFocus={() => setOpen(true)}
           placeholder={placeholder}
-          aria-label="Глобальний пошук"
-          aria-expanded={open && live.active}
+          aria-label={ariaLabel}
+          aria-expanded={showPanel}
           aria-controls={listId}
           autoComplete="off"
-          style={isHeader ? {
-            width: 200,
-            maxWidth: '32vw',
-            padding: '6px 10px',
-            border: '2px solid #000',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 13,
-          } : undefined}
         />
         {showSubmitButton && (
-          <button
-            type="submit"
-            className="btn"
-            style={isHeader ? { padding: '6px 10px', fontSize: 12 } : undefined}
-          >
+          <button type="submit" className="btn">
             {isHeader ? 'OK' : 'ШУКАТИ'}
           </button>
         )}
       </form>
 
-      {(variant === 'page' ? live.active : open && live.active) && (
+      {showPanel && (
         <div id={listId}>
           <LiveSearchResults
             {...live}
-            variant={variant === 'page' ? 'inline' : 'dropdown'}
+            variant={variant === 'page' || isFilter ? 'inline' : 'dropdown'}
             onPick={() => setOpen(false)}
-            showViewAll={variant !== 'page'}
+            showViewAll={viewAll}
+            scope={scope}
           />
         </div>
       )}

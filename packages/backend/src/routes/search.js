@@ -175,12 +175,16 @@ router.get(
   '/live',
   [
     query('q').trim().isLength({ min: 2 }).withMessage('Мінімум 2 символи'),
+    query('scope')
+      .optional()
+      .isIn(['all', 'hub', 'news', 'communities', 'tags', 'mentors', 'users'])
+      .withMessage('Невірний scope'),
   ],
   validate,
   optionalAuth,
   async (req, res, next) => {
     try {
-      const data = await liveSearch(req.query.q);
+      const data = await liveSearch(req.query.q, { scope: req.query.scope || 'all' });
       res.json({ success: true, data });
     } catch (err) {
       next(err);

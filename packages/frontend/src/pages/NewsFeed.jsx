@@ -5,9 +5,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { NewsSidebar } from '../components/NewsSidebar';
+import { LiveSearchBox } from '../components/LiveSearchBox';
 import { useAuth } from '../contexts/AuthContext';
 import { news } from '../services/api';
 import '../styles/brutalism.css';
+import '../components/LiveSearchBox.css';
 
 const NEWS_CATEGORIES = [
   { id: '', label: 'Усі' },
@@ -43,8 +45,8 @@ export function NewsFeed() {
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
   const [page, setPage] = useState(1);
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('search') || '');
+  const [search, setSearch] = useState(() => searchParams.get('search') || '');
   const [category, setCategory] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -85,10 +87,9 @@ export function NewsFeed() {
     setPage(1);
   };
 
-  const onSearch = (e) => {
-    e.preventDefault();
+  const applySearch = (q) => {
     setPage(1);
-    setSearch(searchInput.trim());
+    setSearch(q.trim());
   };
 
   const pinned = items.filter((n) => n.is_pinned);
@@ -134,18 +135,16 @@ export function NewsFeed() {
 
       <div className="news-feed-layout">
       <div className="news-feed-main">
-      <form onSubmit={onSearch} style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <input
-          type="search"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Пошук у новинах…"
-          className="form-input"
-          style={{ flex: 1 }}
-          aria-label="Пошук новин"
-        />
-        <button type="submit" className="btn btn-secondary">ШУКАТИ</button>
-      </form>
+      <LiveSearchBox
+        value={searchInput}
+        onChange={setSearchInput}
+        onSubmitQuery={applySearch}
+        scope="news"
+        variant="filter"
+        placeholder="Пошук у новинах…"
+        ariaLabel="Пошук новин"
+        showViewAll={false}
+      />
 
       {loading ? (
         <div className="loading">ЗАВАНТАЖЕННЯ...</div>

@@ -5,7 +5,10 @@
 import { useEffect, useState } from 'react';
 import { search } from '../services/api';
 
-export function useLiveSearch(query, { debounceMs = 280, minChars = 2, enabled = true } = {}) {
+export function useLiveSearch(
+  query,
+  { debounceMs = 280, minChars = 2, enabled = true, scope = 'all' } = {},
+) {
   const [debouncedQ, setDebouncedQ] = useState('');
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
@@ -29,7 +32,7 @@ export function useLiveSearch(query, { debounceMs = 280, minChars = 2, enabled =
     setError(null);
 
     search
-      .live(debouncedQ, { signal: controller.signal })
+      .live(debouncedQ, { signal: controller.signal, params: { scope } })
       .then((res) => {
         setData(res.data?.data || null);
       })
@@ -43,13 +46,22 @@ export function useLiveSearch(query, { debounceMs = 280, minChars = 2, enabled =
       });
 
     return () => controller.abort();
-  }, [debouncedQ, enabled, minChars]);
+  }, [debouncedQ, enabled, minChars, scope]);
 
   const active = debouncedQ.length >= minChars;
   const hits = data?.hits || [];
   const tags = data?.tags || [];
   const news = data?.news || [];
-  const isEmpty = active && !loading && hits.length === 0 && tags.length === 0 && news.length === 0;
+  const communities = data?.communities || [];
+  const mentors = data?.mentors || [];
+  const users = data?.users || [];
+  const total =
+    data?.total ??
+    hits.length + tags.length + news.length + communities.length + mentors.length + users.length;
+  const isEmpty =
+    active &&
+    !loading &&
+    total === 0;
 
   return {
     debouncedQ,
@@ -58,8 +70,12 @@ export function useLiveSearch(query, { debounceMs = 280, minChars = 2, enabled =
     hits,
     tags,
     news,
+    communities,
+    mentors,
+    users,
     active,
     isEmpty,
-    total: data?.total ?? hits.length + tags.length + news.length,
+    total,
+    scope,
   };
 }

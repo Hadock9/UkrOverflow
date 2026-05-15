@@ -27,7 +27,7 @@ export function NotificationBell() {
       queueMicrotask(() => {
         loadUnreadCount();
       });
-      const interval = setInterval(loadUnreadCount, 30000);
+      const interval = setInterval(loadUnreadCount, 15000);
       return () => clearInterval(interval);
     }
   }, [user, loadUnreadCount]);

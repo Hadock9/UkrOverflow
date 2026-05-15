@@ -2,74 +2,25 @@
  * Список сповіщень користувача
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { notifications } from '../services/api';
+import { notifications as notificationsApi } from '../services/api';
+import {
+  notificationIcon,
+  notificationLabel,
+  notificationLink,
+  notificationTypeName,
+} from '../utils/notificationUi';
 import '../styles/brutalism.css';
-
-function parseData(raw) {
-  if (!raw) return {};
-  if (typeof raw === 'object') return raw;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return {};
-  }
-}
-
-function linkFor(n) {
-  const d = parseData(n.data);
-  switch (n.type) {
-    case 'community_join':
-      return d.slug ? `/communities/${d.slug}` : '/communities';
-    case 'community_new_post':
-    case 'community_post_comment':
-    case 'community_post_reply':
-      return `/community-posts/${n.entity_id}`;
-    case 'answer_accepted':
-      return d.questionId ? `/questions/${d.questionId}` : '/';
-    case 'question_answer':
-    case 'question_bookmark':
-    case 'vote':
-      if (n.entity_type === 'question') return `/questions/${n.entity_id}`;
-      if (n.entity_type === 'answer' && d.questionId) return `/questions/${d.questionId}`;
-      return '/';
-    default:
-      return '/';
-  }
-}
-
-function labelFor(n) {
-  const who = n.actor_name || 'Користувач';
-  const t = n.context_title || n.question_title;
-  switch (n.type) {
-    case 'question_answer':
-      return `${who} відповів на ваше питання${t ? `: «${t}»` : ''}`;
-    case 'answer_accepted':
-      return `Вашу відповідь позначено як прийняту${t ? ` («${t}»)` : ''}`;
-    case 'vote':
-      return `${who} проголосував «за»${n.entity_type === 'answer' ? ' за відповідь' : ' за ваше питання'}${t ? `: «${t}»` : ''}`;
-    case 'community_post_comment':
-      return `${who} залишив коментар до вашого посту${t ? `: «${t}»` : ''}`;
-    case 'community_post_reply':
-      return `${who} відповів у треді коментарів${t ? ` («${t}»)` : ''}`;
-    case 'community_new_post':
-      return `${who} опублікував новий пост у вашій спільноті${t ? `: «${t}»` : ''}`;
-    case 'community_join':
-      return `${who} приєднався до спільноти${t ? ` «${t}»` : ''}`;
-    case 'question_bookmark':
-      return `${who} додав ваше питання в закладки${t ? `: «${t}»` : ''}`;
-    default:
-      return `Сповіщення (${n.type})`;
-  }
-}
+import './Notifications.css';
 
 export function NotificationsPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
 
   useEffect(() => {
     if (authLoading) return;
@@ -80,7 +31,7 @@ export function NotificationsPage() {
     (async () => {
       setLoading(true);
       try {
-        const r = await notifications.getAll({ limit: 80 });
+        const r = await notificationsApi.getAll({ limit: 100 });
         const list = r.data?.data?.notifications || r.data?.notifications || [];
         setItems(Array.isArray(list) ? list : []);
       } catch (e) {
@@ -92,9 +43,16 @@ export function NotificationsPage() {
     })();
   }, [user, authLoading, navigate]);
 
+  const filtered = useMemo(() => {
+    if (filter === 'unread') return items.filter((n) => !n.is_read);
+    return items;
+  }, [items, filter]);
+
+  const unreadCount = items.filter((n) => !n.is_read).length;
+
   const markRead = async (id) => {
     try {
-      await notifications.markAsRead(id);
+      await notificationsApi.markAsRead(id);
       setItems((prev) => prev.map((x) => (x.id === id ? { ...x, is_read: 1 } : x)));
     } catch (e) {
       console.error(e);
@@ -103,7 +61,7 @@ export function NotificationsPage() {
 
   const markAll = async () => {
     try {
-      await notifications.markAllAsRead();
+      await notificationsApi.markAllAsRead();
       setItems((prev) => prev.map((x) => ({ ...x, is_read: 1 })));
     } catch (e) {
       console.error(e);
@@ -119,61 +77,92 @@ export function NotificationsPage() {
   }
 
   return (
-    <div className="container">
+    <div className="container notifications-page">
       <div className="page-header page-header-split">
         <div>
           <h1 className="page-title">СПОВІЩЕННЯ</h1>
-          <p className="page-subtitle">Події щодо ваших питань, постів і спільнот</p>
+          <p className="page-subtitle">
+            Відповіді, голоси, коментарі, спільноти, новини та активність у тредах
+          </p>
         </div>
-        {items.some((n) => !n.is_read) && (
+        {unreadCount > 0 && (
           <button type="button" className="btn btn-secondary" onClick={markAll}>
-            ПРОЧИТАТИ ВСЕ
+            ПРОЧИТАТИ ВСЕ ({unreadCount})
           </button>
         )}
       </div>
 
-      {items.length === 0 ? (
+      <div className="notifications-filters">
+        <button
+          type="button"
+          className={`btn btn-sm ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setFilter('all')}
+        >
+          УСІ ({items.length})
+        </button>
+        <button
+          type="button"
+          className={`btn btn-sm ${filter === 'unread' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setFilter('unread')}
+        >
+          НЕПРОЧИТАНІ ({unreadCount})
+        </button>
+      </div>
+
+      {filtered.length === 0 ? (
         <div className="empty-state">
-          <p>Немає сповіщень</p>
-          <Link to="/" className="btn btn-primary">НА ГОЛОВНУ</Link>
+          <p>{filter === 'unread' ? 'Немає непрочитаних' : 'Немає сповіщень'}</p>
+          <p className="notifications-hint">
+            Сповіщення з’являться, коли хтось відповість, проголосує, прокоментує або приєднається до
+            вашої спільноти.
+          </p>
+          <Link to="/hub" className="btn btn-primary">
+            ВІДКРИТИ ХАБ
+          </Link>
         </div>
       ) : (
-        <div className="questions-list">
-          {items.map((n) => {
-            const href = linkFor(n);
+        <div className="notifications-list">
+          {filtered.map((n) => {
+            const href = notificationLink(n);
             const unread = !n.is_read;
             return (
-              <div
+              <article
                 key={n.id}
-                className="question-card"
-                style={{
-                  opacity: unread ? 1 : 0.85,
-                  borderLeft: unread ? '4px solid var(--color-success)' : undefined,
-                }}
+                className={`notification-card ${unread ? 'notification-card--unread' : ''}`}
               >
-                <div className="question-content" style={{ width: '100%' }}>
-                  <p style={{ margin: 0, fontFamily: 'var(--font-mono)', lineHeight: 1.45 }}>
-                    {labelFor(n)}
-                  </p>
-                  <div className="question-meta" style={{ marginTop: 'var(--space-2)' }}>
-                    <span className="date">
-                      {n.created_at
-                        ? new Date(n.created_at).toLocaleString('uk-UA')
-                        : ''}
-                    </span>
-                    <div className="question-actions" style={{ marginLeft: 'auto', gap: 8 }}>
-                      {unread && (
-                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => markRead(n.id)}>
-                          OK
-                        </button>
-                      )}
-                      <Link to={href} className="btn btn-primary btn-sm">
-                        ВІДКРИТИ
-                      </Link>
-                    </div>
-                  </div>
+                <span className="notification-card__icon" aria-hidden>
+                  {notificationIcon(n.type)}
+                </span>
+                <div className="notification-card__body">
+                  <span className="notification-card__type">
+                    {notificationTypeName(n.type)}
+                  </span>
+                  <p className="notification-card__text">{notificationLabel(n)}</p>
+                  <time className="notification-card__time">
+                    {n.created_at
+                      ? new Date(n.created_at).toLocaleString('uk-UA')
+                      : ''}
+                  </time>
                 </div>
-              </div>
+                <div className="notification-card__actions">
+                  {unread && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => markRead(n.id)}
+                    >
+                      OK
+                    </button>
+                  )}
+                  <Link
+                    to={href}
+                    className="btn btn-primary btn-sm"
+                    onClick={() => unread && markRead(n.id)}
+                  >
+                    ВІДКРИТИ
+                  </Link>
+                </div>
+              </article>
             );
           })}
         </div>

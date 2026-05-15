@@ -7,9 +7,11 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useMediator } from '../contexts/MediatorContext';
 import { EventTypes } from '../../../mediator/src/index';
+import { LiveSearchBox } from '../components/LiveSearchBox';
 import { api } from '../services/api';
 import { CONTENT_TYPE_DEFINITIONS, CONTENT_TYPES, getContentTypeMeta, getContentDetailPath } from '../constants/contentTypes';
 import '../styles/brutalism.css';
+import '../components/LiveSearchBox.css';
 
 const TYPE_BADGE_STYLE = {
   [CONTENT_TYPES.QUESTION]: { background: '#fff', border: '2px solid #000' },
@@ -94,6 +96,8 @@ export function Home() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const [feedSearchInput, setFeedSearchInput] = useState('');
+  const [feedSearch, setFeedSearch] = useState('');
   const createMenuRef = useRef(null);
   const mediator = useMediator();
 
@@ -126,11 +130,11 @@ export function Home() {
   useEffect(() => {
     mediator.emit(EventTypes.PAGE_VIEW, { page: 'home', tag, contentType }, 'Home');
     loadFeed();
-  }, [sortBy, page, tag, contentType]);
+  }, [sortBy, page, tag, contentType, feedSearch]);
 
   useEffect(() => {
     setPage(1);
-  }, [contentType, tag, sortBy]);
+  }, [contentType, tag, sortBy, feedSearch]);
 
   useEffect(() => {
     if (tag) return;
@@ -149,7 +153,14 @@ export function Home() {
       mediator.emit(EventTypes.API_REQUEST, { endpoint: '/content', tag, contentType }, 'Home');
 
       const response = await api.get('/content', {
-        params: { sortBy, page, limit: 20, tag, contentType },
+        params: {
+          sortBy,
+          page,
+          limit: 20,
+          tag,
+          contentType,
+          search: feedSearch || undefined,
+        },
       });
 
       const { items: feedItems, pagination } = response.data.data || response.data;
@@ -260,6 +271,19 @@ export function Home() {
           )}
         </div>
       </div>
+
+      <LiveSearchBox
+        value={feedSearchInput}
+        onChange={setFeedSearchInput}
+        onSubmitQuery={(q) => {
+          setFeedSearch(q.trim());
+          setPage(1);
+        }}
+        scope="hub"
+        variant="filter"
+        placeholder="Пошук у хабі: питання, статті, гайди…"
+        ariaLabel="Пошук у knowledge hub"
+      />
 
       <div className="filters" style={{ flexWrap: 'wrap', gap: 8 }}>
         {CONTENT_TYPE_DEFINITIONS.filter((t) => t.available).map((t) => (

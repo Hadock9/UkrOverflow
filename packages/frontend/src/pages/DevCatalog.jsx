@@ -3,10 +3,12 @@
  */
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { LiveSearchBox } from '../components/LiveSearchBox';
 import { usersSearch } from '../services/api';
 import '../styles/brutalism.css';
+import '../components/LiveSearchBox.css';
 
 const POPULAR_STACKS = ['JavaScript', 'TypeScript', 'Python', 'Java', 'Go', 'Rust', 'C#', 'PHP', 'Ruby', 'C++', 'Swift', 'Kotlin'];
 
@@ -17,10 +19,11 @@ function excerpt(text, n = 160) {
 }
 
 export function DevCatalog() {
+  const [searchParams] = useSearchParams();
   const [activeStacks, setActiveStacks] = useState([]);
   const [location, setLocation] = useState('');
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('search') || '');
+  const [search, setSearch] = useState(() => searchParams.get('search') || '');
 
   const { data, isLoading } = useQuery({
     queryKey: ['devs', { activeStacks, location, search }],
@@ -50,14 +53,17 @@ export function DevCatalog() {
         </div>
       </div>
 
-      <form onSubmit={(e) => { e.preventDefault(); setSearch(searchInput.trim()); }} style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-        <input
-          type="text"
-          className="form-input"
-          placeholder="Пошук: нік, опис, GitHub..."
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+        <LiveSearchBox
           value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          style={{ flex: 1, minWidth: 200 }}
+          onChange={setSearchInput}
+          onSubmitQuery={(q) => setSearch(q.trim())}
+          scope="users"
+          variant="filter"
+          placeholder="Пошук: нік, опис, GitHub…"
+          ariaLabel="Пошук розробників"
+          showViewAll={false}
+          className="mentors-search-live"
         />
         <input
           type="text"
@@ -67,8 +73,7 @@ export function DevCatalog() {
           onChange={(e) => setLocation(e.target.value)}
           style={{ width: 160 }}
         />
-        <button type="submit" className="btn btn-secondary">ШУКАТИ</button>
-      </form>
+      </div>
 
       <div className="filters" style={{ flexWrap: 'wrap', gap: 8 }}>
         {POPULAR_STACKS.map((s) => (

@@ -3,10 +3,12 @@
  */
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { LiveSearchBox } from '../components/LiveSearchBox';
 import { communities } from '../services/api';
 import '../styles/brutalism.css';
+import '../components/LiveSearchBox.css';
 
 const TYPE_FILTERS = [
   { id: 'all', label: 'ВСІ' },
@@ -36,9 +38,10 @@ function excerpt(text, n = 200) {
 }
 
 export function Communities() {
+  const [searchParams] = useSearchParams();
   const [type, setType] = useState('all');
-  const [search, setSearch] = useState('');
-  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState(() => searchParams.get('search') || '');
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('search') || '');
 
   const queryKey = ['communities', { type, search }];
   const { data, isLoading, error } = useQuery({
@@ -54,10 +57,7 @@ export function Communities() {
 
   const list = data?.communities || [];
 
-  const onSubmit = (e) => {
-    e.preventDefault();
-    setSearch(searchInput.trim());
-  };
+  const applySearch = (q) => setSearch(q.trim());
 
   return (
     <div className="container">
@@ -73,17 +73,16 @@ export function Communities() {
         </Link>
       </div>
 
-      <form onSubmit={onSubmit} style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <input
-          type="text"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          placeholder="Пошук: назва або опис"
-          className="form-input"
-          style={{ flex: 1 }}
-        />
-        <button type="submit" className="btn btn-secondary">ШУКАТИ</button>
-      </form>
+      <LiveSearchBox
+        value={searchInput}
+        onChange={setSearchInput}
+        onSubmitQuery={applySearch}
+        scope="communities"
+        variant="filter"
+        placeholder="Пошук: назва або опис спільноти"
+        ariaLabel="Пошук спільнот"
+        showViewAll={false}
+      />
 
       <div className="filters" style={{ flexWrap: 'wrap', gap: 8 }}>
         {TYPE_FILTERS.map((t) => (

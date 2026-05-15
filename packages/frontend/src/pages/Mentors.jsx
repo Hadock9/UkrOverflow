@@ -3,11 +3,13 @@
  */
 
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
+import { LiveSearchBox } from '../components/LiveSearchBox';
 import { mentors } from '../services/api';
 import '../styles/brutalism.css';
+import '../components/LiveSearchBox.css';
 
 const POPULAR_STACKS = ['react', 'typescript', 'nodejs', 'python', 'go', 'java', 'kubernetes', 'postgresql'];
 
@@ -20,11 +22,12 @@ function excerpt(text, n = 240) {
 export function Mentors() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [activeStacks, setActiveStacks] = useState([]);
   const [language, setLanguage] = useState('');
   const [topic, setTopic] = useState('');
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('search') || '');
+  const [search, setSearch] = useState(() => searchParams.get('search') || '');
 
   const { data, isLoading } = useQuery({
     queryKey: ['mentors-list', { activeStacks, language, topic, search }],
@@ -69,14 +72,17 @@ export function Mentors() {
         )}
       </div>
 
-      <form onSubmit={(e) => { e.preventDefault(); setSearch(searchInput.trim()); }} style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-        <input
-          type="text"
-          className="form-input"
-          placeholder="Пошук: ім'я, опис профілю..."
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+        <LiveSearchBox
           value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-          style={{ flex: 1, minWidth: 200 }}
+          onChange={setSearchInput}
+          onSubmitQuery={(q) => setSearch(q.trim())}
+          scope="mentors"
+          variant="filter"
+          placeholder="Пошук: ім'я, опис профілю…"
+          ariaLabel="Пошук менторів"
+          showViewAll={false}
+          className="mentors-search-live"
         />
         <input
           type="text"
@@ -94,8 +100,7 @@ export function Mentors() {
           onChange={(e) => setTopic(e.target.value)}
           style={{ width: 160 }}
         />
-        <button type="submit" className="btn btn-secondary">ШУКАТИ</button>
-      </form>
+      </div>
 
       <div className="filters" style={{ flexWrap: 'wrap', gap: 8 }}>
         {POPULAR_STACKS.map((s) => (

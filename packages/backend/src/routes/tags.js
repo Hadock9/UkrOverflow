@@ -18,9 +18,8 @@ let cache = { at: 0, tags: [] };
 const CACHE_MS = 60_000;
 
 async function getTagsCached() {
-  if (Date.now() - cache.at < CACHE_MS && cache.tags.length) {
-    return cache.tags;
-  }
+  const stale = Date.now() - cache.at >= CACHE_MS || !cache.tags.length;
+  if (!stale) return cache.tags;
   const tags = await aggregateAllTags();
   cache = { at: Date.now(), tags };
   return tags;

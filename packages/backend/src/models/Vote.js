@@ -104,20 +104,23 @@ export class Vote {
    */
 
   static async _updateAuthorReputation(entityType, entityId, voteType) {
-    const table = entityType === 'question' ? 'questions' : 'answers';
-    const delta = voteType === 'up' ? 10 : -5;
+    const tableMap = {
+      question: 'questions',
+      answer: 'answers',
+      content: 'content_items',
+      content_answer: 'content_answers',
+    };
+    const table = tableMap[entityType];
+    if (!table) return;
 
-    // Отримати автора
-    const [rows] = await pool.execute(
-      `SELECT author_id FROM ${table} WHERE id = ?`,
-      [entityId]
-    );
+    const delta = voteType === 'up' ? 10 : -5;
+    const [rows] = await pool.execute(`SELECT author_id FROM ${table} WHERE id = ?`, [entityId]);
 
     if (rows.length > 0) {
-      await pool.execute(
-        'UPDATE users SET reputation = reputation + ? WHERE id = ?',
-        [delta, rows[0].author_id]
-      );
+      await pool.execute('UPDATE users SET reputation = reputation + ? WHERE id = ?', [
+        delta,
+        rows[0].author_id,
+      ]);
     }
   }
 }

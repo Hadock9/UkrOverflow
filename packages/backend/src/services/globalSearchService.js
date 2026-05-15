@@ -341,26 +341,148 @@ async function findTagSuggestions(needle, limit = 6) {
     .map((t) => ({ name: t.name, count: t.count }));
 }
 
-/**
- * Швидкий пошук для автодоповнення (хедер, сторінка пошуку).
- */
-export async function liveSearch(q) {
-  const needle = String(q || '').trim();
-  if (needle.length < 2) {
-    return { hits: [], tags: [], news: [], query: needle };
+async function searchCommunities(needle, limit = 6) {
+  const like = `%${needle}%`;
+  try {
+    const [rows] = await pool.execute(
+      `SELECT id, name, slug, description, type, member_count
+       FROM communities
+       WHERE is_public = 1
+         AND (name LIKE ? OR description LIKE ? OR location LIKE ? OR slug LIKE ?)
+       ORDER BY member_count DESC, post_count DESC
+       LIMIT ${Math.min(limit, 12)}`,
+      [like, like, like, like],
+    );
+    return rows.map((r) =>
+      rowToHit('community', r.id, r.name, r.description, {
+        slug: r.slug,
+        community_type: r.type,
+        member_count: r.member_count,
+      }),
+    );
+  } catch {
+    return [];
   }
+}
 
-  const [{ hits }, tags, news] = await Promise.all([
-    globalSearch(needle, { limitPerType: 2 }),
-    findTagSuggestions(needle, 6),
-    searchNews(needle, 4),
-  ]);
+async function searchUsers(needle, limit = 6, { mentorsOnly = false } = {}) {
+  const like = `%${needle}%`;
+  try {
+    const join = mentorsOnly
+      ? ' INNER JOIN mentor_profiles mp ON mp.user_id = u.id AND mp.is_active = 1 '
+      : '';
+    const [rows] = await pool.execute(
+      `SELECT u.id, u.username, u.avatar_url, u.location, u.reputation, u.bio
+       FROM users u
+       ${join}
+       WHERE (u.username LIKE ? OR u.bio LIKE ? OR u.github_login LIKE ? OR u.location LIKE ?)
+       ORDER BY u.reputation DESC
+       LIMIT ${Math.min(limit, 12)}`,
+      [like, like, like, like],
+    );
+    return rows.map((r) =>
+      rowToHit(mentorsOnly ? 'mentor' : 'user', r.id, r.username, r.bio || r.location, {
+        location: r.location,
+        reputation: r.reputation,
+      }),
+    );
+  } catch {
+    return [];
+  }
+}
 
+function emptyLivePayload(needle) {
   return {
     query: needle,
-    hits: hits.slice(0, 10),
-    tags,
-    news,
-    total: hits.length + tags.length + news.length,
+    hits: [],
+    tags: [],
+    news: [],
+    communities: [],
+    mentors: [],
+    users: [],
+    total: 0,
   };
+}
+
+/**
+ * Швидкий пошук для автодоповнення (хедер, сторінки, фільтри).
+ * @param {string} q
+ * @param {{ scope?: 'all'|'hub'|'news'|'communities'|'tags'|'mentors'|'users' }} opts
+ */
+export async function liveSearch(q, opts = {}) {
+  const needle = String(q || '').trim();
+  const scope = opts.scope || 'all';
+
+  if (needle.length < 2) {
+    return emptyLivePayload(needle);
+  }
+
+  switch (scope) {
+    case 'news': {
+      const news = await searchNews(needle, 10);
+      const tags = await findTagSuggestions(needle, 4);
+      return { ...emptyLivePayload(needle), news, tags, total: news.length + tags.length };
+    }
+    case 'communities': {
+      const communities = await searchCommunities(needle, 10);
+      return { ...emptyLivePayload(needle), communities, total: communities.length };
+    }
+    case 'tags': {
+      const tags = await findTagSuggestions(needle, 14);
+      return { ...emptyLivePayload(needle), tags, total: tags.length };
+    }
+    case 'mentors': {
+      const mentors = await searchUsers(needle, 10, { mentorsOnly: true });
+      return { ...emptyLivePayload(needle), mentors, total: mentors.length };
+    }
+    case 'users': {
+      const users = await searchUsers(needle, 10, { mentorsOnly: false });
+      return { ...emptyLivePayload(needle), users, total: users.length };
+    }
+    case 'hub': {
+      const [{ hits }, tags] = await Promise.all([
+        globalSearch(needle, { limitPerType: 3 }),
+        findTagSuggestions(needle, 6),
+      ]);
+      const sliced = hits.slice(0, 12);
+      return {
+        query: needle,
+        hits: sliced,
+        tags,
+        news: [],
+        communities: [],
+        mentors: [],
+        users: [],
+        total: sliced.length + tags.length,
+      };
+    }
+    default: {
+      const [{ hits }, tags, news, communities, mentors, users] = await Promise.all([
+        globalSearch(needle, { limitPerType: 2 }),
+        findTagSuggestions(needle, 6),
+        searchNews(needle, 4),
+        searchCommunities(needle, 3),
+        searchUsers(needle, 2, { mentorsOnly: true }),
+        searchUsers(needle, 2, { mentorsOnly: false }),
+      ]);
+      const slicedHits = hits.slice(0, 10);
+      const total =
+        slicedHits.length +
+        tags.length +
+        news.length +
+        communities.length +
+        mentors.length +
+        users.length;
+      return {
+        query: needle,
+        hits: slicedHits,
+        tags,
+        news,
+        communities,
+        mentors,
+        users,
+        total,
+      };
+    }
+  }
 }

@@ -134,6 +134,7 @@ router.post(
         linkedContentId,
       });
       await Notification.notifyNewCommunityPost(communityId, post.id, req.user.id);
+      await Notification.notifyHubLinkedInPost(post);
       res.status(201).json({ success: true, data: { post } });
     } catch (e) { next(e); }
   }
@@ -195,6 +196,7 @@ router.post(
       }
       const status = req.body.status === 'filled' ? 'filled' : 'closed';
       const updated = await CommunityPost.update(id, { status });
+      await Notification.notifyCommunityPostStatus(id, req.user.id, status);
       res.json({ success: true, data: { post: updated } });
     } catch (e) { next(e); }
   }
