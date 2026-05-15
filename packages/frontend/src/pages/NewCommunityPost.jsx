@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { communities, communityPosts } from '../services/api';
 import { parseHubMaterialUrl } from '../utils/hubLinkParse';
+import { GitHubRepoPicker } from '../components/GitHubRepoPicker';
 import '../styles/brutalism.css';
 
 const TYPES = [
@@ -285,7 +286,14 @@ export function NewCommunityPost() {
           <>
             <div className="form-group">
               <label className="form-label">URL РЕПОЗИТОРІЮ</label>
-              <input type="url" className="form-input" value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} placeholder="https://github.com/..." />
+              <GitHubRepoPicker
+                className="form-input"
+                inputType="url"
+                outputFormat="url"
+                value={repoUrl}
+                onChange={setRepoUrl}
+                placeholder="https://github.com/owner/repo"
+              />
             </div>
             <div className="form-group">
               <label className="form-label">URL ЗАПИТУ НА ЗЛИТТЯ</label>

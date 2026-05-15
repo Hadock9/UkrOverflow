@@ -9,7 +9,7 @@ import DOMPurify from 'dompurify';
 import { useMediator } from '../contexts/MediatorContext';
 import { useAuth } from '../contexts/AuthContext';
 import { EventTypes } from '../../../mediator/src/index';
-import { api, communityPosts } from '../services/api';
+import { api, answers as answersApi, communityPosts } from '../services/api';
 import { MarkdownEditor } from '../components/MarkdownEditor';
 import { AIAssistant } from '../components/AIAssistant';
 import { AISimilarQuestions } from '../components/AISimilarQuestions';
@@ -17,6 +17,7 @@ import { AIQuestionSummary } from '../components/AIQuestionSummary';
 import { AIAnswersSummary } from '../components/AIAnswersSummary';
 import { AIRelatedPosts } from '../components/AIRelatedPosts';
 import { LinkedReposPanel } from '../components/LinkedReposPanel';
+import { VoteButtons } from '../components/VoteButtons';
 import '../styles/brutalism.css';
 
 export function QuestionDetail() {
@@ -31,6 +32,14 @@ export function QuestionDetail() {
   const [answerBody, setAnswerBody] = useState('');
   const [relatedCommunityPosts, setRelatedCommunityPosts] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [acceptingId, setAcceptingId] = useState(null);
+
+  const isAcceptedAnswer = (answer) => Boolean(Number(answer?.is_accepted));
+  const isQuestionAuthor = user && question && Number(user.id) === Number(question.author_id);
+  const canManageAccepted = user && question && (
+    Number(user.id) === Number(question.author_id) || user.role === 'admin'
+  );
+  const hasAcceptedAnswer = Array.isArray(answers) && answers.some(isAcceptedAnswer);
 
   useEffect(() => {
     loadQuestion();
@@ -82,58 +91,13 @@ export function QuestionDetail() {
     }
   };
 
-  const handleVote = async (type, entityType, entityId) => {
-    if (!user) {
-      alert('Увійдіть, щоб голосувати');
-      return;
-    }
-
-    try {
-      mediator.emit(EventTypes.USER_ACTION, {
-        action: 'vote',
-        type,
-        entityType,
-        entityId
-      }, 'QuestionDetail');
-
-      const response = await api.post('/votes', {
-        entityType,
-        entityId,
-        voteType: type
-      });
-
-      // Бекенд повертає актуальні лічильники { upvotes, downvotes, total }
-      const voteData = response.data?.data?.votes;
-      const newTotal = typeof voteData?.total === 'number'
-        ? voteData.total
-        : (Number(voteData?.upvotes) || 0) - (Number(voteData?.downvotes) || 0);
-
-      if (entityType === 'question') {
-        setQuestion(prev => prev
-          ? { ...prev, votes: newTotal, upvotes: voteData?.upvotes ?? prev.upvotes, downvotes: voteData?.downvotes ?? prev.downvotes }
-          : prev
-        );
-        loadQuestion();
-      } else {
-        setAnswers(prev => prev.map(a =>
-          a.id === entityId
-            ? { ...a, votes: newTotal, upvotes: voteData?.upvotes ?? a.upvotes, downvotes: voteData?.downvotes ?? a.downvotes }
-            : a
-        ));
-        loadAnswers();
-      }
-
-      mediator.emit(EventTypes.NOTIFICATION, {
-        type: 'success',
-        message: 'Голос враховано'
-      }, 'QuestionDetail');
-    } catch (error) {
-      console.error('Помилка голосування:', error);
-      mediator.emit(EventTypes.NOTIFICATION, {
-        type: 'error',
-        message: error.response?.data?.message || 'Помилка голосування'
-      }, 'QuestionDetail');
-    }
+  const emitVoteAction = (voteType, entityType, entityId) => {
+    mediator.emit(EventTypes.USER_ACTION, {
+      action: 'vote',
+      type: voteType,
+      entityType,
+      entityId,
+    }, 'QuestionDetail');
   };
 
   const handleSubmitAnswer = async (e) => {
@@ -186,16 +150,52 @@ export function QuestionDetail() {
   };
 
   const handleAcceptAnswer = async (answerId) => {
+    if (!canManageAccepted) {
+      return;
+    }
+
+    setAcceptingId(answerId);
     try {
-      await api.put(`/answers/${answerId}/accept`);
-      loadAnswers();
+      await answersApi.accept(answerId);
+      await loadAnswers();
 
       mediator.emit(EventTypes.NOTIFICATION, {
         type: 'success',
-        message: 'Відповідь прийнято'
+        message: 'Відповідь прийнято як правильну'
       }, 'QuestionDetail');
     } catch (error) {
       console.error('Помилка прийняття відповіді:', error);
+      mediator.emit(EventTypes.NOTIFICATION, {
+        type: 'error',
+        message: error.response?.data?.message || 'Не вдалося прийняти відповідь'
+      }, 'QuestionDetail');
+    } finally {
+      setAcceptingId(null);
+    }
+  };
+
+  const handleUnacceptAnswer = async (answerId) => {
+    if (!canManageAccepted) {
+      return;
+    }
+
+    setAcceptingId(answerId);
+    try {
+      await answersApi.unaccept(answerId);
+      await loadAnswers();
+
+      mediator.emit(EventTypes.NOTIFICATION, {
+        type: 'success',
+        message: 'Позначку правильної відповіді знято'
+      }, 'QuestionDetail');
+    } catch (error) {
+      console.error('Помилка зняття позначки:', error);
+      mediator.emit(EventTypes.NOTIFICATION, {
+        type: 'error',
+        message: error.response?.data?.message || 'Не вдалося зняти позначку'
+      }, 'QuestionDetail');
+    } finally {
+      setAcceptingId(null);
     }
   };
 
@@ -281,23 +281,16 @@ export function QuestionDetail() {
 
       {/* Тіло питання */}
       <div className="question-detail-card">
-        <div className="vote-section">
-          <button
-            className="vote-btn vote-up"
-            onClick={() => handleVote('up', 'question', question.id)}
-            disabled={!user}
-          >
-            ▲
-          </button>
-          <div className="vote-count">{question.votes || 0}</div>
-          <button
-            className="vote-btn vote-down"
-            onClick={() => handleVote('down', 'question', question.id)}
-            disabled={!user}
-          >
-            ▼
-          </button>
-        </div>
+        <VoteButtons
+          entityType="question"
+          entityId={question.id}
+          votes={question.votes}
+          upvotes={question.upvotes}
+          downvotes={question.downvotes}
+          userVote={question.user_vote}
+          onUpdate={() => loadQuestion()}
+          onVoted={(voteType) => emitVoteAction(voteType, 'question', question.id)}
+        />
 
         <div className="question-detail-content">
           {/* AI Summary для довгих питань */}
@@ -351,43 +344,77 @@ export function QuestionDetail() {
           {Array.isArray(answers) ? answers.length : 0} {Array.isArray(answers) && answers.length === 1 ? 'ВІДПОВІДЬ' : 'ВІДПОВІДЕЙ'}
         </h2>
 
+        <div className="accept-answer-help" role="note">
+          <strong>Як позначити правильну відповідь?</strong>
+          <p>
+            Якщо ви автор питання — натисніть «Прийняти відповідь» біля найкращої відповіді.
+            Вона закріпиться зверху та отримає позначку.
+          </p>
+          {!user && (
+            <p className="accept-answer-help-muted">
+              Увійдіть у свій обліковий запис, щоб керувати відповідями на власних питаннях.
+            </p>
+          )}
+          {user && !isQuestionAuthor && user.role !== 'admin' && (
+            <p className="accept-answer-help-muted">
+              Автор питання може позначити найкращу відповідь кнопкою «Прийняти відповідь».
+            </p>
+          )}
+          {canManageAccepted && answers.length > 0 && !hasAcceptedAnswer && (
+            <p className="accept-answer-help-cta">
+              Оберіть найкращу відповідь нижче — натисніть «Прийняти відповідь».
+            </p>
+          )}
+        </div>
+
+        {canManageAccepted && answers.length > 0 && !hasAcceptedAnswer && (
+          <div className="accept-answer-banner">
+            Ви автор цього питання — оберіть найкращу відповідь кнопкою «Прийняти відповідь».
+          </div>
+        )}
+
+        {Array.isArray(answers) && answers.length === 0 && (
+          <div className="answers-empty">
+            <p>Поки що немає відповідей.</p>
+            {isQuestionAuthor && (
+              <p className="accept-answer-help-muted">
+                Коли з&apos;являться відповіді, ви зможете позначити найкращу кнопкою «Прийняти відповідь».
+              </p>
+            )}
+            {!isQuestionAuthor && (
+              <p className="accept-answer-help-muted">
+                Автор питання зможе позначити правильну відповідь після появи відповідей.
+              </p>
+            )}
+          </div>
+        )}
+
         {Array.isArray(answers) && answers.map((answer) => (
-          <div key={answer.id} className={`answer-card ${answer.is_accepted ? 'accepted' : ''}`}>
+          <div
+            key={answer.id}
+            className={`answer-card ${isAcceptedAnswer(answer) ? 'accepted' : ''}`}
+          >
             <div className="vote-section">
-              <button
-                className="vote-btn vote-up"
-                onClick={() => handleVote('up', 'answer', answer.id)}
-                disabled={!user}
-              >
-                ▲
-              </button>
-              <div className="vote-count">
-                {typeof answer.votes === 'number'
-                  ? answer.votes
-                  : (Number(answer.upvotes) || 0) - (Number(answer.downvotes) || 0)}
-              </div>
-              <button
-                className="vote-btn vote-down"
-                onClick={() => handleVote('down', 'answer', answer.id)}
-                disabled={!user}
-              >
-                ▼
-              </button>
-              {answer.is_accepted && (
-                <div className="accepted-badge">✓</div>
-              )}
-              {user && user.id === question.author_id && !answer.is_accepted && (
-                <button
-                  className="accept-btn"
-                  onClick={() => handleAcceptAnswer(answer.id)}
-                  title="Прийняти відповідь"
-                >
-                  ✓
-                </button>
+              <VoteButtons
+                entityType="answer"
+                entityId={answer.id}
+                votes={answer.votes}
+                upvotes={answer.upvotes}
+                downvotes={answer.downvotes}
+                userVote={answer.user_vote}
+                onUpdate={() => loadAnswers()}
+                onVoted={(voteType) => emitVoteAction(voteType, 'answer', answer.id)}
+              />
+              {isAcceptedAnswer(answer) && (
+                <div className="accepted-badge" title="Прийнята відповідь">✓</div>
               )}
             </div>
 
             <div className="answer-content">
+              {isAcceptedAnswer(answer) && (
+                <div className="accepted-answer-label">ПРИЙНЯТА ВІДПОВІДЬ</div>
+              )}
+
               <div
                 className="markdown-content"
                 dangerouslySetInnerHTML={renderMarkdown(answer.body)}
@@ -400,13 +427,37 @@ export function QuestionDetail() {
                   </Link>
                   <span className="author-date">{formatDate(answer.created_at)}</span>
                 </div>
-                {user && (user.id === answer.author_id || user.role === 'admin') && (
-                  <div className="question-actions">
-                    <button onClick={() => handleDeleteAnswer(answer.id)} className="btn btn-danger btn-sm">
+                <div className="answer-actions-row">
+                  {canManageAccepted && !isAcceptedAnswer(answer) && (
+                    <button
+                      type="button"
+                      className="btn btn-accept-answer"
+                      onClick={() => handleAcceptAnswer(answer.id)}
+                      disabled={acceptingId === answer.id}
+                    >
+                      {acceptingId === answer.id ? 'ЗБЕРІГАЄМО...' : 'ПРИЙНЯТИ ВІДПОВІДЬ'}
+                    </button>
+                  )}
+                  {canManageAccepted && isAcceptedAnswer(answer) && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => handleUnacceptAnswer(answer.id)}
+                      disabled={acceptingId === answer.id}
+                    >
+                      {acceptingId === answer.id ? '...' : 'ЗНЯТИ ПОЗНАЧКУ'}
+                    </button>
+                  )}
+                  {user && (Number(user.id) === Number(answer.author_id) || user.role === 'admin') && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteAnswer(answer.id)}
+                      className="btn btn-danger btn-sm"
+                    >
                       ВИДАЛИТИ
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>

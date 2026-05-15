@@ -9,6 +9,7 @@ import DOMPurify from 'dompurify';
 import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
 import { LinkedReposPanel } from '../components/LinkedReposPanel';
+import { VoteButtons } from '../components/VoteButtons';
 import '../styles/brutalism.css';
 
 export function ArticleDetail() {
@@ -118,7 +119,16 @@ export function ArticleDetail() {
       )}
 
       <div className="question-detail-card">
-        <div className="question-content" style={{ width: '100%' }}>
+        <VoteButtons
+          entityType="article"
+          entityId={article.id}
+          votes={article.votes}
+          upvotes={article.upvotes}
+          downvotes={article.downvotes}
+          userVote={article.user_vote}
+        />
+        <div className="question-detail-content">
+          <div className="question-content" style={{ width: '100%' }}>
           <div className="question-tags" style={{ marginBottom: 'var(--space-3)' }}>
             {Array.isArray(article.tags) && article.tags.map((tag, index) => (
               <Link key={index} to={`/tags/${tag}`} className="tag">
@@ -135,6 +145,7 @@ export function ArticleDetail() {
             </Link>
             <span className="separator">•</span>
             <span className="date">knowledge hub / article</span>
+          </div>
           </div>
         </div>
       </div>

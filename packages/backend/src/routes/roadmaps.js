@@ -8,6 +8,7 @@ import Roadmap from '../models/Roadmap.js';
 import { authenticateToken, optionalAuth } from '../middleware/auth.js';
 import { attachViewerKeyOptional, resolveViewerKey } from '../middleware/viewerKey.js';
 import { validate } from '../middleware/validation.js';
+import { enrichWithVotes } from '../utils/enrichVotes.js';
 
 const router = express.Router();
 
@@ -76,6 +77,7 @@ router.get(
         await Roadmap.recordView(id, req.viewerKey);
         roadmap = await Roadmap.findById(id);
       }
+      await enrichWithVotes(roadmap, 'roadmap', req.user?.id);
       res.json({ success: true, data: { roadmap } });
     } catch (e) { next(e); }
   }

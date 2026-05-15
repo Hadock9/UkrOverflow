@@ -158,7 +158,7 @@ export function CommunityDetail() {
             {!user ? (
               <button className="btn btn-primary" onClick={() => navigate('/login')}>УВІЙТИ ЩОБ ПРИЄДНАТИСЯ</button>
             ) : isOwner ? (
-              <span className="tag" style={{ background: '#f5d142' }}>ВИ ВЛАСНИК</span>
+              <span className="tag tag-accent">ВИ ВЛАСНИК</span>
             ) : isMember ? (
               <button className="btn btn-secondary" onClick={() => leaveMutation.mutate()} disabled={leaveMutation.isPending}>
                 ВИЙТИ
@@ -315,7 +315,7 @@ export function CommunityDetail() {
                       {badge.label}
                     </span>
                     {p.status !== 'open' && (
-                      <span className="tag" style={{ background: '#ddd' }}>{p.status}</span>
+                      <span className={`tag tag-sm tag-status-${p.status}`}>{p.status}</span>
                     )}
                   </div>
                   <Link to={`/community-posts/${p.id}`} className="question-title">

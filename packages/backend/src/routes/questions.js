@@ -8,6 +8,7 @@ import { Question } from '../models/Question.js';
 import { authenticateToken, optionalAuth } from '../middleware/auth.js';
 import { attachViewerKeyOptional, resolveViewerKey } from '../middleware/viewerKey.js';
 import { validate } from '../middleware/validation.js';
+import Vote from '../models/Vote.js';
 
 const router = express.Router();
 
@@ -123,6 +124,10 @@ router.get(
       if (wantRecord && req.viewerKey) {
         await Question.recordView(questionId, req.viewerKey);
         question = await Question.findById(questionId);
+      }
+
+      if (req.user) {
+        question.user_vote = await Vote.getUserVote(req.user.id, 'question', questionId);
       }
 
       res.json({

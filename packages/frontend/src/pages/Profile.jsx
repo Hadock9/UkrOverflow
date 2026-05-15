@@ -55,8 +55,8 @@ const CONTENT_TYPES = [
     tabLabel: 'МАРШРУТИ',
     singular: 'маршрут',
     detail: (id) => `/roadmaps/${id}`,
-    edit: null,
-    hasEdit: false,
+    edit: (id) => `/roadmaps/${id}/edit`,
+    hasEdit: true,
   },
   {
     key: 'bestPractices',
@@ -66,8 +66,8 @@ const CONTENT_TYPES = [
     tabLabel: 'НАЙКРАЩІ ПРАКТИКИ',
     singular: 'практику',
     detail: (id) => `/best-practices/${id}`,
-    edit: null,
-    hasEdit: false,
+    edit: (id) => `/best-practices/${id}/edit`,
+    hasEdit: true,
   },
   {
     key: 'faqs',
@@ -77,8 +77,8 @@ const CONTENT_TYPES = [
     tabLabel: 'ЧАП',
     singular: 'ЧаП',
     detail: (id) => `/faqs/${id}`,
-    edit: null,
-    hasEdit: false,
+    edit: (id) => `/faqs/${id}/edit`,
+    hasEdit: true,
   },
 ];
 
@@ -680,7 +680,10 @@ export function Profile() {
                     <div className="question-meta">
                       <span className="date">Створено {formatDate(post.created_at)}</span>
                       {isOwnProfile && (
-                        <div className="question-actions" style={{ marginLeft: 'auto' }}>
+                        <div className="question-actions" style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+                          <Link to={`/community-posts/${post.id}/edit`} className="btn btn-secondary btn-sm">
+                            РЕДАГУВАТИ
+                          </Link>
                           <button
                             type="button"
                             onClick={() => handleDeleteCommunityPost(post.id)}

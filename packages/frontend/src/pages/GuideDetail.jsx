@@ -9,6 +9,7 @@ import { marked } from 'marked';
 import { useAuth } from '../contexts/AuthContext';
 import { guides } from '../services/api';
 import { LinkedReposPanel } from '../components/LinkedReposPanel';
+import { VoteButtons } from '../components/VoteButtons';
 import '../styles/brutalism.css';
 
 const DIFFICULTY_LABELS = {
@@ -100,7 +101,16 @@ export function GuideDetail() {
       </div>
 
       <div className="question-detail-card">
-        <div className="question-content" style={{ width: '100%' }}>
+        <VoteButtons
+          entityType="guide"
+          entityId={guide.id}
+          votes={guide.votes}
+          upvotes={guide.upvotes}
+          downvotes={guide.downvotes}
+          userVote={guide.user_vote}
+        />
+        <div className="question-detail-content">
+          <div className="question-content" style={{ width: '100%' }}>
           <div className="question-tags" style={{ marginBottom: 'var(--space-3)' }}>
             {Array.isArray(guide.tags) && guide.tags.map((tag, index) => <Link key={index} to={`/tags/${tag}`} className="tag">{tag}</Link>)}
           </div>
@@ -109,6 +119,7 @@ export function GuideDetail() {
             <Link to={`/users/${guide.author_id}`} className="author">{guide.author_name}</Link>
             <span className="separator">•</span>
             <span className="date">knowledge hub / guide</span>
+          </div>
           </div>
         </div>
       </div>

@@ -7,6 +7,7 @@ import Community from './Community.js';
 import { Question } from './Question.js';
 import { LINKABLE_HUB_TYPES } from '../constants/contentTypes.js';
 import { normalizeTagList } from '../utils/tagNormalize.js';
+import { voteTotalExpr } from '../utils/voteSql.js';
 
 const ALLOWED_TYPES = ['discussion', 'pet_project', 'code_review', 'mentor_request', 'roadmap_request', 'team_search', 'event', 'announcement'];
 const ALLOWED_STATUSES = ['open', 'closed', 'filled'];
@@ -75,7 +76,8 @@ export class CommunityPost {
     const [rows] = await pool.execute(
       `SELECT p.*,
               u.username as author_name, u.avatar_url as author_avatar, u.github_login as author_github,
-              c.slug as community_slug, c.name as community_name, c.type as community_type
+              c.slug as community_slug, c.name as community_name, c.type as community_type,
+              ${voteTotalExpr('community_post', 'p.id')} AS votes
        FROM community_posts p
        LEFT JOIN users u ON p.author_id = u.id
        LEFT JOIN communities c ON p.community_id = c.id
@@ -87,6 +89,9 @@ export class CommunityPost {
 
   static async list({ communityId, type, status, authorId, stack, search, page = 1, limit = 20, sort = 'created_at' } = {}) {
     const sortField = ALLOWED_SORTS.includes(sort) ? sort : 'created_at';
+    const orderExpr = sortField === 'votes'
+      ? voteTotalExpr('community_post', 'p.id')
+      : `p.${sortField}`;
     const limitN = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
     const offset = (Math.max(parseInt(page, 10) || 1, 1) - 1) * limitN;
 
@@ -120,12 +125,13 @@ export class CommunityPost {
     }
 
     const sql = `SELECT p.*, u.username as author_name, u.avatar_url as author_avatar,
-                        c.slug as community_slug, c.name as community_name, c.type as community_type
+                        c.slug as community_slug, c.name as community_name, c.type as community_type,
+                        ${voteTotalExpr('community_post', 'p.id')} AS votes
                  FROM community_posts p
                  LEFT JOIN users u ON p.author_id = u.id
                  LEFT JOIN communities c ON p.community_id = c.id
                  ${where}
-                 ORDER BY p.${sortField} DESC
+                 ORDER BY ${orderExpr} DESC
                  LIMIT ${limitN} OFFSET ${offset}`;
 
     const [rows] = params.length ? await pool.execute(sql, params) : await pool.query(sql);

@@ -30,13 +30,17 @@ import { NewSnippet } from './pages/NewSnippet'
 import { EditSnippet } from './pages/EditSnippet'
 import { RoadmapDetail, BestPracticeDetail, FaqDetail } from './pages/HubItemDetail'
 import { NewRoadmap } from './pages/NewRoadmap'
+import { EditRoadmap } from './pages/EditRoadmap'
 import { NewBestPractice } from './pages/NewBestPractice'
+import { EditBestPractice } from './pages/EditBestPractice'
 import { NewFaq } from './pages/NewFaq'
+import { EditFaq } from './pages/EditFaq'
 import { AuthCallback } from './pages/AuthCallback'
 import { Communities } from './pages/Communities'
 import { NewCommunity } from './pages/NewCommunity'
 import { CommunityDetail } from './pages/CommunityDetail'
 import { NewCommunityPost } from './pages/NewCommunityPost'
+import { EditCommunityPost } from './pages/EditCommunityPost'
 import { CommunityPostDetail } from './pages/CommunityPostDetail'
 import { Mentors } from './pages/Mentors'
 import { MentorProfileEdit } from './pages/MentorProfileEdit'
@@ -46,6 +50,7 @@ import { NotificationsPage } from './pages/Notifications'
 import { NewsFeed } from './pages/NewsFeed'
 import { NewsDetail } from './pages/NewsDetail'
 import { NewNews } from './pages/NewNews'
+import { EditNews } from './pages/EditNews'
 
 function App() {
   const mediator = getMediator()
@@ -120,21 +125,25 @@ function App() {
 
             <Route path="/roadmaps" element={<Home />} />
             <Route path="/roadmaps/new" element={<NewRoadmap />} />
+            <Route path="/roadmaps/:id/edit" element={<EditRoadmap />} />
             <Route path="/roadmaps/:id" element={<RoadmapDetail />} />
 
             <Route path="/best-practices" element={<Home />} />
             <Route path="/best-practices/new" element={<NewBestPractice />} />
+            <Route path="/best-practices/:id/edit" element={<EditBestPractice />} />
             <Route path="/best-practices/:id" element={<BestPracticeDetail />} />
 
             <Route path="/faq" element={<Home />} />
             <Route path="/faqs" element={<Home />} />
             <Route path="/faqs/new" element={<NewFaq />} />
+            <Route path="/faqs/:id/edit" element={<EditFaq />} />
             <Route path="/faqs/:id" element={<FaqDetail />} />
 
             <Route path="/communities" element={<Communities />} />
             <Route path="/communities/new" element={<NewCommunity />} />
             <Route path="/communities/:slug" element={<CommunityDetail />} />
             <Route path="/communities/:slug/new" element={<NewCommunityPost />} />
+            <Route path="/community-posts/:id/edit" element={<EditCommunityPost />} />
             <Route path="/community-posts/:id" element={<CommunityPostDetail />} />
             <Route path="/mentors" element={<Mentors />} />
             <Route path="/mentors/edit" element={<MentorProfileEdit />} />
@@ -142,6 +151,7 @@ function App() {
 
             <Route path="/news" element={<NewsFeed />} />
             <Route path="/news/new" element={<NewNews />} />
+            <Route path="/news/:id/edit" element={<EditNews />} />
             <Route path="/news/:idOrSlug" element={<NewsDetail />} />
           </Routes>
         </main>

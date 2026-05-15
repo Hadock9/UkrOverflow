@@ -8,6 +8,7 @@ import BestPractice from '../models/BestPractice.js';
 import { authenticateToken, optionalAuth } from '../middleware/auth.js';
 import { attachViewerKeyOptional, resolveViewerKey } from '../middleware/viewerKey.js';
 import { validate } from '../middleware/validation.js';
+import { enrichWithVotes } from '../utils/enrichVotes.js';
 
 const router = express.Router();
 
@@ -76,6 +77,7 @@ router.get(
         await BestPractice.recordView(id, req.viewerKey);
         bp = await BestPractice.findById(id);
       }
+      await enrichWithVotes(bp, 'best_practice', req.user?.id);
       res.json({ success: true, data: { bestPractice: bp } });
     } catch (e) { next(e); }
   }

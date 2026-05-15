@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { github } from '../services/api';
+import { GitHubRepoPicker } from './GitHubRepoPicker';
 
 function formatNumber(n) {
   if (!Number.isFinite(n)) return '0';
@@ -112,13 +113,13 @@ export function LinkedReposPanel({ targetType, targetId }) {
 
       {showForm && user && (
         <form onSubmit={handleAdd} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <input
+          <GitHubRepoPicker
             className="input"
-            type="text"
             placeholder="owner/repo або https://github.com/owner/repo"
             value={repoInput}
-            onChange={(e) => setRepoInput(e.target.value)}
+            onChange={setRepoInput}
             disabled={adding}
+            outputFormat="slug"
           />
           <input
             className="input"

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Генерація DOCX з детальним описом платформи DevFlow (станом на 2026)."""
+"""Генерація DOCX з основними можливостями платформи DevFlow."""
 
 from datetime import date
 from pathlib import Path
@@ -9,7 +9,7 @@ from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt, Cm
 
-OUT = Path(__file__).resolve().parent.parent / "DevFlow-opys-saitu.docx"
+OUT = Path(__file__).resolve().parent.parent / "DevFlow-osnovni-mozhlyvosti.docx"
 
 
 def h(doc, text, level=1):
@@ -58,191 +58,118 @@ def main():
     r = title.add_run("DevFlow\n")
     r.bold = True
     r.font.size = Pt(22)
-    r2 = title.add_run("Детальний опис функціоналу веб-платформи\n")
+    r2 = title.add_run("Основні можливості веб-платформи\n")
     r2.font.size = Pt(14)
-    r3 = title.add_run(f"Дата: {date.today().strftime('%d.%m.%Y')}")
+    r3 = title.add_run(f"https://devflow.info · {date.today().strftime('%d.%m.%Y')}")
     r3.font.size = Pt(11)
     doc.add_paragraph()
 
-    h(doc, "1. Загальна характеристика", 1)
+    h(doc, "1. Про платформу", 1)
     p(doc, (
-        "DevFlow — україномовна платформа для розробників, що поєднує "
-        "модель Q&A (Stack Overflow), knowledge hub (статті, гайди, сніпети, маршрути навчання), "
-        "тематичні спільноти, каталог менторів, стрічку IT-новин у стилі DOU та інтеграцію "
-        "штучного інтелекту (Google Gemini). Продакшн-інстанс: https://devflow.info"
-    ))
-    p(doc, (
-        "Візуальний стиль — brutalism: чорно-білі контрасти, жовті/блакитні/зелені акценти, "
-        "моноширинні підписи, товсті рамки та тіні box-shadow. Frontend: React + Vite; "
-        "Backend: Node.js + Express; БД: MySQL; деплой: Docker (nginx + API + frontend build)."
+        "DevFlow — україномовна платформа для розробників. Поєднує Q&A (як Stack Overflow), "
+        "knowledge hub (статті, гайди, сніпети, маршрути навчання), тематичні спільноти, "
+        "каталог менторів і розробників, стрічку IT-новин та AI-помічника на базі Google Gemini."
     ))
 
-    h(doc, "2. Навігація та структура сайту", 1)
-    p(doc, "Головне меню (Header) містить:")
-    bullet(doc, "ГОЛОВНА (/) — лендінг з оглядом розділів")
-    bullet(doc, "ХАБ (/hub) — єдина стрічка knowledge hub")
-    bullet(doc, "НОВИНИ (/news) — стрічка новин")
-    bullet(doc, "ТЕГИ (/tags) — глобальний каталог тегів")
-    bullet(doc, "КОМ'ЮНІТІ, МЕНТОРИ, РОЗРОБНИКИ (/devs)")
-    bullet(doc, "Пошук у хедері — live-підказки під час введення (з 2 символів)")
-    bullet(doc, "Увійти / Реєстрація або профіль + сповіщення (для авторизованих)")
-
-    h(doc, "3. Сторінки та маршрути", 1)
-
-    routes = [
-        ("/", "Головна (MainPage)", "Hero, картки розділів, превʼю новин, блок «Свіже в хабі», бічна панель статистики"),
-        ("/hub", "Хаб знань", "Уніфікована стрічка /api/content, фільтри за типом, сортування, пагінація, створення контенту"),
-        ("/questions, /articles, …", "Фільтровані стрічки", "Той самий Home.jsx з автофільтром типу за URL"),
-        ("/tags/:tag", "Контент за тегом", "Стрічка хабу з фільтром tag"),
-        ("/tags", "Каталог тегів", "Хмара тегів, пошук, фільтри джерел, агрегація з усіх таблиць"),
-        ("/search", "Глобальний пошук", "Live-підказки + повні результати FULLTEXT по хабу та спільнотах"),
-        ("/news", "Стрічка новин", "Категорії (salary, career, tech…), пошук, sidebar: тренди, опитування, пульс ринку"),
-        ("/news/:id", "Деталь новини", "Markdown-тіло, перегляди, коментарі, категорія"),
-        ("/communities", "Спільноти", "Список міст/університетів/онлайн-груп"),
-        ("/communities/:slug", "Сторінка спільноти", "Пости, учасники, membership"),
-        ("/mentors", "Ментори", "Каталог профілів менторів"),
-        ("/devs", "Розробники", "Каталог користувачів-профілів"),
-        ("/users/:id, /profile", "Профіль", "Контент автора, GitHub-дані, вкладки хабу"),
-        ("/login, /register", "Авторизація", "Email/пароль + GitHub OAuth"),
-        ("/notifications", "Сповіщення", "Події: відповіді, голоси, коментарі в спільнотах"),
+    h(doc, "2. Основні можливості (коротко)", 1)
+    highlights = [
+        "Knowledge Hub — єдина стрічка контенту: питання, статті, гайди, сніпети, roadmap, best practices, FAQ.",
+        "Питання та відповіді — Markdown, голосування, прийнята відповідь, перегляди, пов’язані пости спільнот.",
+        "Глобальний пошук — live-підказки в хедері та на сторінках (хаб, новини, теги, спільноти, ментори, розробники).",
+        "Каталог тегів — агрегація з усього контенту, хмара тегів, фільтри та посилання на матеріали.",
+        "Спільноти — міста, університети, онлайн-групи; пости, коментарі, ролі owner/admin/member.",
+        "IT-новини — стрічка в стилі DOU: категорії, коментарі, опитування, sidebar з трендами.",
+        "Ментори та розробники — каталоги профілів, редагування профілю ментора.",
+        "Профіль користувача — репутація, GitHub OAuth, синхронізація репозиторіїв і стеку.",
+        "Сповіщення — відповіді, голоси, коментарі, активність у спільнотах і новинах; bell у хедері.",
+        "AI (Gemini) — підказки відповідей, теги, TL;DR, схожі питання, модерація, генерація roadmap.",
+        "Realtime — WebSocket для оновлень (питання, відповіді) без перезавантаження сторінки.",
+        "Авторизація — email/пароль і GitHub OAuth; ролі user, moderator, admin.",
     ]
-    table_headers(doc, ["URL", "Сторінка", "Опис"], routes)
+    for item in highlights:
+        bullet(doc, item)
+
+    h(doc, "3. Розділи сайту", 1)
+    routes = [
+        ("/", "Головна", "Огляд платформи, превʼю новин і хабу, статистика"),
+        ("/hub", "Knowledge Hub", "Уніфікована стрічка, фільтри за типом, сортування, створення контенту"),
+        ("/questions, /articles, /guides…", "Типи контенту", "Окремі URL-фільтри тієї ж стрічки хабу"),
+        ("/tags", "Теги", "Каталог, пошук, фільтри джерел"),
+        ("/search", "Пошук", "Повні результати + live-підказки за областями"),
+        ("/news", "Новини", "Стрічка, категорії, коментарі, sidebar"),
+        ("/communities", "Спільноти", "Список і сторінки спільнот з постами"),
+        ("/mentors", "Ментори", "Каталог і редагування профілю"),
+        ("/devs", "Розробники", "Каталог профілів"),
+        ("/profile, /users/:id", "Профіль", "Контент автора, GitHub-дані"),
+        ("/notifications", "Сповіщення", "Центр подій з фільтрами та посиланнями"),
+        ("/login, /register", "Вхід", "Реєстрація та GitHub OAuth"),
+    ]
+    table_headers(doc, ["URL", "Розділ", "Що робить"], routes)
 
     h(doc, "4. Knowledge Hub — типи контенту", 1)
     types = [
-        ("Питання (question)", "Q&A з відповідями, голосування, accepted answer, перегляди"),
-        ("Стаття (article)", "Довгі матеріали, excerpt, Markdown"),
-        ("Гайд (guide)", "Міні-гайди, difficulty, estimated minutes"),
-        ("Сніпет (snippet)", "Блоки коду + language"),
-        ("Маршрут (roadmap)", "Кроки навчання (steps JSON), difficulty, тижні"),
-        ("Best practice", "Правила, anti-patterns, category"),
-        ("ЧаП (faq)", "Q&A пари (qa_pairs JSON)"),
-        ("Пост спільноти", "У фіді /api/content як community_post"),
+        ("Питання", "Q&A, відповіді, голоси, accepted answer"),
+        ("Стаття", "Довгі матеріали, excerpt, Markdown"),
+        ("Гайд", "Короткі інструкції, складність, час читання"),
+        ("Сніпет", "Фрагменти коду з мовою програмування"),
+        ("Roadmap", "Кроки навчання, складність, тривалість"),
+        ("Best practice", "Рекомендації та anti-patterns"),
+        ("FAQ", "Пари питання–відповідь"),
+        ("Пост спільноти", "Обговорення, pet project, code review тощо"),
     ]
     table_headers(doc, ["Тип", "Можливості"], types)
-    p(doc, "Єдиний API GET /api/content з параметрами contentType, sortBy, tag, authorId, search, page, limit.")
 
-    h(doc, "5. Питання та відповіді", 1)
-    bullet(doc, "Створення / редагування / видалення питань (автор або admin)")
-    bullet(doc, "Відповіді з Markdown, голосування up/down")
-    bullet(doc, "Прийнята відповідь (accepted)")
-    bullet(doc, "Пов’язані пости спільнот за спільними тегами")
-    bullet(doc, "Панель Linked GitHub Repos на сторінці питання")
-    bullet(doc, "AI: підказка відповіді, TL;DR питання, схожі питання, резюме відповідей, рекомендації матеріалів")
+    h(doc, "5. Пошук", 1)
+    bullet(doc, "Live-підказки з 2 символів — у хедері, на /search, новинах, тегах, спільнотах, менторах, каталозі devs")
+    bullet(doc, "Області (scope): all, hub, news, tags, communities, mentors, users")
+    bullet(doc, "Повнотекстовий глобальний пошук по хабу та постах спільнот (FULLTEXT)")
+    bullet(doc, "API: GET /api/search/live, GET /api/search/global")
 
-    h(doc, "6. Спільноти (Communities)", 1)
-    bullet(doc, "Типи: city, university, online та ін.")
-    bullet(doc, "Slug-URL, опис, теги, website, location")
-    bullet(doc, "Membership: owner, admin, member")
-    bullet(doc, "Пости: pet_project, code_review, mentor_search, discussion тощо")
-    bullet(doc, "Коментарі до постів, лічильники views/votes")
-    bullet(doc, "Створення спільноти та постів авторизованими користувачами")
-
-    h(doc, "7. Ментори", 1)
-    bullet(doc, "Профіль ментора: стек, теми, формат сесій, контакт")
-    bullet(doc, "Редагування власного профілю (/mentors/edit)")
-    bullet(doc, "Перегляд каталогу /mentors")
-
-    h(doc, "8. Стрічка новин", 1)
-    p(doc, "Окремий модуль news_posts (не змішується з хабом):")
-    bullet(doc, "Поля: title, summary, body, slug, category, tags, views, is_pinned, published_at")
+    h(doc, "6. Спільноти та новини", 1)
+    p(doc, "Спільноти:", bold=True)
+    bullet(doc, "Створення спільнот і постів, membership, коментарі")
+    bullet(doc, "Типи постів: discussion, pet_project, code_review, mentor_search та ін.")
+    bullet(doc, "Пов’язаний контент з хабу в постах спільнот")
+    p(doc, "Новини:", bold=True)
     bullet(doc, "Категорії: salary, career, tech, community, events, ai")
-    bullet(doc, "До ~400 демо-новин (seed:news:large), тематика українського IT / DOU")
-    bullet(doc, "Sidebar: «Популярне за тиждень», «Зарплати», топ тегів, опитування грейду")
-    bullet(doc, "Коментарі під новинами (news_comments)")
-    bullet(doc, "Створення новин: admin / moderator (/news/new)")
+    bullet(doc, "Коментарі, перегляди, закріплені матеріали")
+    bullet(doc, "Sidebar: тренди, зарплати, опитування грейду")
 
-    h(doc, "9. Пошук", 1)
-    bullet(doc, "GET /api/search/live — миттєві підказки (хаб + новини + теги)")
-    bullet(doc, "GET /api/search/global — повнотекстовий пошук по всіх типах хабу + community_post")
-    bullet(doc, "GET /api/search — legacy пошук питань/відповідей")
-    bullet(doc, "UI: dropdown у хедері, сторінка /search з автооновленням URL")
-
-    h(doc, "10. Теги", 1)
-    bullet(doc, "GET /api/tags — агрегація тегів з questions, articles, guides, snippets, roadmaps, faqs, news, communities")
-    bullet(doc, "Сторінка /tags: хмара, фільтри, сортування, посилання на /tags/:name та /news?tag=")
-
-    h(doc, "11. AI-інтеграція (Google Gemini)", 1)
+    h(doc, "7. AI-функції (Google Gemini)", 1)
     ai_rows = [
-        ("POST /api/ai/suggest-answer", "Чернетка відповіді на питання (JWT)"),
-        ("POST /api/ai/suggest-tags", "Автопідбір тегів при створенні"),
-        ("POST /api/ai/summarize", "TL;DR довгого питання"),
-        ("POST /api/ai/summarize-answers", "Резюме дискусії"),
-        ("GET /api/ai/similar-questions/:id", "Схожі питання"),
-        ("GET /api/ai/related-content/:id", "Рекомендації статей/гайдів/roadmap"),
-        ("POST /api/ai/check-duplicate", "Перевірка дублікатів перед публікацією"),
-        ("POST /api/ai/analyze-question", "Оцінка якості формулювання"),
-        ("POST /api/ai/generate-roadmap", "Генерація roadmap за стеком (JWT)"),
-        ("POST /api/ai/moderate", "Модерація SPAM/TOXIC/LOW_QUALITY"),
+        ("Підказка відповіді", "Чернетка відповіді на питання"),
+        ("Автотеги", "Підбір тегів при створенні питання"),
+        ("TL;DR", "Коротке резюме довгого питання або дискусії"),
+        ("Схожі питання", "Рекомендації перед публікацією"),
+        ("Пов’язаний контент", "Статті, гайди, roadmap за темою"),
+        ("Модерація", "Перевірка SPAM / токсичності / якості"),
+        ("Roadmap generator", "Генерація маршруту навчання за стеком"),
     ]
-    table_headers(doc, ["Endpoint", "Призначення"], ai_rows)
-    p(doc, "UI: AIQuestionCoach (NewQuestion), AIAnswersSummary, AIRelatedPosts, AISimilarQuestions, AIQuestionSummary, AIAssistant, AITagSuggester, AIRoadmapGenerator.")
+    table_headers(doc, ["Функція", "Опис"], ai_rows)
+    p(doc, "Потрібен GEMINI_API_KEY у змінних середовища сервера.")
 
-    h(doc, "12. Авторизація та користувачі", 1)
-    bullet(doc, "Реєстрація email + пароль (bcrypt)")
-    bullet(doc, "GitHub OAuth: login, link account, callback /auth/callback")
-    bullet(doc, "Ролі: user, moderator, admin")
-    bullet(doc, "Репутація (reputation), аватар, bio, location, website")
-    bullet(doc, "Синхронізація GitHub: профіль, stack, contributions, badges, repos")
-    bullet(doc, "Каталог /devs та адмін-список /users")
+    h(doc, "8. Користувачі та сповіщення", 1)
+    bullet(doc, "Реєстрація, вхід, GitHub OAuth, ролі moderator/admin")
+    bullet(doc, "Репутація, аватар, bio, синхронізація GitHub-профілю")
+    bullet(doc, "Сповіщення: відповіді, голоси, коментарі, спільноти, новини, accepted answer")
+    bullet(doc, "NotificationBell у хедері, сторінка /notifications з фільтрами")
+    bullet(doc, "Закладки на питання")
 
-    h(doc, "13. Сповіщення та закладки", 1)
-    bullet(doc, "Типи: question_answer, answer_comment, vote, mention, community_post_comment тощо")
-    bullet(doc, "NotificationBell у хедері, сторінка /notifications")
-    bullet(doc, "Закладки на питання (bookmarks API)")
-
-    h(doc, "14. Статистика", 1)
-    bullet(doc, "GET /api/stats/overview — загальні лічильники")
-    bullet(doc, "GET /api/stats/top-tags, top-users, recent-activity, unanswered")
-    bullet(doc, "StatsSidebar на головній: питання, відповіді, користувачі, топ теги/користувачі")
-
-    h(doc, "15. Технічний стек", 1)
+    h(doc, "9. Технології", 1)
     stack = [
-        ("Frontend", "React 18, Vite, React Router, TanStack Query, Axios, marked+DOMPurify, brutalism CSS"),
-        ("Backend", "Node.js ESM, Express, express-validator, JWT, mysql2, WebSocket (ws)"),
-        ("Shared", "Пакет shared — типи контенту, шляхи"),
-        ("Mediator", "Патерн Mediator для подій UI (окремий пакет)"),
-        ("AI", "Gemini REST API (Flash/Pro), GEMINI_API_KEY"),
-        ("Deploy", "docker-compose: nginx (SSL Let's Encrypt), api, web, MySQL"),
+        ("Frontend", "React, Vite, React Router, brutalism UI"),
+        ("Backend", "Node.js, Express, JWT, MySQL"),
+        ("Realtime", "WebSocket (ws) через nginx"),
+        ("AI", "Google Gemini API (Flash / Pro)"),
+        ("Deploy", "Docker, nginx, SSL, домен devflow.info"),
     ]
-    table_headers(doc, ["Шар", "Технології"], stack)
+    table_headers(doc, ["Компонент", "Стек"], stack)
 
-    h(doc, "16. База даних (основні таблиці)", 1)
-    tables = [
-        "users, questions, answers, votes, bookmarks, notifications",
-        "articles, guides, snippets, roadmaps, best_practices, faqs, content_items (hub)",
-        "communities, community_memberships, community_posts, community_post_comments",
-        "mentor_profiles, news_posts, news_comments, news_polls, news_poll_votes, news_post_views",
-        "user_repositories, content_linked_repos, github webhooks",
-    ]
-    for t in tables:
-        bullet(doc, t)
-
-    h(doc, "17. Скрипти наповнення даними", 1)
-    seeds = [
-        ("npm run seed", "~10 users, 490 hub units, 700 answers"),
-        ("npm run seed:communities:large", "15 спільнот, багато постів/членів"),
-        ("npm run seed:news:large", "~400 новин"),
-        ("npm run seed:news-poll", "Опитування грейду (DOU-style)"),
-        ("npm run seed:user -- --user N", "Демо-контент для користувача N"),
-        ("npm run seed:notifications", "Демо-сповіщення"),
-        ("npm run migrate", "Створення/оновлення схеми БД"),
-    ]
-    table_headers(doc, ["Команда", "Що робить"], seeds)
-
-    h(doc, "18. Обмеження та відомі нюанси", 1)
-    bullet(doc, "AI вимагає GEMINI_API_KEY; без ключа backend може не стартувати")
-    bullet(doc, "Rate limit API вимкнено за замовчуванням (увімкнення через API_RATE_LIMIT_ENABLED=1)")
-    bullet(doc, "Mediator Visualizer вимкнено на проді (був debug UI)")
-    bullet(doc, "На VPS потрібні узгоджені FRONTEND_URL та GitHub OAuth callback")
-    bullet(doc, "VITE_API_URL порожній на проді — запити йдуть через той самий origin (/api)")
-
-    h(doc, "19. Висновок", 1)
+    h(doc, "10. Висновок", 1)
     p(doc, (
-        "На момент опису DevFlow — повноцінна дипломна платформа з knowledge hub, спільнотами, "
-        "новинами, менторством, глобальним пошуком, каталогом тегів та розгалуженою AI-інтеграцією. "
-        "Сайт орієнтований на українську IT-спільноту та демонструє сучасний full-stack підхід "
-        "з Docker-деплоєм і production-ready доменом devflow.info."
+        "DevFlow — повноцінна платформа для української IT-спільноти: навчання, обмін досвідом, "
+        "новини, менторство та AI-підтримка в одному інтерфейсі. Сайт готовий до демонстрації "
+        "як дипломний проєкт із production-деплоєм на https://devflow.info."
     ))
 
     doc.save(str(OUT))

@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { news } from '../services/api';
+import { VoteButtons } from './VoteButtons';
 
 function formatDate(dateString) {
   return new Date(dateString).toLocaleString('uk-UA', {
@@ -72,6 +73,15 @@ export function NewsComments({ newsId }) {
                   {c.author_name}
                 </Link>
                 <span className="news-sidebar-meta">{formatDate(c.created_at)}</span>
+                <VoteButtons
+                  entityType="news_comment"
+                  entityId={c.id}
+                  votes={c.votes}
+                  upvotes={c.upvotes}
+                  downvotes={c.downvotes}
+                  userVote={c.user_vote}
+                  compact
+                />
               </div>
               <p className="news-comment-body">{c.body}</p>
             </li>

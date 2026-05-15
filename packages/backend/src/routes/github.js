@@ -99,12 +99,44 @@ router.post('/sync', authenticateToken, async (req, res, next) => {
 
 router.get('/me/repos', authenticateToken, async (req, res, next) => {
   try {
+    const user = await User.findById(req.user.id);
+    if (!user?.github_connected) {
+      return res.status(400).json({
+        success: false,
+        code: 'GITHUB_NOT_LINKED',
+        message: 'GitHub не підключено. Підключіть GitHub у профілі.',
+      });
+    }
+
     const onlyPinned = String(req.query.pinned || '') === '1';
-    const repos = await UserRepository.listByUser(req.user.id, {
-      onlyPinned,
-      limit: parseInt(req.query.limit, 10) || 50,
+    const limit = parseInt(req.query.limit, 10) || 50;
+    const refresh = String(req.query.refresh || '') === '1';
+
+    let repos = await UserRepository.listByUser(req.user.id, { onlyPinned, limit });
+
+    const token = await User.getGithubAccessToken(req.user.id);
+    if (token && (refresh || repos.length === 0)) {
+      try {
+        const liveRepos = await fetchUserRepos(token, { perPage: 100, maxPages: 3 });
+        if (liveRepos.length > 0) {
+          await UserRepository.upsertMany(req.user.id, liveRepos);
+          await UserRepository.removeMissing(req.user.id, liveRepos.map((r) => r.id));
+          repos = await UserRepository.listByUser(req.user.id, { onlyPinned, limit });
+        }
+      } catch (e) {
+        console.warn('[github/me/repos] live fetch failed:', e.message);
+        if (repos.length === 0) throw e;
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        repos,
+        github_login: user.github_login,
+        synced_at: user.github_synced_at,
+      },
     });
-    res.json({ success: true, data: { repos } });
   } catch (err) { next(err); }
 });
 

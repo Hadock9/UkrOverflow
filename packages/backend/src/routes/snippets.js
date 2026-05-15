@@ -8,6 +8,7 @@ import Snippet from '../models/Snippet.js';
 import { authenticateToken, optionalAuth } from '../middleware/auth.js';
 import { attachViewerKeyOptional, resolveViewerKey } from '../middleware/viewerKey.js';
 import { validate } from '../middleware/validation.js';
+import { enrichWithVotes } from '../utils/enrichVotes.js';
 
 const router = express.Router();
 
@@ -95,6 +96,7 @@ router.get(
         snippet = await Snippet.findById(snippetId);
       }
 
+      await enrichWithVotes(snippet, 'snippet', req.user?.id);
       res.json({ success: true, data: { snippet } });
     } catch (error) {
       next(error);

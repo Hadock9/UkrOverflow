@@ -11,6 +11,7 @@ import Notification from '../models/Notification.js';
 import { authenticateToken, optionalAuth, requireRole } from '../middleware/auth.js';
 import { attachViewerKeyOptional, resolveViewerKey } from '../middleware/viewerKey.js';
 import { validate } from '../middleware/validation.js';
+import { enrichWithVotes, enrichManyWithVotes } from '../utils/enrichVotes.js';
 
 const router = express.Router();
 
@@ -99,12 +100,14 @@ router.get(
   '/:id/comments',
   [param('id').isInt()],
   validate,
+  optionalAuth,
   async (req, res, next) => {
     try {
       const id = parseInt(req.params.id, 10);
       const post = await News.findById(id);
       if (!post) return res.status(404).json({ success: false, message: 'Новину не знайдено' });
       const comments = await NewsComment.listByPost(id);
+      await enrichManyWithVotes(comments, 'news_comment', req.user?.id);
       res.json({ success: true, data: { comments, count: comments.length } });
     } catch (e) {
       next(e);
@@ -174,6 +177,7 @@ router.get(
         await News.recordView(item.id, req.viewerKey);
         item = await News.findById(item.id);
       }
+      await enrichWithVotes(item, 'news_post', req.user?.id);
       res.json({ success: true, data: { news: item } });
     } catch (e) {
       next(e);

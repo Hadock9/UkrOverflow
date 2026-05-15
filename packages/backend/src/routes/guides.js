@@ -8,6 +8,7 @@ import Guide from '../models/Guide.js';
 import { authenticateToken, optionalAuth } from '../middleware/auth.js';
 import { attachViewerKeyOptional, resolveViewerKey } from '../middleware/viewerKey.js';
 import { validate } from '../middleware/validation.js';
+import { enrichWithVotes } from '../utils/enrichVotes.js';
 
 const router = express.Router();
 
@@ -90,6 +91,7 @@ router.get(
         guide = await Guide.findById(guideId);
       }
 
+      await enrichWithVotes(guide, 'guide', req.user?.id);
       res.json({ success: true, data: { guide } });
     } catch (error) {
       next(error);

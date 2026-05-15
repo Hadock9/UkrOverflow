@@ -186,14 +186,14 @@ export function NewCommunity() {
             </button>
           </div>
           {tags.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
+            <div className="question-tags" style={{ marginTop: 'var(--space-2)' }}>
               {tags.map((t) => (
-                <span key={t} className="tag" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <span key={t} className="tag tag-removable">
                   {t}
                   <button
                     type="button"
+                    className="tag-remove"
                     onClick={() => removeTag(t)}
-                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 700 }}
                     aria-label={`Видалити ${t}`}
                   >×</button>
                 </span>

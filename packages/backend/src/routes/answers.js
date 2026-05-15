@@ -4,13 +4,31 @@
 
 import express from 'express';
 import { body, param, query } from 'express-validator';
-import { Answer } from '../models/Answer.js';
+import { Answer, ACCEPTED_ANSWER_REPUTATION } from '../models/Answer.js';
 import { Question } from '../models/Question.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { User } from '../models/User.js';
+import { authenticateToken, optionalAuth } from '../middleware/auth.js';
+import { enrichManyWithVotes } from '../utils/enrichVotes.js';
 import { validate } from '../middleware/validation.js';
 import Notification from '../models/Notification.js';
 
 const router = express.Router();
+
+function canManageAcceptedAnswer(question, user) {
+  return question.author_id === user.id || user.role === 'admin';
+}
+
+async function applyAcceptedReputation({ previousAccepted, newAuthorId }) {
+  if (
+    previousAccepted &&
+    previousAccepted.author_id !== newAuthorId
+  ) {
+    await User.updateReputation(previousAccepted.author_id, -ACCEPTED_ANSWER_REPUTATION);
+  }
+  if (!previousAccepted || previousAccepted.author_id !== newAuthorId) {
+    await User.updateReputation(newAuthorId, ACCEPTED_ANSWER_REPUTATION);
+  }
+}
 
 /**
  * GET /api/answers
@@ -25,6 +43,7 @@ router.get(
     query('limit').optional().isInt().withMessage('Limit має бути числом')
   ],
   validate,
+  optionalAuth,
   async (req, res, next) => {
     try {
       const { questionId, authorId, sortBy, limit } = req.query;
@@ -41,6 +60,10 @@ router.get(
           success: false,
           message: 'Вкажіть questionId або authorId'
         });
+      }
+
+      if (req.user && Array.isArray(answers) && answers.length) {
+        await enrichManyWithVotes(answers, 'answer', req.user.id);
       }
 
       res.json({
@@ -214,24 +237,95 @@ router.post(
         });
       }
 
-      // Перевірка, що користувач - автор питання
       const question = await Question.findById(answer.question_id);
-      if (question.author_id !== req.user.id) {
-        return res.status(403).json({
+      if (!question) {
+        return res.status(404).json({
           success: false,
-          message: 'Тільки автор питання може прийняти відповідь'
+          message: 'Питання не знайдено'
         });
       }
 
-      const updatedAnswer = await Answer.markAsAccepted(answerId, answer.question_id);
+      if (!canManageAcceptedAnswer(question, req.user)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Тільки автор питання або адміністратор може прийняти відповідь'
+        });
+      }
 
-      // Створити сповіщення для автора відповіді
-      await Notification.notifyAnswerAccepted(answerId);
+      const { answer: updatedAnswer, previousAccepted } = await Answer.markAsAccepted(
+        answerId,
+        answer.question_id
+      );
+
+      await applyAcceptedReputation({
+        previousAccepted,
+        newAuthorId: updatedAnswer.author_id,
+      });
+
+      if (!previousAccepted || previousAccepted.id !== answerId) {
+        await Notification.notifyAnswerAccepted(answerId);
+      }
 
       res.json({
         success: true,
         message: 'Відповідь прийнято',
         data: { answer: updatedAnswer }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * DELETE /api/answers/:id/accept
+ * Зняття позначки прийнятої відповіді
+ */
+router.delete(
+  '/:id/accept',
+  authenticateToken,
+  [param('id').isInt().withMessage('ID має бути числом')],
+  validate,
+  async (req, res, next) => {
+    try {
+      const answerId = parseInt(req.params.id);
+
+      const answer = await Answer.findById(answerId);
+      if (!answer) {
+        return res.status(404).json({
+          success: false,
+          message: 'Відповідь не знайдено'
+        });
+      }
+
+      const question = await Question.findById(answer.question_id);
+      if (!question) {
+        return res.status(404).json({
+          success: false,
+          message: 'Питання не знайдено'
+        });
+      }
+
+      if (!canManageAcceptedAnswer(question, req.user)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Тільки автор питання або адміністратор може зняти позначку'
+        });
+      }
+
+      const { cleared, previousAccepted } = await Answer.clearAccepted(
+        answerId,
+        answer.question_id
+      );
+
+      if (cleared && previousAccepted) {
+        await User.updateReputation(previousAccepted.author_id, -ACCEPTED_ANSWER_REPUTATION);
+      }
+
+      res.json({
+        success: true,
+        message: cleared ? 'Позначку знято' : 'Відповідь не була прийнятою',
+        data: { cleared }
       });
     } catch (error) {
       next(error);

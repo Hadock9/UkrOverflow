@@ -9,6 +9,7 @@ import DOMPurify from 'dompurify';
 import { useAuth } from '../contexts/AuthContext';
 import { news } from '../services/api';
 import { NewsComments } from '../components/NewsComments';
+import { VoteButtons } from '../components/VoteButtons';
 import '../styles/brutalism.css';
 
 const CATEGORY_LABELS = {
@@ -116,6 +117,9 @@ export function NewsDetail() {
 
           {canManage && (
             <div className="question-actions" style={{ display: 'flex', gap: 'var(--space-2)' }}>
+              <Link to={`/news/${item.id}/edit`} className="btn btn-secondary">
+                РЕДАГУВАТИ
+              </Link>
               <button type="button" className="btn" onClick={handleDelete}>
                 ВИДАЛИТИ
               </button>
@@ -132,10 +136,22 @@ export function NewsDetail() {
         </div>
       )}
 
-      <div
-        className="question-body markdown-content news-detail-body"
-        dangerouslySetInnerHTML={renderBody(item.body)}
-      />
+      <div className="question-detail-card" style={{ marginBottom: 'var(--space-4)' }}>
+        <VoteButtons
+          entityType="news_post"
+          entityId={item.id}
+          votes={item.votes}
+          upvotes={item.upvotes}
+          downvotes={item.downvotes}
+          userVote={item.user_vote}
+        />
+        <div className="question-detail-content">
+          <div
+            className="question-body markdown-content news-detail-body"
+            dangerouslySetInnerHTML={renderBody(item.body)}
+          />
+        </div>
+      </div>
 
       <NewsComments newsId={item.id} />
     </div>

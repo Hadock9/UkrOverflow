@@ -108,7 +108,8 @@ export const answers = {
   create: (data) => api.post('/answers', data),
   update: (id, data) => api.put(`/answers/${id}`, data),
   delete: (id) => api.delete(`/answers/${id}`),
-  accept: (id) => api.post(`/answers/${id}/accept`)
+  accept: (id) => api.post(`/answers/${id}/accept`),
+  unaccept: (id) => api.delete(`/answers/${id}/accept`)
 };
 
 // Votes

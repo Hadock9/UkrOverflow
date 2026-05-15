@@ -7,6 +7,7 @@ import CommunityPost from './CommunityPost.js';
 import CommunityComment from './CommunityComment.js';
 import Community from './Community.js';
 import { hubTableForType } from '../utils/hubTables.js';
+import { VOTE_AUTHOR_TABLE } from '../constants/voteEntityTypes.js';
 
 function pickActorId(data) {
   if (!data || typeof data !== 'object') return null;
@@ -20,10 +21,7 @@ function pickActorId(data) {
 }
 
 const AUTHOR_TABLE = {
-  question: 'questions',
-  answer: 'answers',
-  content: 'content_items',
-  content_answer: 'content_answers',
+  ...VOTE_AUTHOR_TABLE,
 };
 
 class Notification {
@@ -269,6 +267,25 @@ class Notification {
           data.contentType = c[0].type;
           data.title = c[0].title;
           data.slug = c[0].slug;
+        }
+      }
+      if (['article', 'guide', 'snippet', 'roadmap', 'best_practice', 'faq'].includes(entityType)) {
+        const table = hubTableForType(entityType);
+        if (table) {
+          const [c] = await pool.execute(`SELECT title FROM ${table} WHERE id = ?`, [entityId]);
+          if (c[0]) data.title = c[0].title;
+        }
+        data.hubType = entityType;
+      }
+      if (entityType === 'community_post') {
+        const [c] = await pool.execute('SELECT title FROM community_posts WHERE id = ?', [entityId]);
+        if (c[0]) data.title = c[0].title;
+      }
+      if (entityType === 'news_post') {
+        const [c] = await pool.execute('SELECT title, slug FROM news_posts WHERE id = ?', [entityId]);
+        if (c[0]) {
+          data.title = c[0].title;
+          data.newsSlug = c[0].slug;
         }
       }
 

@@ -219,6 +219,14 @@ async function migrate() {
         // ігноруємо
       }
     }
+    try {
+      await connection.execute(`
+        ALTER TABLE votes
+        MODIFY COLUMN entity_type VARCHAR(32) NOT NULL
+      `);
+    } catch (e) {
+      // таблиця може вже бути VARCHAR
+    }
     console.log('✓ votes\n');
 
     // 5. notifications

@@ -9,8 +9,10 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
+import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
 import { LinkedReposPanel } from '../components/LinkedReposPanel';
+import { VoteButtons } from '../components/VoteButtons';
 import '../styles/brutalism.css';
 
 function renderMarkdown(text) {
@@ -25,8 +27,15 @@ function formatDate(dateString) {
   });
 }
 
+const EDIT_PATHS = {
+  roadmap: (itemId) => `/roadmaps/${itemId}/edit`,
+  best_practice: (itemId) => `/best-practices/${itemId}/edit`,
+  faq: (itemId) => `/faqs/${itemId}/edit`,
+};
+
 function HubItemDetail({ endpoint, dataKey, label, kind }) {
   const { id } = useParams();
+  const { user } = useAuth();
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -53,6 +62,9 @@ function HubItemDetail({ endpoint, dataKey, label, kind }) {
   if (loading) return <div className="container"><div className="loading">ЗАВАНТАЖЕННЯ...</div></div>;
   if (!item) return <div className="container"><div className="error">{label.toUpperCase()} НЕ ЗНАЙДЕНО</div></div>;
 
+  const canEdit = user && (user.id === item.author_id || user.role === 'admin');
+  const editPath = EDIT_PATHS[kind] ? EDIT_PATHS[kind](item.id) : null;
+
   return (
     <div className="container">
       <div className="question-header">
@@ -67,10 +79,24 @@ function HubItemDetail({ endpoint, dataKey, label, kind }) {
             <span>Переглядів: {item.views ?? 0}</span>
           </div>
         </div>
+        {canEdit && editPath && (
+          <div className="question-actions">
+            <Link to={editPath} className="btn btn-secondary btn-sm">РЕДАГУВАТИ</Link>
+          </div>
+        )}
       </div>
 
       <div className="question-detail-card">
-        <div className="question-content" style={{ width: '100%' }}>
+        <VoteButtons
+          entityType={kind}
+          entityId={item.id}
+          votes={item.votes}
+          upvotes={item.upvotes}
+          downvotes={item.downvotes}
+          userVote={item.user_vote}
+        />
+        <div className="question-detail-content">
+          <div className="question-content" style={{ width: '100%' }}>
           <div className="question-tags" style={{ marginBottom: 'var(--space-3)' }}>
             {Array.isArray(item.tags) && item.tags.map((tag, idx) => (
               <Link key={idx} to={`/tags/${tag}`} className="tag">{tag}</Link>
@@ -130,6 +156,7 @@ function HubItemDetail({ endpoint, dataKey, label, kind }) {
             </Link>
             <span className="separator">•</span>
             <span className="date">DevFlow · {label}</span>
+          </div>
           </div>
         </div>
       </div>

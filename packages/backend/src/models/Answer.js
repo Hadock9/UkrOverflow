@@ -4,6 +4,9 @@
 
 import pool from '../config/database.js';
 
+/** Бонус репутації автору прийнятої відповіді */
+export const ACCEPTED_ANSWER_REPUTATION = 15;
+
 export class Answer {
   /**
    * Створення відповіді
@@ -57,11 +60,22 @@ export class Answer {
        FROM answers a
        JOIN users u ON a.author_id = u.id
        WHERE a.question_id = ?
-       ORDER BY ${orderBy}`,
+       ORDER BY a.is_accepted DESC, ${orderBy}`,
       [questionId]
     );
 
     return rows;
+  }
+
+  /**
+   * Поточна прийнята відповідь для питання (якщо є)
+   */
+  static async findAcceptedByQuestion(questionId) {
+    const [rows] = await pool.execute(
+      'SELECT id, author_id FROM answers WHERE question_id = ? AND is_accepted = 1 LIMIT 1',
+      [questionId]
+    );
+    return rows[0] || null;
   }
 
   /**
@@ -141,6 +155,12 @@ export class Answer {
     try {
       await connection.beginTransaction();
 
+      const [previousRows] = await connection.execute(
+        'SELECT id, author_id FROM answers WHERE question_id = ? AND is_accepted = 1',
+        [questionId]
+      );
+      const previous = previousRows[0] || null;
+
       // Зняти позначку з інших відповідей
       await connection.execute(
         'UPDATE answers SET is_accepted = 0 WHERE question_id = ?',
@@ -155,7 +175,48 @@ export class Answer {
 
       await connection.commit();
 
-      return this.findById(id);
+      return {
+        answer: await this.findById(id),
+        previousAccepted: previous,
+      };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  }
+
+  /**
+   * Зняти позначку прийнятої відповіді
+   */
+  static async clearAccepted(id, questionId) {
+    const connection = await pool.getConnection();
+
+    try {
+      await connection.beginTransaction();
+
+      const [rows] = await connection.execute(
+        'SELECT id, author_id, is_accepted FROM answers WHERE id = ? AND question_id = ?',
+        [id, questionId]
+      );
+      const existing = rows[0];
+      if (!existing || !existing.is_accepted) {
+        await connection.rollback();
+        return { cleared: false, previousAccepted: null };
+      }
+
+      await connection.execute(
+        'UPDATE answers SET is_accepted = 0 WHERE question_id = ?',
+        [questionId]
+      );
+
+      await connection.commit();
+
+      return {
+        cleared: true,
+        previousAccepted: { id: existing.id, author_id: existing.author_id },
+      };
     } catch (error) {
       await connection.rollback();
       throw error;

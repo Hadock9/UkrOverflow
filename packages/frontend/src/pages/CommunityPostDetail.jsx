@@ -10,6 +10,7 @@ import DOMPurify from 'dompurify';
 import { useAuth } from '../contexts/AuthContext';
 import { communityPosts } from '../services/api';
 import { CONTENT_TYPES } from '../constants/contentTypes';
+import { VoteButtons } from '../components/VoteButtons';
 import '../styles/brutalism.css';
 
 const POST_TYPE_LABEL = {
@@ -27,12 +28,6 @@ const PROJECT_STAGE_UK = {
   idea: 'Ідея',
   mvp: 'MVP',
   production: 'Продакшн',
-};
-
-const STATUS_BADGE_BG = {
-  open: '#9ee6a0',
-  closed: '#ddd',
-  filled: '#f5d142',
 };
 
 function renderMarkdown(text) {
@@ -179,9 +174,18 @@ function CommentList({ comments, currentUserId, onDelete }) {
         fontSize: 14,
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
         <Link to={`/users/${c.author_id}`} style={{ fontWeight: 700 }}>{c.author_name}</Link>
         <span style={{ fontSize: 12, color: '#444' }}>{formatDate(c.created_at)}</span>
+        <VoteButtons
+          entityType="community_post_comment"
+          entityId={c.id}
+          votes={c.votes}
+          upvotes={c.upvotes}
+          downvotes={c.downvotes}
+          userVote={c.user_vote}
+          compact
+        />
       </div>
       <div style={{ whiteSpace: 'pre-wrap' }}>{c.body}</div>
       {currentUserId === c.author_id && (
@@ -250,23 +254,8 @@ export function CommunityPostDetail() {
       <div className="question-header">
         <div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6, flexWrap: 'wrap' }}>
-            <span
-              style={{
-                fontSize: 12,
-                fontWeight: 700,
-                padding: '2px 8px',
-                background: '#f5d142',
-                border: '2px solid #000',
-                textTransform: 'uppercase',
-                letterSpacing: 1,
-              }}
-            >
-              {typeLabel}
-            </span>
-            <span
-              className="tag"
-              style={{ background: STATUS_BADGE_BG[data.status] || '#fff' }}
-            >
+            <span className="tag tag-accent tag-sm">{typeLabel}</span>
+            <span className={`tag tag-sm tag-status-${data.status || 'open'}`}>
               {data.status}
             </span>
             {data.community_slug && (
@@ -283,23 +272,38 @@ export function CommunityPostDetail() {
             <span>•</span>
             <span>Переглядів: {data.views || 0}</span>
             <span>•</span>
-            <span>Голосів: {data.votes || 0}</span>
           </div>
         </div>
-        {isAuthor && data.status === 'open' && (
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn btn-secondary" onClick={() => closeMutation.mutate('closed')}>
-              ЗАКРИТИ
-            </button>
-            <button className="btn btn-secondary" onClick={() => closeMutation.mutate('filled')}>
-              ПОЗНАЧИТИ ЗАПОВНЕНИМ
-            </button>
+        {isAuthor && (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <Link to={`/community-posts/${id}/edit`} className="btn btn-secondary">
+              РЕДАГУВАТИ
+            </Link>
+            {data.status === 'open' && (
+              <>
+                <button className="btn btn-secondary" onClick={() => closeMutation.mutate('closed')}>
+                  ЗАКРИТИ
+                </button>
+                <button className="btn btn-secondary" onClick={() => closeMutation.mutate('filled')}>
+                  ПОЗНАЧИТИ ЗАПОВНЕНИМ
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
 
       <div className="question-detail-card">
-        <div className="question-content" style={{ width: '100%' }}>
+        <VoteButtons
+          entityType="community_post"
+          entityId={data.id}
+          votes={data.votes}
+          upvotes={data.upvotes}
+          downvotes={data.downvotes}
+          userVote={data.user_vote}
+        />
+        <div className="question-detail-content">
+          <div className="question-content" style={{ width: '100%' }}>
           <MetadataBlock type={data.type} metadata={data.metadata} />
 
           {data.linked_content_type && data.linked_content_id && hubMaterialPath(data.linked_content_type, data.linked_content_id) && (
@@ -320,6 +324,7 @@ export function CommunityPostDetail() {
               ))}
             </div>
           )}
+          </div>
         </div>
       </div>
 

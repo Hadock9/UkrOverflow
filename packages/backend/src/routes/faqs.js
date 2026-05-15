@@ -8,6 +8,7 @@ import Faq from '../models/Faq.js';
 import { authenticateToken, optionalAuth } from '../middleware/auth.js';
 import { attachViewerKeyOptional, resolveViewerKey } from '../middleware/viewerKey.js';
 import { validate } from '../middleware/validation.js';
+import { enrichWithVotes } from '../utils/enrichVotes.js';
 
 const router = express.Router();
 
@@ -76,6 +77,7 @@ router.get(
         await Faq.recordView(id, req.viewerKey);
         faq = await Faq.findById(id);
       }
+      await enrichWithVotes(faq, 'faq', req.user?.id);
       res.json({ success: true, data: { faq } });
     } catch (e) { next(e); }
   }

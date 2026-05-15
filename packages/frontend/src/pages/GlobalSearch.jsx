@@ -120,7 +120,7 @@ export function GlobalSearch() {
           <div key={`${hit.type}-${hit.id}`} className="question-card">
             <div className="question-content">
               <div style={{ marginBottom: 6 }}>
-                <span className="tag" style={{ fontSize: 11, textTransform: 'uppercase' }}>
+                <span className="tag tag-sm">
                   {TYPE_LABELS[hit.type] || hit.type}
                 </span>
                 {hit.community_name && (

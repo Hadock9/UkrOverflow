@@ -9,6 +9,7 @@ import { marked } from 'marked';
 import { useAuth } from '../contexts/AuthContext';
 import { snippets } from '../services/api';
 import { LinkedReposPanel } from '../components/LinkedReposPanel';
+import { VoteButtons } from '../components/VoteButtons';
 import '../styles/brutalism.css';
 
 export function SnippetDetail() {
@@ -109,7 +110,16 @@ export function SnippetDetail() {
       </div>
 
       <div className="question-detail-card">
-        <div className="question-content" style={{ width: '100%' }}>
+        <VoteButtons
+          entityType="snippet"
+          entityId={snippet.id}
+          votes={snippet.votes}
+          upvotes={snippet.upvotes}
+          downvotes={snippet.downvotes}
+          userVote={snippet.user_vote}
+        />
+        <div className="question-detail-content">
+          <div className="question-content" style={{ width: '100%' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
             <strong>КОД</strong>
             <span className="badge">{snippet.language}</span>
@@ -119,6 +129,7 @@ export function SnippetDetail() {
             <Link to={`/users/${snippet.author_id}`} className="author">{snippet.author_name}</Link>
             <span className="separator">•</span>
             <span className="date">збірка знань / сніпет</span>
+          </div>
           </div>
         </div>
       </div>

@@ -11,6 +11,8 @@ import { authenticateToken } from '../middleware/auth.js';
 import { validate } from '../middleware/validation.js';
 import { LINKABLE_HUB_TYPES } from '../constants/contentTypes.js';
 import Notification from '../models/Notification.js';
+import { optionalAuth } from '../middleware/auth.js';
+import { enrichWithVotes, enrichManyWithVotes } from '../utils/enrichVotes.js';
 
 const router = express.Router();
 
@@ -77,6 +79,7 @@ router.get(
   '/:id',
   [param('id').isInt()],
   validate,
+  optionalAuth,
   async (req, res, next) => {
     try {
       const id = parseInt(req.params.id, 10);
@@ -85,6 +88,7 @@ router.get(
       }
       const post = await CommunityPost.findById(id);
       if (!post) return res.status(404).json({ success: false, message: 'Пост не знайдено' });
+      await enrichWithVotes(post, 'community_post', req.user?.id);
       res.json({ success: true, data: { post } });
     } catch (e) { next(e); }
   }
@@ -206,10 +210,12 @@ router.get(
   '/:id/comments',
   [param('id').isInt()],
   validate,
+  optionalAuth,
   async (req, res, next) => {
     try {
       const id = parseInt(req.params.id, 10);
       const comments = await CommunityComment.listByPost(id);
+      await enrichManyWithVotes(comments, 'community_post_comment', req.user?.id);
       res.json({ success: true, data: { comments } });
     } catch (e) { next(e); }
   }
