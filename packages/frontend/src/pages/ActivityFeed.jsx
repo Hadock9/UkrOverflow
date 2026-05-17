@@ -113,7 +113,7 @@ export function ActivityFeed() {
       </div>
 
       <div className="social-quick-links">
-        <Link to="/pair-rooms" className="btn">ПАРНЕ КОДУВАННЯ</Link>
+        <Link to="/pair-rooms" className="btn">КОЛАБОРАЦІЯ</Link>
         <Link to="/challenges" className="btn btn-primary">ЧЕЛЕНДЖІ ТИЖНЯ</Link>
       </div>
     </div>

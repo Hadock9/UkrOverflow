@@ -61,7 +61,7 @@ export function PairRooms() {
     <div className="container">
       <div className="page-header page-header-split">
         <div>
-          <h1 className="page-title">ПАРНЕ КОДУВАННЯ</h1>
+          <h1 className="page-title">КОЛАБОРАЦІЯ</h1>
           <p className="page-subtitle">
             Кімнати для спільного дебагу, навчання JS та live coding з чатом і редактором коду.
           </p>

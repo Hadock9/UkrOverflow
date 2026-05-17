@@ -14,6 +14,7 @@ import 'dotenv/config';
 import pool from '../config/database.js';
 import Challenge from '../models/Challenge.js';
 import PairRoom from '../models/PairRoom.js';
+import { CHALLENGE_WEEK_SETS } from './challengeWeekTemplates.js';
 
 function parseArgs(argv) {
   const args = { user: null };
@@ -91,32 +92,11 @@ async function seedPairRooms(hostId) {
 
 async function seedChallenges() {
   const { weekStart, weekEnd } = Challenge.getWeekBounds();
-
+  const tpl = CHALLENGE_WEEK_SETS[0];
   const items = [
-    {
-      slug: `algo-${weekStart}`,
-      title: 'Алгоритми: Two Sum за O(n)',
-      description: 'Реалізуйте функцію twoSum(nums, target), що повертає індекси двох чисел. Додайте пояснення складності.',
-      challengeType: 'algorithms',
-      criteria: { timeLimit: 'O(n)', language: 'any' },
-      pointsMax: 100,
-    },
-    {
-      slug: `bugfix-${weekStart}`,
-      title: 'Bug fixing: зламаний fetch',
-      description: 'Знайдіть і виправте баг у коді, що ламає обробку помилок API. Опишіть root cause.',
-      challengeType: 'bug_fixing',
-      criteria: { mustInclude: 'PR або gist з diff' },
-      pointsMax: 80,
-    },
-    {
-      slug: `mini-${weekStart}`,
-      title: 'Mini project: TODO з localStorage',
-      description: 'Міні-додаток TODO (додати / видалити / фільтр) з збереженням у localStorage. UI — на ваш смак.',
-      challengeType: 'mini_project',
-      criteria: { deploy: 'optional', repo: 'required' },
-      pointsMax: 120,
-    },
+    { ...tpl.algorithms, slug: `algo-${weekStart}`, challengeType: 'algorithms' },
+    { ...tpl.bug_fixing, slug: `bugfix-${weekStart}`, challengeType: 'bug_fixing' },
+    { ...tpl.mini_project, slug: `mini-${weekStart}`, challengeType: 'mini_project' },
   ];
 
   for (const ch of items) {
@@ -128,7 +108,17 @@ async function seedChallenges() {
       console.log(`  · челендж вже є: ${ch.slug}`);
       continue;
     }
-    await Challenge.create({ ...ch, weekStart, weekEnd });
+    await Challenge.create({
+      slug: ch.slug,
+      title: ch.title,
+      description: ch.description,
+      challengeType: ch.challengeType,
+      criteria: ch.criteria,
+      pointsMax: ch.pointsMax,
+      weekStart,
+      weekEnd,
+      status: 'active',
+    });
     console.log(`  ✓ челендж: ${ch.slug}`);
   }
 }

@@ -35,7 +35,7 @@ const FEATURES = [
   },
   {
     to: '/pair-rooms',
-    title: 'ПАРНЕ КОДУВАННЯ',
+    title: 'КОЛАБОРАЦІЯ',
     text: 'Кімнати debug this, study JS — realtime чат і спільний редактор.',
     accent: '#c9b8ff',
   },

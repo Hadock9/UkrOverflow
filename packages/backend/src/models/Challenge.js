@@ -89,6 +89,18 @@ export class Challenge {
     return rows.map(decorate);
   }
 
+  static async getByWeekStart(weekStart) {
+    const [rows] = await pool.execute(
+      `SELECT c.*,
+        (SELECT COUNT(*) FROM challenge_submissions cs WHERE cs.challenge_id = c.id) AS submission_count
+       FROM challenges c
+       WHERE c.week_start = ?
+       ORDER BY c.id ASC`,
+      [weekStart]
+    );
+    return rows.map(decorate);
+  }
+
   static async list({ page = 1, limit = 20, status = null } = {}) {
     const offset = (page - 1) * limit;
     const params = [];
@@ -125,9 +137,10 @@ export class Challenge {
   }
 
   static async create(data) {
+    const status = data.status || 'active';
     const [result] = await pool.execute(
       `INSERT INTO challenges (slug, title, description, challenge_type, week_start, week_end, criteria, points_max, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', NOW())`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
         data.slug,
         data.title,
@@ -137,6 +150,7 @@ export class Challenge {
         data.weekEnd,
         JSON.stringify(data.criteria || {}),
         data.pointsMax || 100,
+        status,
       ]
     );
     return this.findById(result.insertId);
@@ -357,8 +371,8 @@ export class Challenge {
     }));
   }
 
-  static async getWeeklyLeaderboard({ limit = 15 } = {}) {
-    const { weekStart } = getWeekBounds();
+  static async getWeeklyLeaderboard({ limit = 15, weekStart: weekStartParam } = {}) {
+    const weekStart = weekStartParam || getWeekBounds().weekStart;
     const lim = Math.min(Math.max(parseInt(limit, 10) || 15, 1), 50);
     const [rows] = await pool.execute(
       `SELECT u.id AS user_id, u.username, u.avatar_url, u.github_avatar_url, u.reputation,

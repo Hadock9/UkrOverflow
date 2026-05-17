@@ -245,7 +245,7 @@ export function notificationLabel(n) {
       return `Опубліковано вашу новину${titleSuffix}`;
     case 'pair_room_created':
       return isSelf
-        ? `Ви створили кімнату парного програмування${titleSuffix}`
+        ? `Ви створили кімнату колаборації${titleSuffix}`
         : `${who} створив кімнату${titleSuffix}`;
     case 'pair_room_joined':
       return isSelf

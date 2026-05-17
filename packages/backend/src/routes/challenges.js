@@ -49,6 +49,36 @@ router.get('/history/weeks', async (req, res, next) => {
   }
 });
 
+router.get(
+  '/history/week/:weekStart',
+  [param('weekStart').matches(/^\d{4}-\d{2}-\d{2}$/)],
+  validate,
+  optionalAuth,
+  async (req, res, next) => {
+    try {
+      const weekStart = req.params.weekStart;
+      const challenges = await Challenge.getByWeekStart(weekStart);
+      const leaderboard = await Challenge.getWeeklyLeaderboard({
+        limit: 20,
+        weekStart,
+      });
+      const stats = await Challenge.getWeekStats(weekStart);
+
+      res.json({
+        success: true,
+        data: {
+          weekStart,
+          challenges,
+          leaderboard,
+          stats,
+        },
+      });
+    } catch (e) {
+      next(e);
+    }
+  }
+);
+
 router.get('/current', optionalAuth, async (req, res, next) => {
   try {
     const challenges = await Challenge.getCurrent();
@@ -70,16 +100,22 @@ router.get('/current', optionalAuth, async (req, res, next) => {
   }
 });
 
-router.get('/leaderboard/weekly', async (req, res, next) => {
-  try {
-    const leaderboard = await Challenge.getWeeklyLeaderboard({
-      limit: parseInt(req.query.limit, 10) || 20,
-    });
-    res.json({ success: true, data: { leaderboard } });
-  } catch (e) {
-    next(e);
+router.get(
+  '/leaderboard/weekly',
+  [query('weekStart').optional().matches(/^\d{4}-\d{2}-\d{2}$/)],
+  validate,
+  async (req, res, next) => {
+    try {
+      const leaderboard = await Challenge.getWeeklyLeaderboard({
+        limit: parseInt(req.query.limit, 10) || 20,
+        weekStart: req.query.weekStart || undefined,
+      });
+      res.json({ success: true, data: { leaderboard } });
+    } catch (e) {
+      next(e);
+    }
   }
-});
+);
 
 router.get(
   '/:slug',

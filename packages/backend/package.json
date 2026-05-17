@@ -16,6 +16,7 @@
     "seed:news:large": "node src/scripts/seedNews.js --large",
     "seed:news-poll": "node src/scripts/seedNewsPoll.js",
     "seed:social": "node src/scripts/seedSocial.js",
+    "seed:challenges:history": "node src/scripts/seedChallengesHistory.js",
     "test": "node --test 'src/**/*.test.js'"
   },
   "keywords": [
