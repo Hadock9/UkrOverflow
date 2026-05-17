@@ -15,4 +15,4 @@ ENV NODE_ENV=production
 
 EXPOSE 3338
 
-CMD ["sh", "-c", "node src/scripts/migrate.js && exec node src/index.js"]
+CMD ["sh", "-c", "node src/scripts/migrate.js || echo '⚠ migrate failed — API still starting'; exec node src/index.js"]

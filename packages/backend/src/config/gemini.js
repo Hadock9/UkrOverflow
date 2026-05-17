@@ -1,10 +1,19 @@
 import './geminiDnsBootstrap.js';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim();
-if (!GEMINI_API_KEY) {
-  throw new Error(
-    'Відсутній GEMINI_API_KEY у .env (packages/backend). Додайте ключ: https://aistudio.google.com/apikey'
-  );
+
+/** Чи налаштовано Gemini (ключ у .env). Сервер стартує навіть без ключа. */
+export function isGeminiConfigured() {
+  return Boolean(GEMINI_API_KEY);
+}
+
+export function getGeminiApiKey() {
+  if (!GEMINI_API_KEY) {
+    throw new Error(
+      'Відсутній GEMINI_API_KEY у .env. Додайте ключ: https://aistudio.google.com/apikey'
+    );
+  }
+  return GEMINI_API_KEY;
 }
 
 export const flashModelId = process.env.AI_MODEL_FLASH?.trim() || 'gemini-2.5-flash';
@@ -35,4 +44,5 @@ export default {
   safetySettings,
   flashModelId,
   proModelId,
+  isGeminiConfigured,
 };

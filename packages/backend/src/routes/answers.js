@@ -12,7 +12,6 @@ import { enrichManyWithVotes } from '../utils/enrichVotes.js';
 import { validate } from '../middleware/validation.js';
 import Notification from '../models/Notification.js';
 import { logActivity, setPresence } from '../services/activityService.js';
-import Notification from '../models/Notification.js';
 
 const router = express.Router();
 
