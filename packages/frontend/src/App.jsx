@@ -52,6 +52,10 @@ import { NewsFeed } from './pages/NewsFeed'
 import { NewsDetail } from './pages/NewsDetail'
 import { NewNews } from './pages/NewNews'
 import { EditNews } from './pages/EditNews'
+import { ActivityFeed } from './pages/ActivityFeed'
+import { PairRooms } from './pages/PairRooms'
+import { PairRoomDetail } from './pages/PairRoomDetail'
+import { Challenges } from './pages/Challenges'
 
 function App() {
   const mediator = getMediator()
@@ -70,6 +74,10 @@ function App() {
 
     wsClient.on('answers', (data) => {
       mediator.emit(EventTypes.ANSWER_CREATE, data, 'WebSocket')
+    })
+
+    wsClient.on('activity', (data) => {
+      mediator.emit(EventTypes.NOTIFICATION, { source: 'activity', ...data }, 'WebSocket')
     })
 
     // Підписка на системні події
@@ -155,6 +163,11 @@ function App() {
             <Route path="/news/new" element={<NewNews />} />
             <Route path="/news/:id/edit" element={<EditNews />} />
             <Route path="/news/:idOrSlug" element={<NewsDetail />} />
+
+            <Route path="/activity" element={<ActivityFeed />} />
+            <Route path="/pair-rooms" element={<PairRooms />} />
+            <Route path="/pair-rooms/:slug" element={<PairRoomDetail />} />
+            <Route path="/challenges" element={<Challenges />} />
           </Routes>
         </main>
 

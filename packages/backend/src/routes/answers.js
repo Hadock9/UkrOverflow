@@ -11,6 +11,7 @@ import { authenticateToken, optionalAuth } from '../middleware/auth.js';
 import { enrichManyWithVotes } from '../utils/enrichVotes.js';
 import { validate } from '../middleware/validation.js';
 import Notification from '../models/Notification.js';
+import { logActivity, setPresence } from '../services/activityService.js';
 
 const router = express.Router();
 
@@ -114,6 +115,24 @@ router.post(
 
       // Створити сповіщення для автора питання
       await Notification.notifyQuestionAnswer(questionId, req.user.id);
+
+      await logActivity({
+        actorId: req.user.id,
+        verb: 'answer_posted',
+        entityType: 'question',
+        entityId: questionId,
+        title: question.title,
+      });
+      await setPresence(req.user.id, {
+        status: 'answering',
+        context: { questionTitle: question.title },
+        entityType: 'question',
+        entityId: questionId,
+      });
+      if (typeof global.broadcast === 'function') {
+        global.broadcast('answers', { type: 'create', answer, questionId });
+        global.broadcast('activity', { type: 'event', verb: 'answer_posted' });
+      }
 
       res.status(201).json({
         success: true,

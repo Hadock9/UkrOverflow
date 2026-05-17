@@ -42,6 +42,9 @@ import communityPostsRoutes from './routes/communityPosts.js';
 import mentorsRoutes from './routes/mentors.js';
 import newsRoutes from './routes/news.js';
 import tagsRoutes from './routes/tags.js';
+import activityRoutes from './routes/activity.js';
+import pairRoomsRoutes from './routes/pairRooms.js';
+import challengesRoutes from './routes/challenges.js';
 import { logGithubOAuthRedirectUriHint } from './services/githubService.js';
 import { logGoogleOAuthRedirectUriHint } from './services/googleService.js';
 
@@ -170,6 +173,9 @@ app.use('/api/community-posts', communityPostsRoutes);
 app.use('/api/mentors', mentorsRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/tags', tagsRoutes);
+app.use('/api/activity', activityRoutes);
+app.use('/api/pair-rooms', pairRoomsRoutes);
+app.use('/api/challenges', challengesRoutes);
 
 // WebSocket з'єднання
 const clients = new Map();

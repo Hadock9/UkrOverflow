@@ -9,6 +9,7 @@ import { authenticateToken, optionalAuth } from '../middleware/auth.js';
 import { attachViewerKeyOptional, resolveViewerKey } from '../middleware/viewerKey.js';
 import { validate } from '../middleware/validation.js';
 import Vote from '../models/Vote.js';
+import { logActivity, setPresence } from '../services/activityService.js';
 
 const router = express.Router();
 
@@ -175,6 +176,24 @@ router.post(
         tags,
         authorId: req.user.id
       });
+
+      await logActivity({
+        actorId: req.user.id,
+        verb: 'question_asked',
+        entityType: 'question',
+        entityId: question.id,
+        title: question.title,
+      });
+      await setPresence(req.user.id, {
+        status: 'asking',
+        context: { title: question.title },
+        entityType: 'question',
+        entityId: question.id,
+      });
+      if (typeof global.broadcast === 'function') {
+        global.broadcast('questions', { type: 'create', question });
+        global.broadcast('activity', { type: 'event', verb: 'question_asked' });
+      }
 
       res.status(201).json({
         success: true,

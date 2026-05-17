@@ -1,10 +1,31 @@
 /**
- * Лайк / дизлайк (▲/▼) — єдиний UI для всіх типів контенту.
+ * Лайк / дизлайк — єдиний UI для всіх типів контенту.
  */
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { votes as votesApi } from '../services/api';
+
+function VoteIcon({ type }) {
+  if (type === 'up') {
+    return (
+      <svg className="vote-icon" viewBox="0 0 24 24" aria-hidden focusable="false">
+        <path
+          fill="currentColor"
+          d="M7 22V11l4-6h6l-2 7h4L9 22H7zm-4 0V10H1v12h2z"
+        />
+      </svg>
+    );
+  }
+  return (
+    <svg className="vote-icon" viewBox="0 0 24 24" aria-hidden focusable="false">
+      <path
+        fill="currentColor"
+        d="M17 2v11l-4 6h-6l2-7H5l6-10h6zm4 0V14h2V2h-2z"
+      />
+    </svg>
+  );
+}
 
 export function VoteButtons({
   entityType,
@@ -79,8 +100,10 @@ export function VoteButtons({
           onClick={() => handleVote('up')}
           disabled={!user || loading}
           title="Лайк"
+          aria-label="Лайк"
+          aria-pressed={userVote === 'up'}
         >
-          ЛАЙК
+          <VoteIcon type="up" />
         </button>
         <span className="vote-count vote-count--compact">{total}</span>
         <button
@@ -89,8 +112,10 @@ export function VoteButtons({
           onClick={() => handleVote('down')}
           disabled={!user || loading}
           title="Дизлайк"
+          aria-label="Дизлайк"
+          aria-pressed={userVote === 'down'}
         >
-          ДИЗЛАЙК
+          <VoteIcon type="down" />
         </button>
       </div>
     );
@@ -104,9 +129,10 @@ export function VoteButtons({
         onClick={() => handleVote('up')}
         disabled={!user || loading}
         title="Лайк"
+        aria-label="Лайк"
         aria-pressed={userVote === 'up'}
       >
-        ▲
+        <VoteIcon type="up" />
       </button>
       <div className="vote-count" aria-live="polite">{total}</div>
       <button
@@ -115,9 +141,10 @@ export function VoteButtons({
         onClick={() => handleVote('down')}
         disabled={!user || loading}
         title="Дизлайк"
+        aria-label="Дизлайк"
         aria-pressed={userVote === 'down'}
       >
-        ▼
+        <VoteIcon type="down" />
       </button>
     </div>
   );

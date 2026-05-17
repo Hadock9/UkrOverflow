@@ -59,6 +59,9 @@ export function Header() {
               <Link to="/tags" className="nav-item">
                 ТЕГИ
               </Link>
+              <Link to="/activity" className="nav-item">АКТИВНІСТЬ</Link>
+              <Link to="/pair-rooms" className="nav-item">ПАРНЕ КОД</Link>
+              <Link to="/challenges" className="nav-item">ЧЕЛЕНДЖІ</Link>
               <Link to="/communities" className="nav-item">КОМ'ЮНІТІ</Link>
               <Link to="/mentors" className="nav-item">МЕНТОРИ</Link>
               <Link to="/devs" className="nav-item">РОЗРОБНИКИ</Link>

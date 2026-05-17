@@ -10,6 +10,7 @@ import { useMediator } from '../contexts/MediatorContext';
 import { EventTypes } from '../../../mediator/src/index';
 import { api, news as newsApi } from '../services/api';
 import { StatsSidebar } from '../components/StatsSidebar';
+import { LiveActivityWidget } from '../components/LiveActivityWidget';
 import { getContentDetailPath, getContentTypeMeta } from '../constants/contentTypes';
 import '../styles/brutalism.css';
 
@@ -24,6 +25,24 @@ const FEATURES = [
     to: '/news',
     title: 'СТРІЧКА НОВИН',
     text: 'Огляди українського IT, тренди та оновлення платформи.',
+    accent: '#ff9bd3',
+  },
+  {
+    to: '/activity',
+    title: 'ЖИВА АКТИВНІСТЬ',
+    text: 'Хто зараз задає питання, відповідає, вчиться або кодить у кімнатах.',
+    accent: '#f5d142',
+  },
+  {
+    to: '/pair-rooms',
+    title: 'ПАРНЕ КОДУВАННЯ',
+    text: 'Кімнати debug this, study JS — realtime чат і спільний редактор.',
+    accent: '#c9b8ff',
+  },
+  {
+    to: '/challenges',
+    title: 'ЧЕЛЕНДЖІ ТИЖНЯ',
+    text: 'Алгоритми, bug fixing, mini projects — з рейтингом учасників.',
     accent: '#ff9bd3',
   },
   {
@@ -152,6 +171,8 @@ export function MainPage() {
               )}
             </div>
           </section>
+
+          <LiveActivityWidget />
 
           <section className="main-feature-grid" aria-label="Розділи платформи">
             {FEATURES.map((f) => (

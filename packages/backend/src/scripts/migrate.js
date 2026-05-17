@@ -854,6 +854,124 @@ async function migrate() {
     `);
     console.log('✓ news_polls\n');
 
+    console.log('📝 activity_events + user_presence...');
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS activity_events (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        actor_id INT NOT NULL,
+        verb VARCHAR(48) NOT NULL,
+        entity_type VARCHAR(48) NULL,
+        entity_id INT NULL,
+        title VARCHAR(255) NULL,
+        meta JSON NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_actor (actor_id),
+        INDEX idx_verb (verb),
+        INDEX idx_created (created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS user_presence (
+        user_id INT PRIMARY KEY,
+        status ENUM('asking', 'answering', 'learning', 'in_room') NOT NULL DEFAULT 'learning',
+        context JSON NULL,
+        entity_type VARCHAR(48) NULL,
+        entity_id INT NULL,
+        last_seen_at DATETIME NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_status (status),
+        INDEX idx_last_seen (last_seen_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log('✓ activity_events + user_presence\n');
+
+    console.log('📝 pair_rooms...');
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS pair_rooms (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        slug VARCHAR(100) UNIQUE NOT NULL,
+        title VARCHAR(120) NOT NULL,
+        topic VARCHAR(60) NOT NULL DEFAULT 'general',
+        room_type ENUM('debug', 'study', 'code_review', 'general') DEFAULT 'general',
+        description VARCHAR(500) NULL,
+        code_snippet MEDIUMTEXT NULL,
+        host_id INT NOT NULL,
+        max_participants INT DEFAULT 6,
+        member_count INT DEFAULT 1,
+        status ENUM('open', 'closed') DEFAULT 'open',
+        stack JSON NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (host_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_topic (topic),
+        INDEX idx_status (status),
+        INDEX idx_updated (updated_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS pair_room_members (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        room_id INT NOT NULL,
+        user_id INT NOT NULL,
+        role ENUM('host', 'member') DEFAULT 'member',
+        joined_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_room_user (room_id, user_id),
+        FOREIGN KEY (room_id) REFERENCES pair_rooms(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS pair_room_messages (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        room_id INT NOT NULL,
+        author_id INT NOT NULL,
+        body TEXT NOT NULL,
+        message_type ENUM('chat', 'system', 'code') DEFAULT 'chat',
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (room_id) REFERENCES pair_rooms(id) ON DELETE CASCADE,
+        FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_room_created (room_id, created_at)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log('✓ pair_rooms\n');
+
+    console.log('📝 challenges...');
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS challenges (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        slug VARCHAR(100) UNIQUE NOT NULL,
+        title VARCHAR(200) NOT NULL,
+        description TEXT NOT NULL,
+        challenge_type ENUM('algorithms', 'bug_fixing', 'mini_project') NOT NULL,
+        week_start DATE NOT NULL,
+        week_end DATE NOT NULL,
+        criteria JSON NULL,
+        points_max INT DEFAULT 100,
+        status ENUM('active', 'closed', 'draft') DEFAULT 'active',
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_week (week_start),
+        INDEX idx_type (challenge_type),
+        INDEX idx_status (status)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS challenge_submissions (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        challenge_id INT NOT NULL,
+        user_id INT NOT NULL,
+        solution_url VARCHAR(500) NULL,
+        solution_text TEXT NOT NULL,
+        score INT DEFAULT 0,
+        submitted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_challenge_user (challenge_id, user_id),
+        FOREIGN KEY (challenge_id) REFERENCES challenges(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        INDEX idx_score (challenge_id, score DESC)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log('✓ challenges\n');
+
     console.log('📝 reputation floor (мін. 0)...');
     const [repFix] = await connection.execute(
       'UPDATE users SET reputation = 0 WHERE reputation < 0'

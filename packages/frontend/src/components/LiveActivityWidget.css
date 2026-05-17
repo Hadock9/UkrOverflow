@@ -1,0 +1,18 @@
+.live-activity-widget-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.live-activity-widget-link {
+  font-size: 0.8rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.live-activity-widget-link:hover {
+  text-decoration: underline;
+}

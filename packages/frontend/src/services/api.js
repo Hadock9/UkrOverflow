@@ -346,6 +346,37 @@ export const mentors = {
 // Users search (за стеком/локацією/q)
 export const usersSearch = (params) => api.get('/users/search', { params });
 
+// Live activity
+export const activity = {
+  getLive: (params) => api.get('/activity/live', { params }),
+  list: (params) => api.get('/activity', { params }),
+  setPresence: (data) => api.post('/activity/presence', data),
+  heartbeat: (data) => api.post('/activity/heartbeat', data),
+};
+
+// Pair programming rooms
+export const pairRooms = {
+  list: (params) => api.get('/pair-rooms', { params }),
+  getTopics: () => api.get('/pair-rooms/topics'),
+  get: (slug) => api.get(`/pair-rooms/${slug}`),
+  create: (data) => api.post('/pair-rooms', data),
+  join: (id) => api.post(`/pair-rooms/${id}/join`),
+  leave: (id) => api.post(`/pair-rooms/${id}/leave`),
+  updateCode: (id, codeSnippet) => api.put(`/pair-rooms/${id}/code`, { codeSnippet }),
+  getMessages: (id, params) => api.get(`/pair-rooms/${id}/messages`, { params }),
+  sendMessage: (id, body) => api.post(`/pair-rooms/${id}/messages`, { body }),
+};
+
+// Weekly challenges
+export const challenges = {
+  list: (params) => api.get('/challenges', { params }),
+  getCurrent: () => api.get('/challenges/current'),
+  getWeeklyLeaderboard: (params) => api.get('/challenges/leaderboard/weekly', { params }),
+  get: (slug) => api.get(`/challenges/${slug}`),
+  getLeaderboard: (id, params) => api.get(`/challenges/${id}/leaderboard`, { params }),
+  submit: (id, data) => api.post(`/challenges/${id}/submit`, data),
+};
+
 // Експорт API клієнта
 export { api };
 export default api;
