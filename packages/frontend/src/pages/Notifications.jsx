@@ -2,15 +2,17 @@
  * Список сповіщень користувача
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { notifications as notificationsApi } from '../services/api';
 import {
+  isNotificationUnread,
   notificationIcon,
   notificationLabel,
   notificationLink,
   notificationTypeName,
+  notifyNotificationsUpdated,
 } from '../utils/notificationUi';
 import '../styles/brutalism.css';
 import './Notifications.css';
@@ -19,8 +21,28 @@ export function NotificationsPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+
+  const loadNotifications = useCallback(async () => {
+    setLoading(true);
+    try {
+      const r = await notificationsApi.getAll({ limit: 100 });
+      const payload = r.data?.data || r.data || {};
+      const list = payload.notifications || [];
+      setItems(Array.isArray(list) ? list : []);
+      const apiUnread = Number(payload.unreadCount);
+      const listUnread = (Array.isArray(list) ? list : []).filter(isNotificationUnread).length;
+      setUnreadCount(Number.isFinite(apiUnread) ? apiUnread : listUnread);
+    } catch (e) {
+      console.error(e);
+      setItems([]);
+      setUnreadCount(0);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (authLoading) return;
@@ -28,32 +50,22 @@ export function NotificationsPage() {
       navigate('/login');
       return;
     }
-    (async () => {
-      setLoading(true);
-      try {
-        const r = await notificationsApi.getAll({ limit: 100 });
-        const list = r.data?.data?.notifications || r.data?.notifications || [];
-        setItems(Array.isArray(list) ? list : []);
-      } catch (e) {
-        console.error(e);
-        setItems([]);
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [user, authLoading, navigate]);
+    loadNotifications();
+  }, [user, authLoading, navigate, loadNotifications]);
 
   const filtered = useMemo(() => {
-    if (filter === 'unread') return items.filter((n) => !n.is_read);
+    if (filter === 'unread') return items.filter(isNotificationUnread);
     return items;
   }, [items, filter]);
-
-  const unreadCount = items.filter((n) => !n.is_read).length;
 
   const markRead = async (id) => {
     try {
       await notificationsApi.markAsRead(id);
-      setItems((prev) => prev.map((x) => (x.id === id ? { ...x, is_read: 1 } : x)));
+      setItems((prev) =>
+        prev.map((x) => (x.id === id ? { ...x, is_read: true } : x))
+      );
+      setUnreadCount((c) => Math.max(0, c - 1));
+      notifyNotificationsUpdated();
     } catch (e) {
       console.error(e);
     }
@@ -62,7 +74,9 @@ export function NotificationsPage() {
   const markAll = async () => {
     try {
       await notificationsApi.markAllAsRead();
-      setItems((prev) => prev.map((x) => ({ ...x, is_read: 1 })));
+      setItems((prev) => prev.map((x) => ({ ...x, is_read: true })));
+      setUnreadCount(0);
+      notifyNotificationsUpdated();
     } catch (e) {
       console.error(e);
     }
@@ -124,7 +138,7 @@ export function NotificationsPage() {
         <div className="notifications-list">
           {filtered.map((n) => {
             const href = notificationLink(n);
-            const unread = !n.is_read;
+            const unread = isNotificationUnread(n);
             return (
               <article
                 key={n.id}

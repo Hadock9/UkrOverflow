@@ -34,6 +34,7 @@ import bestPracticesRoutes from './routes/bestPractices.js';
 import faqsRoutes from './routes/faqs.js';
 import contentRoutes from './routes/content.js';
 import githubAuthRoutes from './routes/githubAuth.js';
+import googleAuthRoutes from './routes/googleAuth.js';
 import githubRoutes from './routes/github.js';
 import githubWebhookRoutes from './routes/githubWebhook.js';
 import communitiesRoutes from './routes/communities.js';
@@ -42,6 +43,7 @@ import mentorsRoutes from './routes/mentors.js';
 import newsRoutes from './routes/news.js';
 import tagsRoutes from './routes/tags.js';
 import { logGithubOAuthRedirectUriHint } from './services/githubService.js';
+import { logGoogleOAuthRedirectUriHint } from './services/googleService.js';
 
 // Завантаження змінних оточення
 dotenv.config();
@@ -161,6 +163,7 @@ app.use('/api/best-practices', bestPracticesRoutes);
 app.use('/api/faqs', faqsRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/auth/github', githubAuthRoutes);
+app.use('/api/auth/google', googleAuthRoutes);
 app.use('/api/github', githubRoutes);
 app.use('/api/communities', communitiesRoutes);
 app.use('/api/community-posts', communityPostsRoutes);
@@ -290,6 +293,7 @@ async function start() {
     await testConnection();
 
     logGithubOAuthRedirectUriHint();
+    logGoogleOAuthRedirectUriHint();
 
     server.listen(PORT, HOST, () => {
       console.log('\n' + '='.repeat(50));

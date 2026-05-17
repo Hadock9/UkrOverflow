@@ -7,7 +7,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useMediator } from '../contexts/MediatorContext';
 import { EventTypes } from '../../../mediator/src/index';
-import { githubLoginUrl } from '../services/api';
+import { githubLoginUrl, googleLoginUrl } from '../services/api';
 import { redirectToCanonicalPath } from '../utils/frontendCanonical';
 import '../styles/brutalism.css';
 
@@ -206,6 +206,21 @@ export function Register() {
         <div style={{ margin: 'var(--space-3) 0', textAlign: 'center', opacity: 0.6 }}>
           АБО
         </div>
+
+        <a
+          href={googleLoginUrl()}
+          className="btn btn-block"
+          style={{
+            background: '#fff',
+            color: '#000',
+            borderColor: '#000',
+            textDecoration: 'none',
+            textAlign: 'center',
+            marginBottom: 'var(--space-2)',
+          }}
+        >
+          РЕЄСТРАЦІЯ ЧЕРЕЗ GOOGLE
+        </a>
 
         <a
           href={githubLoginUrl()}

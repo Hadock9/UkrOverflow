@@ -14,6 +14,15 @@ const TOP_TECH = [
   'kubernetes', 'docker', 'postgresql', 'mongodb', 'aws', 'gcp', 'graphql', 'nextjs',
 ];
 
+const HOURS_WEEK_MAX = 40;
+
+/** Лише цілі 0–40 (без e/E/+/- як у type="number"). */
+function parseHoursPerWeekInput(raw) {
+  const digits = String(raw ?? '').replace(/\D/g, '');
+  if (!digits) return 0;
+  return Math.min(HOURS_WEEK_MAX, parseInt(digits, 10));
+}
+
 function ChipsInput({ value, onChange, placeholder, suggestions, max = 10 }) {
   const [text, setText] = useState('');
   const add = (raw) => {
@@ -133,6 +142,10 @@ export function MentorProfileEdit() {
     if (bio.length > 2000) e.bio = 'Bio максимум 2000 символів';
     if (stack.length < 1) e.stack = 'Додайте мінімум 1 елемент стеку';
     if (stack.length > 10) e.stack = 'Максимум 10';
+    const hours = Number(availability);
+    if (!Number.isFinite(hours) || hours < 0 || hours > HOURS_WEEK_MAX) {
+      e.availability = `Вкажіть ціле число від 0 до ${HOURS_WEEK_MAX}`;
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -197,13 +210,19 @@ export function MentorProfileEdit() {
           <div className="form-group">
             <label className="form-label">ГОДИН / ТИЖДЕНЬ</label>
             <input
-              type="number"
-              min="0"
-              max="40"
-              className="form-input"
-              value={availability}
-              onChange={(e) => setAvailability(e.target.value)}
+              type="text"
+              inputMode="numeric"
+              autoComplete="off"
+              className={`form-input ${errors.availability ? 'error' : ''}`}
+              value={availability === 0 ? '' : String(availability)}
+              onChange={(e) => setAvailability(parseHoursPerWeekInput(e.target.value))}
+              onKeyDown={(e) => {
+                if (['e', 'E', '+', '-', '.', ','].includes(e.key)) e.preventDefault();
+              }}
+              placeholder="0–40"
+              maxLength={2}
             />
+            {errors.availability && <div className="form-error">{errors.availability}</div>}
           </div>
           <div className="form-group">
             <label className="form-label">УМОВИ / ОПЛАТА</label>

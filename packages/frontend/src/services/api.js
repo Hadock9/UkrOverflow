@@ -21,6 +21,14 @@ export function githubLoginUrl({ link = false, token = null } = {}) {
   return `${API_URL}/api/auth/github${qs ? `?${qs}` : ''}`;
 }
 
+export function googleLoginUrl({ link = false, token = null } = {}) {
+  const params = new URLSearchParams();
+  if (link) params.set('link', '1');
+  if (token) params.set('as', token);
+  const qs = params.toString();
+  return `${API_URL}/api/auth/google${qs ? `?${qs}` : ''}`;
+}
+
 const VISITOR_STORAGE_KEY = 'ukroverflow_visitor_id';
 
 /** Так само, як UUID_STRING на бекенді — щоб анонімний перегляд завжди мав валідний ключ. */
@@ -269,6 +277,12 @@ export const faqs = {
   update: (id, data) => api.put(`/faqs/${id}`, data),
   delete: (id) => api.delete(`/faqs/${id}`),
   getTags: () => api.get('/faqs/tags/all'),
+};
+
+// Google OAuth
+export const googleAuth = {
+  status: () => api.get('/auth/google/status'),
+  unlink: () => api.post('/auth/google/unlink'),
 };
 
 // GitHub integration

@@ -1,5 +1,5 @@
 /**
- * /auth/callback — приймає JWT і user-payload з GitHub OAuth callback,
+ * /auth/callback — приймає JWT і user-payload з OAuth (GitHub / Google),
  * зберігає у localStorage і повертає на /.
  */
 
@@ -70,9 +70,9 @@ export function AuthCallback() {
   return (
     <div className="container" style={{ textAlign: 'center', padding: '100px 20px' }}>
       {error ? (
-        <div className="error">Помилка входу через GitHub: {error}</div>
+        <div className="error">Помилка входу: {error}</div>
       ) : (
-        <div className="loading">ВХІД ЧЕРЕЗ GITHUB...</div>
+        <div className="loading">ВХІД...</div>
       )}
     </div>
   );

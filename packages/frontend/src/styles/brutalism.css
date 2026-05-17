@@ -700,18 +700,6 @@ a.tag-dark:hover {
   margin-bottom: var(--space-4);
 }
 
-.answer-card.accepted {
-  background: repeating-linear-gradient(
-    45deg,
-    var(--color-white),
-    var(--color-white) 10px,
-    #9ee6a020 10px,
-    #9ee6a020 20px
-  );
-  border: calc(var(--border-width) + 1px) solid #9ee6a0;
-  box-shadow: 6px 6px 0 #9ee6a0;
-}
-
 .accept-answer-help {
   padding: var(--space-3) var(--space-4);
   margin-bottom: var(--space-4);
@@ -746,17 +734,6 @@ a.tag-dark:hover {
   color: var(--color-black);
 }
 
-.accept-answer-banner {
-  padding: var(--space-3) var(--space-4);
-  margin-bottom: var(--space-4);
-  background: #fff9c4;
-  border: var(--border-width) solid var(--border-color);
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 0.875rem;
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.15);
-}
-
 .answers-empty {
   padding: var(--space-4);
   margin-bottom: var(--space-4);
@@ -777,7 +754,7 @@ a.tag-dark:hover {
   display: inline-block;
   margin-bottom: var(--space-3);
   padding: var(--space-1) var(--space-2);
-  background: #9ee6a0;
+  background: var(--color-white);
   border: var(--border-width) solid var(--border-color);
   font-family: var(--font-mono);
   font-size: 0.75rem;
@@ -793,7 +770,7 @@ a.tag-dark:hover {
 }
 
 .btn-accept-answer {
-  background: #9ee6a0;
+  background: var(--color-white);
   color: var(--color-black);
   border: var(--border-width) solid var(--border-color);
   font-family: var(--font-mono);
@@ -880,8 +857,8 @@ a.tag-dark:hover {
 .accepted-badge {
   width: 40px;
   height: 40px;
-  background: var(--color-success);
-  color: var(--color-white);
+  background: var(--color-white);
+  color: var(--color-black);
   border: var(--border-width) solid var(--border-color);
   display: flex;
   align-items: center;

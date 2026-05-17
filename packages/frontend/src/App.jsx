@@ -9,6 +9,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { getMediator, EventTypes } from '../../mediator/src/index'
 import wsClient from './services/websocket'
 import { Header } from './components/Header'
+import { ScrollToTop } from './components/ScrollToTop'
 import { Home } from './pages/Home'
 import { MainPage } from './pages/MainPage'
 import { QuestionDetail } from './pages/QuestionDetail'
@@ -84,6 +85,7 @@ function App() {
 
   return (
     <AuthProvider>
+      <ScrollToTop />
       <div className="app">
         <Header />
 

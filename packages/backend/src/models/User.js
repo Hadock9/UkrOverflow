@@ -35,6 +35,7 @@ export class User {
       `SELECT id, username, email, reputation, role, bio, location, website, avatar_url,
               github_id, github_login, github_avatar_url, github_profile, github_stack,
               github_contributions, github_badges, github_synced_at,
+              google_id, google_email, google_avatar_url, google_profile,
               created_at, updated_at,
               (SELECT COUNT(*) FROM questions WHERE author_id = ?) as questions_count,
               (SELECT COUNT(*) FROM answers WHERE author_id = ?) as answers_count
@@ -53,6 +54,7 @@ export class User {
 
     return {
       ...u,
+      reputation: Math.max(0, Number(u.reputation) || 0),
       github_profile: parseJson(u.github_profile, null),
       github_stack: parseJson(u.github_stack, null),
       github_contributions: parseJson(u.github_contributions, null),
@@ -106,11 +108,12 @@ export class User {
   }
 
   /**
-   * Оновлення репутації
+   * Оновлення репутації (не нижче 0)
    */
   static async updateReputation(userId, delta) {
+    if (!userId || !delta) return;
     await pool.execute(
-      'UPDATE users SET reputation = reputation + ? WHERE id = ?',
+      'UPDATE users SET reputation = GREATEST(0, reputation + ?) WHERE id = ?',
       [delta, userId]
     );
   }
@@ -302,6 +305,87 @@ export class User {
          github_id = NULL, github_login = NULL, github_avatar_url = NULL,
          github_access_token = NULL, github_profile = NULL, github_stack = NULL,
          github_synced_at = NULL, updated_at = NOW()
+       WHERE id = ?`,
+      [userId]
+    );
+    return this.findById(userId);
+  }
+
+  static async findByGoogleId(googleId) {
+    const [rows] = await pool.execute(
+      'SELECT * FROM users WHERE google_id = ?',
+      [String(googleId)]
+    );
+    return rows[0] || null;
+  }
+
+  static async generateUniqueUsernameFromGoogle(googleUser) {
+    const fromEmail = googleUser?.email?.split('@')?.[0];
+    const base = String(fromEmail || googleUser?.given_name || googleUser?.name || 'google_user')
+      .toLowerCase()
+      .replace(/[^a-z0-9_]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 24) || 'google_user';
+
+    let candidate = base;
+    for (let i = 0; i < 50; i += 1) {
+      const existing = await this.findByUsername(candidate);
+      if (!existing) return candidate;
+      candidate = `${base}_${i + 2}`;
+    }
+    return `${base}_${Date.now()}`;
+  }
+
+  static async createFromGoogle({ googleUser, profile }) {
+    const username = await this.generateUniqueUsernameFromGoogle(googleUser);
+    const email = String(googleUser.email || `${username}@google.local`).slice(0, 255);
+
+    const [result] = await pool.execute(
+      `INSERT INTO users (
+         username, email, password, reputation, role,
+         bio, location, website, avatar_url,
+         google_id, google_email, google_avatar_url, google_profile,
+         created_at, updated_at
+       ) VALUES (?, ?, NULL, 0, 'user', NULL, NULL, NULL, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      [
+        username,
+        email,
+        googleUser.picture ?? null,
+        String(googleUser.sub),
+        email,
+        googleUser.picture ?? null,
+        JSON.stringify(profile || {}),
+      ]
+    );
+
+    return this.findById(result.insertId);
+  }
+
+  static async linkGoogle(userId, { googleUser, profile }) {
+    const email = String(googleUser.email || '').slice(0, 255);
+    await pool.execute(
+      `UPDATE users SET
+         google_id = ?, google_email = ?, google_avatar_url = ?, google_profile = ?,
+         avatar_url = COALESCE(avatar_url, ?),
+         updated_at = NOW()
+       WHERE id = ?`,
+      [
+        String(googleUser.sub),
+        email || null,
+        googleUser.picture ?? null,
+        JSON.stringify(profile || {}),
+        googleUser.picture ?? null,
+        userId,
+      ]
+    );
+    return this.findById(userId);
+  }
+
+  static async unlinkGoogle(userId) {
+    await pool.execute(
+      `UPDATE users SET
+         google_id = NULL, google_email = NULL, google_avatar_url = NULL,
+         google_profile = NULL, updated_at = NOW()
        WHERE id = ?`,
       [userId]
     );

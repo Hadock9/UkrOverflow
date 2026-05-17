@@ -1,0 +1,62 @@
+/* Каталог розробників (/devs) — кнопки та дії по правому краю */
+
+.dev-catalog-page .devs-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-2);
+  width: 100%;
+  margin-bottom: var(--space-3);
+}
+
+.dev-catalog-page .devs-search-wrap {
+  flex: 1 1 220px;
+  min-width: 0;
+  margin-bottom: 0 !important;
+  width: auto !important;
+}
+
+.dev-catalog-page .devs-search-wrap .live-search-form {
+  width: 100%;
+  margin-bottom: 0;
+}
+
+.dev-catalog-page .devs-search-wrap .live-search-form .form-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+.dev-catalog-page .devs-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.dev-catalog-page .devs-location-input {
+  width: 160px;
+  max-width: 100%;
+}
+
+.dev-catalog-page .devs-filters {
+  justify-content: flex-end;
+}
+
+.dev-catalog-page .devs-card-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  font-size: 12px;
+  font-family: var(--font-mono);
+}
+
+.dev-catalog-page .devs-card-footer .devs-card-location {
+  margin-right: auto;
+}

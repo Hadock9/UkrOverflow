@@ -103,6 +103,11 @@ async function migrate() {
     await ensureColumn(connection, 'users', 'github_synced_at', 'DATETIME NULL');
     await ensureIndex(connection, 'users', 'uq_github_id', 'UNIQUE KEY uq_github_id (github_id)');
     await ensureIndex(connection, 'users', 'idx_github_login', 'INDEX idx_github_login (github_login)');
+    await ensureColumn(connection, 'users', 'google_id', 'VARCHAR(128) NULL');
+    await ensureColumn(connection, 'users', 'google_email', 'VARCHAR(255) NULL');
+    await ensureColumn(connection, 'users', 'google_avatar_url', 'VARCHAR(500) NULL');
+    await ensureColumn(connection, 'users', 'google_profile', 'JSON NULL');
+    await ensureIndex(connection, 'users', 'uq_google_id', 'UNIQUE KEY uq_google_id (google_id)');
     // Дозволяємо NULL password для GitHub-only акаунтів
     try {
       await connection.execute(`ALTER TABLE users MODIFY COLUMN password VARCHAR(255) NULL`);
@@ -848,6 +853,16 @@ async function migrate() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
     console.log('✓ news_polls\n');
+
+    console.log('📝 reputation floor (мін. 0)...');
+    const [repFix] = await connection.execute(
+      'UPDATE users SET reputation = 0 WHERE reputation < 0'
+    );
+    console.log(
+      repFix.affectedRows > 0
+        ? `✓ reputation: виправлено ${repFix.affectedRows} записів\n`
+        : '✓ reputation floor\n'
+    );
 
     console.log('✅ Міграція завершена успішно!');
   } catch (error) {

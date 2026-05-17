@@ -114,12 +114,16 @@ router.post(
       }
 
       if (user.password == null || String(user.password).trim() === '') {
+        const oauthHint = user.github_id && user.google_id
+          ? 'Увійдіть через GitHub або Google.'
+          : user.github_id
+            ? 'Увійдіть через GitHub.'
+            : user.google_id
+              ? 'Увійдіть через Google.'
+              : 'Для цього акаунта не налаштовано пароль. Зверніться до підтримки.';
         return res.status(401).json({
           success: false,
-          message:
-            user.github_id
-              ? 'Для цього акаунта пароль не заданий. Увійдіть через GitHub.'
-              : 'Для цього акаунта не налаштовано пароль. Зверніться до підтримки.'
+          message: `Для цього акаунта пароль не заданий. ${oauthHint}`,
         });
       }
 

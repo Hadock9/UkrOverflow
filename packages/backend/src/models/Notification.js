@@ -118,10 +118,7 @@ class Notification {
       params.push(limit, offset);
 
       const [rows] = await pool.execute(query, params);
-      return rows.map((row) => ({
-        ...row,
-        question_title: row.context_title,
-      }));
+      return rows.map((row) => Notification._enrichRow(row));
     } catch (error) {
       console.error('Error finding notifications:', error);
       throw error;
@@ -133,7 +130,37 @@ class Notification {
       'SELECT COUNT(*) AS count FROM notifications WHERE user_id = ? AND is_read = FALSE',
       [userId]
     );
-    return rows[0].count;
+    return Number(rows[0]?.count) || 0;
+  }
+
+  /** Нормалізація рядка для API: data як об'єкт, узгоджений заголовок контексту. */
+  static _enrichRow(row) {
+    let data = row.data;
+    if (typeof data === 'string') {
+      try {
+        data = JSON.parse(data);
+      } catch {
+        data = {};
+      }
+    }
+    if (!data || typeof data !== 'object') data = {};
+
+    const contextTitle =
+      row.context_title ||
+      data.title ||
+      data.postTitle ||
+      (row.type === 'community_join' || row.type === 'community_welcome'
+        ? data.communityName
+        : null) ||
+      null;
+
+    return {
+      ...row,
+      data,
+      context_title: contextTitle,
+      question_title: contextTitle,
+      is_read: row.is_read === true || row.is_read === 1,
+    };
   }
 
   static async markAsRead(id, userId) {

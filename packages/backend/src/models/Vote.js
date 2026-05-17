@@ -4,6 +4,7 @@
 
 import pool from '../config/database.js';
 import Notification from './Notification.js';
+import { User } from './User.js';
 import { VOTE_AUTHOR_TABLE, isVoteEntityType } from '../constants/voteEntityTypes.js';
 
 export class Vote {
@@ -120,10 +121,7 @@ export class Vote {
 
     const [rows] = await pool.execute(`SELECT author_id FROM ${table} WHERE id = ?`, [entityId]);
     if (rows.length > 0 && rows[0].author_id) {
-      await pool.execute('UPDATE users SET reputation = reputation + ? WHERE id = ?', [
-        delta,
-        rows[0].author_id,
-      ]);
+      await User.updateReputation(rows[0].author_id, delta);
     }
   }
 }

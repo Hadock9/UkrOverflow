@@ -9,6 +9,7 @@ import { LiveSearchBox } from '../components/LiveSearchBox';
 import { usersSearch } from '../services/api';
 import '../styles/brutalism.css';
 import '../components/LiveSearchBox.css';
+import './DevCatalog.css';
 
 const POPULAR_STACKS = ['JavaScript', 'TypeScript', 'Python', 'Java', 'Go', 'Rust', 'C#', 'PHP', 'Ruby', 'C++', 'Swift', 'Kotlin'];
 
@@ -43,7 +44,7 @@ export function DevCatalog() {
   };
 
   return (
-    <div className="container">
+    <div className="container dev-catalog-page">
       <div className="page-header">
         <div>
           <h1 className="page-title">РОЗРОБНИКИ</h1>
@@ -53,7 +54,7 @@ export function DevCatalog() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+      <div className="devs-toolbar">
         <LiveSearchBox
           value={searchInput}
           onChange={setSearchInput}
@@ -63,19 +64,28 @@ export function DevCatalog() {
           placeholder="Пошук: нік, опис, GitHub…"
           ariaLabel="Пошук розробників"
           showViewAll={false}
-          className="mentors-search-live"
+          showSubmitButton={false}
+          className="devs-search-wrap"
         />
-        <input
-          type="text"
-          className="form-input"
-          placeholder="локація"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          style={{ width: 160 }}
-        />
+        <div className="devs-toolbar-actions">
+          <input
+            type="text"
+            className="form-input devs-location-input"
+            placeholder="локація"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+          />
+          <button
+            type="button"
+            className="btn"
+            onClick={() => setSearch(searchInput.trim())}
+          >
+            ШУКАТИ
+          </button>
+        </div>
       </div>
 
-      <div className="filters" style={{ flexWrap: 'wrap', gap: 8 }}>
+      <div className="filters devs-filters" style={{ flexWrap: 'wrap', gap: 8 }}>
         {POPULAR_STACKS.map((s) => (
           <button
             key={s}
@@ -135,8 +145,8 @@ export function DevCatalog() {
 
                   {u.bio && <p className="question-excerpt">{excerpt(u.bio, 160)}</p>}
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, fontSize: 12, fontFamily: 'var(--font-mono)' }}>
-                    {u.location && <span>📍 {u.location}</span>}
+                  <div className="devs-card-footer">
+                    {u.location && <span className="devs-card-location">📍 {u.location}</span>}
                     <Link to={`/users/${u.id}`} className="btn btn-secondary" style={{ padding: '4px 10px', fontSize: 12 }}>
                       ПРОФІЛЬ →
                     </Link>

@@ -367,12 +367,6 @@ export function QuestionDetail() {
           )}
         </div>
 
-        {canManageAccepted && answers.length > 0 && !hasAcceptedAnswer && (
-          <div className="accept-answer-banner">
-            Ви автор цього питання — оберіть найкращу відповідь кнопкою «Прийняти відповідь».
-          </div>
-        )}
-
         {Array.isArray(answers) && answers.length === 0 && (
           <div className="answers-empty">
             <p>Поки що немає відповідей.</p>
