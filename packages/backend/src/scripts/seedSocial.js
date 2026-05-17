@@ -1,16 +1,46 @@
 /**
  * Seed: кімнати парного програмування + тижневі челенджі.
- * Запуск: node packages/backend/src/scripts/seedSocial.js
+ *
+ * Локально:
+ *   node src/scripts/seedSocial.js
+ *   node src/scripts/seedSocial.js --user 11
+ *
+ * Docker (з кореня проєкту, сервіс api):
+ *   docker compose --env-file .env exec api node src/scripts/seedSocial.js
+ *   docker compose --env-file .env exec api node src/scripts/seedSocial.js --user 11
  */
 
-import dotenv from 'dotenv';
+import 'dotenv/config';
 import pool from '../config/database.js';
 import Challenge from '../models/Challenge.js';
 import PairRoom from '../models/PairRoom.js';
 
-dotenv.config();
+function parseArgs(argv) {
+  const args = { user: null };
+  for (let i = 2; i < argv.length; i += 1) {
+    const a = argv[i];
+    if (a === '--user' || a === '-u') {
+      const n = parseInt(argv[i + 1], 10);
+      if (!Number.isFinite(n)) throw new Error(`Невалідне значення для --user: "${argv[i + 1]}"`);
+      args.user = n;
+      i += 1;
+    } else if (a.startsWith('--user=')) {
+      const n = parseInt(a.slice('--user='.length), 10);
+      if (!Number.isFinite(n)) throw new Error(`Невалідне значення для --user`);
+      args.user = n;
+    }
+  }
+  return args;
+}
 
-async function getFirstUserId() {
+async function resolveHostId(preferredUserId) {
+  if (preferredUserId) {
+    const [rows] = await pool.execute('SELECT id FROM users WHERE id = ?', [preferredUserId]);
+    if (rows.length === 0) {
+      throw new Error(`Користувача з id=${preferredUserId} не знайдено`);
+    }
+    return preferredUserId;
+  }
   const [rows] = await pool.execute('SELECT id FROM users ORDER BY id ASC LIMIT 1');
   return rows[0]?.id || null;
 }
@@ -104,9 +134,12 @@ async function seedChallenges() {
 }
 
 async function main() {
+  const { user: preferredUserId } = parseArgs(process.argv);
+
   try {
     console.log('\n🌱 Seed соціальних фіч...\n');
-    const hostId = await getFirstUserId();
+    const hostId = await resolveHostId(preferredUserId);
+    if (hostId) console.log(`  Хост кімнат: user #${hostId}\n`);
     await seedPairRooms(hostId);
     await seedChallenges();
     console.log('\n✅ Seed завершено\n');
