@@ -30,13 +30,28 @@ class Notification {
     const actorId = pickActorId(data);
     if (actorId && recipientId === actorId) return null;
 
+    return this._insert(recipientId, type, entityType, entityId, data, actorId || null);
+  }
+
+  /** Сповіщення для самого автора дії (підтвердження в дзвінку). */
+  static async createSelf(userId, type, entityType, entityId, data = {}) {
+    const recipientId = parseInt(userId, 10);
+    const actorId = pickActorId(data) ?? recipientId;
+    return this._insert(recipientId, type, entityType, entityId, { ...data, self: true }, actorId);
+  }
+
+  static async _insert(recipientId, type, entityType, entityId, data, actorId) {
     try {
       const [result] = await pool.execute(
         `INSERT INTO notifications (user_id, type, entity_type, entity_id, data, actor_id, created_at)
          VALUES (?, ?, ?, ?, ?, ?, NOW())`,
         [recipientId, type, entityType, entityId, JSON.stringify(data), actorId || null]
       );
-      return await this.findById(result.insertId);
+      const row = await this.findById(result.insertId);
+      if (typeof global.broadcast === 'function') {
+        global.broadcast(`notifications:${recipientId}`, { type: 'new', notificationId: result.insertId });
+      }
+      return row;
     } catch (error) {
       console.error('Error creating notification:', error);
       return null;
@@ -568,6 +583,118 @@ class Notification {
     } catch (error) {
       console.error('Error creating news comment notification:', error);
     }
+  }
+
+  // ——— Pair rooms & social self-actions ———
+
+  static async notifyPairRoomCreated(userId, room) {
+    await this.createSelf(userId, 'pair_room_created', 'pair_room', room.id, {
+      actorId: userId,
+      title: room.title,
+      slug: room.slug,
+    });
+  }
+
+  static async notifyPairRoomJoined(userId, room) {
+    await this.createSelf(userId, 'pair_room_joined', 'pair_room', room.id, {
+      actorId: userId,
+      title: room.title,
+      slug: room.slug,
+    });
+
+    const members = await pool.execute(
+      `SELECT prm.user_id FROM pair_room_members prm
+       WHERE prm.room_id = ? AND prm.user_id != ?`,
+      [room.id, userId]
+    );
+    for (const row of members[0]) {
+      await this.create(row.user_id, 'pair_room_member_joined', 'pair_room', room.id, {
+        actorId: userId,
+        title: room.title,
+        slug: room.slug,
+      });
+    }
+  }
+
+  static async notifyPairRoomLeft(userId, room) {
+    await this.createSelf(userId, 'pair_room_left', 'pair_room', room.id, {
+      actorId: userId,
+      title: room.title,
+      slug: room.slug,
+    });
+  }
+
+  static async notifyPairRoomMessage(roomId, authorId, body) {
+    const room = await pool.execute(
+      'SELECT id, title, slug, host_id FROM pair_rooms WHERE id = ?',
+      [roomId]
+    );
+    const r = room[0]?.[0];
+    if (!r) return;
+
+    const preview = String(body || '').slice(0, 120);
+    const payload = {
+      actorId: authorId,
+      title: r.title,
+      slug: r.slug,
+      preview,
+    };
+
+    await this.createSelf(authorId, 'pair_room_message_sent', 'pair_room', roomId, payload);
+
+    const [members] = await pool.execute(
+      `SELECT user_id FROM pair_room_members WHERE room_id = ? AND user_id != ?`,
+      [roomId, authorId]
+    );
+    for (const row of members) {
+      await this.createOnce(
+        row.user_id,
+        'pair_room_message',
+        'pair_room',
+        roomId,
+        payload,
+        2
+      );
+    }
+  }
+
+  static async notifyChallengeWeekComplete(userId, totalScore, completed, total) {
+    await this.createSelf(userId, 'challenge_week_complete', 'challenge', 0, {
+      actorId: userId,
+      title: `Тижневий челендж: ${completed}/${total}`,
+      totalScore,
+      completed,
+      total,
+    });
+  }
+
+  static async notifyChallengeSubmitted(userId, challengeId, score) {
+    const [rows] = await pool.execute(
+      'SELECT title, slug FROM challenges WHERE id = ?',
+      [challengeId]
+    );
+    if (!rows[0]) return;
+    await this.createSelf(userId, 'challenge_submitted', 'challenge', challengeId, {
+      actorId: userId,
+      title: rows[0].title,
+      slug: rows[0].slug,
+      score,
+    });
+  }
+
+  static async notifyQuestionCreatedSelf(userId, questionId, title) {
+    await this.createSelf(userId, 'question_created', 'question', questionId, {
+      actorId: userId,
+      title,
+    });
+  }
+
+  static async notifyAnswerCreatedSelf(userId, questionId, answerId, questionTitle) {
+    await this.createSelf(userId, 'answer_created', 'answer', answerId, {
+      actorId: userId,
+      questionId,
+      title: questionTitle,
+    });
   }
 
   static async notifyNewsPublished(newsId, authorId, moderatorId = null) {

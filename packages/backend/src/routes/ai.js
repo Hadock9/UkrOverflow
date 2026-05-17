@@ -568,6 +568,7 @@ router.get('/status', async (req, res) => {
           'duplicate-detection',
           'question-quality',
           'roadmap-generation',
+          'challenge-scoring',
         ],
       },
     });

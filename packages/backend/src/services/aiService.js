@@ -607,7 +607,127 @@ ${(body || '').slice(0, 3000)}
   }
 
   /**
-   * 10. Генерація навчального roadmap за стеком
+   * 10. Оцінка рішення тижневого челенджу (Gemini Flash)
+   */
+  async scoreChallengeSubmission({
+    challengeTitle,
+    challengeDescription,
+    challengeType,
+    criteria = {},
+    pointsMax = 100,
+    solutionText,
+    solutionUrl = null,
+  }) {
+    const maxPts = Math.min(500, Math.max(10, Number(pointsMax) || 100));
+    const typeHints = {
+      algorithms: 'коректність алгоритму, складність O(), edge cases',
+      bug_fixing: 'root cause, якість виправлення, пояснення',
+      mini_project: 'повнота функцій, структура коду, UX/деплой',
+    };
+
+    try {
+      const prompt = `Ти технічний журі української платформи для розробників. Оціни рішення тижневого челенджу.
+
+ТИП: ${challengeType}
+ЗАВДАННЯ: ${challengeTitle}
+ОПИС: ${challengeDescription}
+КРИТЕРІЇ: ${JSON.stringify(criteria)}
+НА ЩО ЗВЕРТАТИ УВАГУ: ${typeHints[challengeType] || 'якість і повнота рішення'}
+МАКСИМУМ БАЛІВ: ${maxPts}
+${solutionUrl ? `ПОСИЛАННЯ НА РЕПО: ${solutionUrl}` : ''}
+
+РІШЕННЯ УЧАСНИКА:
+${(solutionText || '').slice(0, 6000)}
+
+Поверни JSON:
+{
+  "score": число від 0 до ${maxPts},
+  "feedback": "2-4 речення українською: що добре, що покращити",
+  "breakdown": {
+    "correctness": 0-100,
+    "clarity": 0-100,
+    "completeness": 0-100
+  }
+}
+Будь справедливим. Порожнє або нерелевантне рішення — низький бал.`;
+
+      const parsed = await this._flashJsonPrompt(prompt, { maxOutputTokens: 1024 });
+      const rawScore = Number(parsed.score);
+      const score = Number.isFinite(rawScore)
+        ? Math.min(maxPts, Math.max(0, Math.round(rawScore)))
+        : null;
+
+      if (score === null) {
+        return { success: false, error: 'Модель не повернула бал' };
+      }
+
+      return {
+        success: true,
+        score,
+        feedback: String(parsed.feedback || '').slice(0, 2000),
+        breakdown: parsed.breakdown || {},
+        model: flashModelId,
+        scoredBy: 'gemini',
+      };
+    } catch (error) {
+      if (isGeminiQuotaOrRateLimitError(error)) {
+        console.warn('[AI] challenge score: квота/ліміт —', String(error.message).slice(0, 160));
+      } else {
+        console.error('AI Challenge Score Error:', describeGeminiError(error));
+      }
+      return {
+        success: false,
+        score: null,
+        feedback: null,
+        error: describeGeminiError(error),
+        scoredBy: 'none',
+      };
+    }
+  }
+
+  /**
+   * 11. Підказка до челенджу (без оцінки рішення)
+   */
+  async getChallengeHint({
+    challengeTitle,
+    challengeDescription,
+    challengeType,
+    draftText = '',
+  }) {
+    try {
+      const prompt = `Ти ментор української платформи для розробників. Дай підказку до тижневого челенджу — НЕ повне рішення.
+
+ТИП: ${challengeType}
+ЗАВДАННЯ: ${challengeTitle}
+ОПИС: ${challengeDescription}
+${draftText ? `ЧЕРНЕТКА УЧАСНИКА:\n${draftText.slice(0, 1500)}` : ''}
+
+Поверни JSON:
+{
+  "hint": "2-4 речення українською — напрямок думки, на що звернути увагу",
+  "checklist": ["крок 1", "крок 2", "крок 3"],
+  "pitfalls": ["типова помилка 1", "типова помилка 2"]
+}
+Не давай готового коду цілком.`;
+
+      const parsed = await this._flashJsonPrompt(prompt);
+      return {
+        success: true,
+        hint: String(parsed.hint || '').slice(0, 1500),
+        checklist: Array.isArray(parsed.checklist) ? parsed.checklist.slice(0, 6) : [],
+        pitfalls: Array.isArray(parsed.pitfalls) ? parsed.pitfalls.slice(0, 4) : [],
+        model: flashModelId,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: describeGeminiError(error),
+      };
+    }
+  }
+
+  /**
+   * 12. Генерація навчального roadmap за стеком
    */
   async generateRoadmap({ stack, goal, level = 'beginner' }) {
     try {

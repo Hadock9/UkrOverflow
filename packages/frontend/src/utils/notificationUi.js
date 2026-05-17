@@ -87,6 +87,20 @@ export function notificationLink(n) {
     case 'news_thread_activity':
     case 'news_published':
       return d.slug ? `/news/${d.slug}` : `/news/${n.entity_id}`;
+    case 'pair_room_created':
+    case 'pair_room_joined':
+    case 'pair_room_left':
+    case 'pair_room_message_sent':
+    case 'pair_room_message':
+    case 'pair_room_member_joined':
+      return d.slug ? `/pair-rooms/${d.slug}` : '/pair-rooms';
+    case 'challenge_submitted':
+    case 'challenge_week_complete':
+      return '/challenges';
+    case 'question_created':
+      return `/questions/${n.entity_id}`;
+    case 'answer_created':
+      return d.questionId ? `/questions/${d.questionId}` : '/hub';
     case 'answer_accepted':
       return d.questionId ? `/questions/${d.questionId}` : '/hub';
     case 'question_answer':
@@ -148,15 +162,26 @@ export function notificationIcon(type) {
     news_comment_reply: '↩️',
     news_thread_activity: '🧵',
     news_published: '📢',
+    pair_room_created: '🚪',
+    pair_room_joined: '👋',
+    pair_room_left: '👋',
+    pair_room_message_sent: '💬',
+    pair_room_message: '💬',
+    pair_room_member_joined: '👥',
+    challenge_submitted: '🏆',
+    challenge_week_complete: '🎉',
+    question_created: '❓',
+    answer_created: '✍️',
   };
   return map[type] || '•';
 }
 
 export function notificationLabel(n) {
-  const who = n.actor_name || 'Користувач';
+  const d = parseNotificationData(n.data);
+  const isSelf = d.self === true;
+  const who = isSelf ? 'Ви' : (n.actor_name || 'Користувач');
   const titlePart = notificationContextTitle(n);
   const titleSuffix = titlePart ? `: ${titlePart}` : '';
-  const d = parseNotificationData(n.data);
 
   switch (n.type) {
     case 'question_answer':
@@ -218,6 +243,38 @@ export function notificationLabel(n) {
       return `${who} додав коментар у треді новини${titleSuffix}`;
     case 'news_published':
       return `Опубліковано вашу новину${titleSuffix}`;
+    case 'pair_room_created':
+      return isSelf
+        ? `Ви створили кімнату парного програмування${titleSuffix}`
+        : `${who} створив кімнату${titleSuffix}`;
+    case 'pair_room_joined':
+      return isSelf
+        ? `Ви приєднались до кімнати${titleSuffix}`
+        : `${who} приєднався до кімнати${titleSuffix}`;
+    case 'pair_room_left':
+      return `Ви вийшли з кімнати${titleSuffix}`;
+    case 'pair_room_message_sent': {
+      const prev = d.preview ? ` «${d.preview.slice(0, 60)}${d.preview.length > 60 ? '…' : ''}»` : '';
+      return `Ви надіслали повідомлення в кімнаті${titleSuffix}${prev}`;
+    }
+    case 'pair_room_message': {
+      const prev = d.preview ? ` «${d.preview.slice(0, 60)}${d.preview.length > 60 ? '…' : ''}»` : '';
+      return `${who} написав у кімнаті${titleSuffix}${prev}`;
+    }
+    case 'pair_room_member_joined':
+      return `${who} приєднався до вашої кімнати${titleSuffix}`;
+    case 'challenge_submitted': {
+      const pts = d.score != null ? ` (${d.score} б.)` : '';
+      return `Ви надіслали рішення челенджу${titleSuffix}${pts}`;
+    }
+    case 'challenge_week_complete': {
+      const pts = d.totalScore != null ? ` — ${d.totalScore} б. загалом` : '';
+      return `Ви завершили всі челенджі тижня (${d.completed}/${d.total})${pts}`;
+    }
+    case 'question_created':
+      return `Ви опублікували питання${titleSuffix}`;
+    case 'answer_created':
+      return `Ви опублікували відповідь${titleSuffix}`;
     default:
       return `Подія: ${n.type}${titleSuffix}`;
   }
@@ -242,6 +299,16 @@ export function notificationTypeName(type) {
     news_comment_reply: 'Відповідь',
     news_thread_activity: 'Тред',
     news_published: 'Публікація',
+    pair_room_created: 'Кімната',
+    pair_room_joined: 'Кімната',
+    pair_room_left: 'Кімната',
+    pair_room_message_sent: 'Чат',
+    pair_room_message: 'Чат',
+    pair_room_member_joined: 'Кімната',
+    challenge_submitted: 'Челендж',
+    challenge_week_complete: 'Тиждень',
+    question_created: 'Питання',
+    answer_created: 'Відповідь',
   };
   return names[type] || type;
 }

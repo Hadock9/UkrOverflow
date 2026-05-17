@@ -10,6 +10,7 @@ import { attachViewerKeyOptional, resolveViewerKey } from '../middleware/viewerK
 import { validate } from '../middleware/validation.js';
 import Vote from '../models/Vote.js';
 import { logActivity, setPresence } from '../services/activityService.js';
+import Notification from '../models/Notification.js';
 
 const router = express.Router();
 
@@ -190,6 +191,7 @@ router.post(
         entityType: 'question',
         entityId: question.id,
       });
+      await Notification.notifyQuestionCreatedSelf(req.user.id, question.id, question.title);
       if (typeof global.broadcast === 'function') {
         global.broadcast('questions', { type: 'create', question });
         global.broadcast('activity', { type: 'event', verb: 'question_asked' });

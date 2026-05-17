@@ -56,6 +56,7 @@ import { ActivityFeed } from './pages/ActivityFeed'
 import { PairRooms } from './pages/PairRooms'
 import { PairRoomDetail } from './pages/PairRoomDetail'
 import { Challenges } from './pages/Challenges'
+import { ActivityPresenceTracker } from './components/ActivityPresenceTracker'
 
 function App() {
   const mediator = getMediator()
@@ -93,6 +94,7 @@ function App() {
 
   return (
     <AuthProvider>
+      <ActivityPresenceTracker />
       <ScrollToTop />
       <div className="app">
         <Header />

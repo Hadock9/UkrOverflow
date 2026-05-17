@@ -9,6 +9,7 @@ import PairRoomMessage from '../models/PairRoomMessage.js';
 import { authenticateToken, optionalAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validation.js';
 import { setPresence, logActivity } from '../services/activityService.js';
+import Notification from '../models/Notification.js';
 
 const router = express.Router();
 
@@ -112,6 +113,7 @@ router.post(
         entityId: room.id,
         title: room.title,
       });
+      await Notification.notifyPairRoomCreated(req.user.id, room);
 
       res.status(201).json({ success: true, data: { room } });
     } catch (e) {
@@ -148,6 +150,7 @@ router.post(
       });
 
       broadcastRoom(roomId, { type: 'member_join', userId: req.user.id, username: req.user.username });
+      await Notification.notifyPairRoomJoined(req.user.id, result.room);
 
       res.json({ success: true, data: { room: result.room } });
     } catch (e) {
@@ -164,7 +167,9 @@ router.post(
   async (req, res, next) => {
     try {
       const roomId = parseInt(req.params.id, 10);
+      const room = await PairRoom.findById(roomId);
       await PairRoom.leave(roomId, req.user.id);
+      if (room) await Notification.notifyPairRoomLeft(req.user.id, room);
       broadcastRoom(roomId, { type: 'member_leave', userId: req.user.id });
       res.json({ success: true, message: 'Ви вийшли з кімнати' });
     } catch (e) {
@@ -240,6 +245,13 @@ router.post(
       });
 
       broadcastRoom(roomId, { type: 'message', message });
+      await Notification.notifyPairRoomMessage(roomId, req.user.id, req.body.body);
+      await setPresence(req.user.id, {
+        status: 'in_room',
+        context: { roomTitle: (await PairRoom.findById(roomId))?.title },
+        entityType: 'pair_room',
+        entityId: roomId,
+      });
 
       res.status(201).json({ success: true, data: { message } });
     } catch (e) {

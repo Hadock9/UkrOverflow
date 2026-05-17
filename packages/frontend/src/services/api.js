@@ -371,9 +371,11 @@ export const pairRooms = {
 export const challenges = {
   list: (params) => api.get('/challenges', { params }),
   getCurrent: () => api.get('/challenges/current'),
+  getWeekHistory: (params) => api.get('/challenges/history/weeks', { params }),
   getWeeklyLeaderboard: (params) => api.get('/challenges/leaderboard/weekly', { params }),
   get: (slug) => api.get(`/challenges/${slug}`),
   getLeaderboard: (id, params) => api.get(`/challenges/${id}/leaderboard`, { params }),
+  getHint: (id, draftText) => api.post(`/challenges/${id}/hint`, { draftText }),
   submit: (id, data) => api.post(`/challenges/${id}/submit`, data),
 };
 

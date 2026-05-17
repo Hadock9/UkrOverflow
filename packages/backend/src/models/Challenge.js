@@ -142,7 +142,25 @@ export class Challenge {
     return this.findById(result.insertId);
   }
 
-  static async submit({ challengeId, userId, solutionUrl, solutionText, score = null }) {
+  static _parseBreakdown(raw) {
+    if (!raw) return null;
+    if (typeof raw === 'object') return raw;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+
+  static async submit({
+    challengeId,
+    userId,
+    solutionUrl,
+    solutionText,
+    score = null,
+    aiFeedback = null,
+    aiBreakdown = null,
+  }) {
     const challenge = await this.findById(challengeId);
     if (!challenge) return { error: 'not_found' };
     if (challenge.status !== 'active') return { error: 'closed' };
@@ -152,21 +170,23 @@ export class Challenge {
       [challengeId, userId]
     );
 
+    const breakdownJson = aiBreakdown ? JSON.stringify(aiBreakdown) : null;
+
     if (existing.length > 0) {
       await pool.execute(
         `UPDATE challenge_submissions
-         SET solution_url = ?, solution_text = ?, score = COALESCE(?, score), submitted_at = NOW()
+         SET solution_url = ?, solution_text = ?, score = ?, ai_feedback = ?, ai_breakdown = ?, submitted_at = NOW()
          WHERE id = ?`,
-        [solutionUrl, solutionText, score, existing[0].id]
+        [solutionUrl, solutionText, score, aiFeedback, breakdownJson, existing[0].id]
       );
       return this.getSubmission(existing[0].id);
     }
 
-    const autoScore = score ?? Math.floor(Math.random() * 30) + 50;
+    const finalScore = score ?? 0;
     const [result] = await pool.execute(
-      `INSERT INTO challenge_submissions (challenge_id, user_id, solution_url, solution_text, score, submitted_at)
-       VALUES (?, ?, ?, ?, ?, NOW())`,
-      [challengeId, userId, solutionUrl, solutionText, autoScore]
+      `INSERT INTO challenge_submissions (challenge_id, user_id, solution_url, solution_text, score, ai_feedback, ai_breakdown, submitted_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [challengeId, userId, solutionUrl, solutionText, finalScore, aiFeedback, breakdownJson]
     );
     return this.getSubmission(result.insertId);
   }
@@ -195,8 +215,122 @@ export class Challenge {
       solutionUrl: r.solution_url,
       solutionText: r.solution_text,
       score: r.score,
+      aiFeedback: r.ai_feedback,
+      aiBreakdown: Challenge._parseBreakdown(r.ai_breakdown),
       submittedAt: r.submitted_at,
     };
+  }
+
+  static async getWeekStats(weekStart = null) {
+    const ws = weekStart || getWeekBounds().weekStart;
+    const [rows] = await pool.execute(
+      `SELECT
+         COUNT(DISTINCT cs.user_id) AS participants,
+         COUNT(cs.id) AS submissions,
+         ROUND(AVG(cs.score), 1) AS avg_score,
+         MAX(cs.score) AS top_score
+       FROM challenge_submissions cs
+       JOIN challenges c ON c.id = cs.challenge_id
+       WHERE c.week_start = ?`,
+      [ws]
+    );
+    const [chCount] = await pool.execute(
+      'SELECT COUNT(*) AS n FROM challenges WHERE week_start = ? AND status = ?',
+      [ws, 'active']
+    );
+    const r = rows[0] || {};
+    return {
+      weekStart: ws,
+      challengeCount: chCount[0]?.n || 0,
+      participants: Number(r.participants) || 0,
+      submissions: Number(r.submissions) || 0,
+      avgScore: r.avg_score != null ? Number(r.avg_score) : null,
+      topScore: Number(r.top_score) || 0,
+    };
+  }
+
+  static async getUserWeekProgress(userId, weekStart = null) {
+    const ws = weekStart || getWeekBounds().weekStart;
+    const [challenges] = await pool.execute(
+      `SELECT c.id, c.slug, c.title, c.challenge_type, c.points_max
+       FROM challenges c
+       WHERE c.week_start = ? AND c.status = 'active'
+       ORDER BY c.id ASC`,
+      [ws]
+    );
+
+    const progress = [];
+    let totalScore = 0;
+    let completed = 0;
+
+    for (const ch of challenges) {
+      const sub = await this.getUserSubmission(ch.id, userId);
+      if (sub) {
+        completed += 1;
+        totalScore += sub.score || 0;
+      }
+      progress.push({
+        challengeId: ch.id,
+        slug: ch.slug,
+        title: ch.title,
+        challengeType: ch.challenge_type,
+        pointsMax: ch.points_max,
+        submission: sub,
+      });
+    }
+
+    const rankRow = await this.getUserWeeklyRank(userId, ws);
+
+    return {
+      weekStart: ws,
+      completed,
+      total: challenges.length,
+      totalScore,
+      maxPossible: challenges.reduce((s, c) => s + (c.points_max || 0), 0),
+      weeklyRank: rankRow?.rank || null,
+      items: progress,
+    };
+  }
+
+  static async getUserWeeklyRank(userId, weekStart = null) {
+    const ws = weekStart || getWeekBounds().weekStart;
+    const [rows] = await pool.execute(
+      `SELECT user_id, total_score FROM (
+         SELECT u.id AS user_id, SUM(cs.score) AS total_score
+         FROM challenge_submissions cs
+         JOIN challenges c ON c.id = cs.challenge_id
+         JOIN users u ON u.id = cs.user_id
+         WHERE c.week_start = ?
+         GROUP BY u.id
+       ) t
+       ORDER BY total_score DESC`,
+      [ws]
+    );
+    const idx = rows.findIndex((r) => r.user_id === userId);
+    if (idx < 0) return null;
+    return { rank: idx + 1, totalScore: rows[idx].total_score };
+  }
+
+  static async getRecentWeeks(limit = 8) {
+    const lim = Math.min(Math.max(parseInt(limit, 10) || 8, 1), 52);
+    const [rows] = await pool.execute(
+      `SELECT c.week_start, c.week_end,
+              COUNT(DISTINCT c.id) AS challenge_count,
+              COUNT(cs.id) AS submission_count,
+              COUNT(DISTINCT cs.user_id) AS participant_count
+       FROM challenges c
+       LEFT JOIN challenge_submissions cs ON cs.challenge_id = c.id
+       GROUP BY c.week_start, c.week_end
+       ORDER BY c.week_start DESC
+       LIMIT ${lim}`
+    );
+    return rows.map((r) => ({
+      weekStart: r.week_start,
+      weekEnd: r.week_end,
+      challengeCount: r.challenge_count,
+      submissionCount: r.submission_count,
+      participantCount: r.participant_count,
+    }));
   }
 
   static async getLeaderboard(challengeId, { limit = 20 } = {}) {

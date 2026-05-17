@@ -10,6 +10,14 @@ import { pairRooms } from '../services/api';
 import wsClient from '../services/websocket';
 import '../styles/brutalism.css';
 import './SocialPages.css';
+import { notifyNotificationsUpdated } from '../utils/notificationUi';
+import { setExplicitPresence, clearExplicitPresence } from '../hooks/useReportPresence';
+
+function appendMessage(prev, msg) {
+  if (!msg?.id) return prev;
+  if (prev.some((m) => m.id === msg.id)) return prev;
+  return [...prev, msg];
+}
 
 export function PairRoomDetail() {
   const { slug } = useParams();
@@ -41,11 +49,22 @@ export function PairRoomDetail() {
   }, [data]);
 
   useEffect(() => {
+    if (!joined || !room?.id) return undefined;
+    setExplicitPresence({
+      status: 'in_room',
+      context: { roomTitle: room.title },
+      entityType: 'pair_room',
+      entityId: room.id,
+    });
+    return () => clearExplicitPresence();
+  }, [joined, room?.id, room?.title]);
+
+  useEffect(() => {
     if (!room?.id) return undefined;
     const channel = `pair-room:${room.id}`;
     const unsub = wsClient.on(channel, (payload) => {
       if (payload.type === 'message' && payload.message) {
-        setMessages((prev) => [...prev, payload.message]);
+        setMessages((prev) => appendMessage(prev, payload.message));
       }
       if (payload.type === 'code_update' && payload.codeSnippet != null) {
         if (payload.userId !== user?.id) setCode(payload.codeSnippet);
@@ -66,6 +85,7 @@ export function PairRoomDetail() {
     onSuccess: () => {
       setJoined(true);
       refetch();
+      notifyNotificationsUpdated();
     },
   });
 
@@ -84,8 +104,9 @@ export function PairRoomDetail() {
       try {
         const r = await pairRooms.sendMessage(room.id, chatInput.trim());
         const msg = r.data.data.message;
-        setMessages((prev) => [...prev, msg]);
+        setMessages((prev) => appendMessage(prev, msg));
         setChatInput('');
+        notifyNotificationsUpdated();
       } catch {
         /* ignore */
       }

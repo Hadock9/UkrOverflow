@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { notifications } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { NOTIFICATIONS_UPDATED_EVENT } from '../utils/notificationUi';
+import wsClient from '../services/websocket';
 import './NotificationBell.css';
 
 function parseUnreadCount(payload) {
@@ -42,10 +43,13 @@ export function NotificationBell() {
     window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, onUpdated);
     const onFocus = () => loadUnreadCount();
     window.addEventListener('focus', onFocus);
+    const wsChannel = `notifications:${user.id}`;
+    const unsubWs = wsClient.on(wsChannel, onUpdated);
     return () => {
       clearInterval(interval);
       window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, onUpdated);
       window.removeEventListener('focus', onFocus);
+      unsubWs();
     };
   }, [user, loadUnreadCount]);
 

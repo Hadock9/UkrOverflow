@@ -2,10 +2,8 @@
  * Віджет живої активності для головної сторінки.
  */
 
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { activity as activityApi } from '../services/api';
-import wsClient from '../services/websocket';
+import { useLiveActivity } from '../hooks/useLiveActivity';
 import '../pages/SocialPages.css';
 import './LiveActivityWidget.css';
 
@@ -17,26 +15,7 @@ const DOTS = {
 };
 
 export function LiveActivityWidget() {
-  const [totals, setTotals] = useState({ asking: 0, answering: 0, learning: 0, inRoom: 0 });
-
-  const load = async () => {
-    try {
-      const res = await activityApi.getLive({ limit: 10 });
-      setTotals(res.data.data.totals || {});
-    } catch {
-      /* ignore */
-    }
-  };
-
-  useEffect(() => {
-    load();
-    const unsub = wsClient.on('activity', load);
-    const interval = setInterval(load, 45000);
-    return () => {
-      unsub();
-      clearInterval(interval);
-    };
-  }, []);
+  const { totals } = useLiveActivity({ pollMs: 45000, eventLimit: 10 });
 
   return (
     <div className="social-widget live-activity-widget">

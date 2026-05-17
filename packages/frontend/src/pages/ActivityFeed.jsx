@@ -2,11 +2,8 @@
  * Жива стрічка активності — хто задає питання, відповідає, вчиться.
  */
 
-import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { activity as activityApi } from '../services/api';
-import wsClient from '../services/websocket';
+import { useLiveActivity } from '../hooks/useLiveActivity';
 import '../styles/brutalism.css';
 import './SocialPages.css';
 
@@ -67,40 +64,7 @@ function PresenceColumn({ status, users }) {
 }
 
 export function ActivityFeed() {
-  const { isAuthenticated } = useAuth();
-  const [feed, setFeed] = useState({ events: [], liveNow: {}, totals: {} });
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    try {
-      const res = await activityApi.getLive();
-      setFeed(res.data.data);
-    } catch {
-      /* ignore */
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    load();
-    const unsub = wsClient.on('activity', () => load());
-    const interval = setInterval(load, 30000);
-    return () => {
-      unsub();
-      clearInterval(interval);
-    };
-  }, [load]);
-
-  useEffect(() => {
-    if (!isAuthenticated) return undefined;
-    activityApi.heartbeat({ status: 'learning' }).catch(() => {});
-    const hb = setInterval(() => {
-      activityApi.heartbeat({ status: 'learning' }).catch(() => {});
-    }, 120000);
-    return () => clearInterval(hb);
-  }, [isAuthenticated]);
-
+  const { feed, loading } = useLiveActivity({ pollMs: 30000 });
   const live = feed.liveNow || {};
 
   return (
@@ -109,6 +73,7 @@ export function ActivityFeed() {
         <h1 className="page-title">ЖИВА АКТИВНІСТЬ</h1>
         <p className="page-subtitle">
           Хто зараз на платформі: задає питання, відповідає, вчиться або кодить у кімнатах.
+          Оновлюється в реальному часі.
         </p>
       </div>
 

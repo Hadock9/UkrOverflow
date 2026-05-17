@@ -972,6 +972,10 @@ async function migrate() {
     `);
     console.log('✓ challenges\n');
 
+    await ensureColumn(connection, 'challenge_submissions', 'ai_feedback', 'TEXT NULL');
+    await ensureColumn(connection, 'challenge_submissions', 'ai_breakdown', 'JSON NULL');
+    console.log('✓ challenge_submissions.ai_feedback + ai_breakdown\n');
+
     console.log('📝 reputation floor (мін. 0)...');
     const [repFix] = await connection.execute(
       'UPDATE users SET reputation = 0 WHERE reputation < 0'

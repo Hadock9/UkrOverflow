@@ -12,6 +12,7 @@ import { enrichManyWithVotes } from '../utils/enrichVotes.js';
 import { validate } from '../middleware/validation.js';
 import Notification from '../models/Notification.js';
 import { logActivity, setPresence } from '../services/activityService.js';
+import Notification from '../models/Notification.js';
 
 const router = express.Router();
 
@@ -129,6 +130,12 @@ router.post(
         entityType: 'question',
         entityId: questionId,
       });
+      await Notification.notifyAnswerCreatedSelf(
+        req.user.id,
+        questionId,
+        answer.id,
+        question.title
+      );
       if (typeof global.broadcast === 'function') {
         global.broadcast('answers', { type: 'create', answer, questionId });
         global.broadcast('activity', { type: 'event', verb: 'answer_posted' });
