@@ -137,6 +137,7 @@ router.get('/callback', async (req, res, next) => {
     const url = new URL(resolveFrontendBaseUrl(req));
     url.pathname = '/auth/callback';
     url.searchParams.set('error', msg);
+    url.searchParams.set('provider', 'github');
     return res.redirect(url.toString());
   };
 
@@ -164,13 +165,12 @@ router.get('/callback', async (req, res, next) => {
       }
       user = await User.linkGithub(parsedState.userId, { ghUser, accessToken, profile });
     } else {
-      // Логін / реєстрація
-      const existing = await User.findByGithubId(ghUser.id);
-      if (existing) {
-        user = await User.linkGithub(existing.id, { ghUser, accessToken, profile });
-      } else {
-        user = await User.createFromGithub({ ghUser, primaryEmail, accessToken, profile });
-      }
+      user = await User.loginOrRegisterFromGithub({
+        ghUser,
+        primaryEmail,
+        accessToken,
+        profile,
+      });
     }
 
     const token = issueAppToken(user);
@@ -195,6 +195,14 @@ router.get('/callback', async (req, res, next) => {
     return res.redirect(url.toString());
   } catch (err) {
     console.error('GitHub OAuth callback error:', err);
+    if (err.code === 'ER_DUP_ENTRY' && String(err.message || '').includes('users.email')) {
+      return fail(
+        'Акаунт з цим email уже існує. Увійдіть паролем або прив’яжіть GitHub у профілі після входу.'
+      );
+    }
+    if (err.code === 'GITHUB_EMAIL_CONFLICT') {
+      return fail(err.message);
+    }
     return fail(err.message || 'GitHub OAuth callback failed');
   }
 });

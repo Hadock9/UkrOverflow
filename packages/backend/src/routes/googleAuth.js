@@ -130,12 +130,7 @@ router.get('/callback', async (req, res) => {
       }
       user = await User.linkGoogle(parsedState.userId, { googleUser, profile });
     } else {
-      const existing = await User.findByGoogleId(googleUser.sub);
-      if (existing) {
-        user = await User.linkGoogle(existing.id, { googleUser, profile });
-      } else {
-        user = await User.createFromGoogle({ googleUser, profile });
-      }
+      user = await User.loginOrRegisterFromGoogle({ googleUser, profile });
     }
 
     const token = issueAppToken(user);
@@ -162,6 +157,14 @@ router.get('/callback', async (req, res) => {
     return res.redirect(url.toString());
   } catch (err) {
     console.error('Google OAuth callback error:', err);
+    if (err.code === 'ER_DUP_ENTRY' && String(err.message || '').includes('users.email')) {
+      return fail(
+        'Акаунт з цим email уже існує. Увійдіть паролем або прив’яжіть Google у профілі після входу.'
+      );
+    }
+    if (err.code === 'GOOGLE_EMAIL_CONFLICT') {
+      return fail(err.message);
+    }
     return fail(err.message || 'Google OAuth callback failed');
   }
 });

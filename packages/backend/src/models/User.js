@@ -244,6 +244,32 @@ export class User {
   }
 
   /**
+   * Вхід через GitHub: існуючий github_id / email → лінкування, інакше — новий акаунт.
+   */
+  static async loginOrRegisterFromGithub({ ghUser, primaryEmail, accessToken, profile }) {
+    const githubId = ghUser.id;
+    const byGithub = await this.findByGithubId(githubId);
+    if (byGithub) {
+      return this.linkGithub(byGithub.id, { ghUser, accessToken, profile });
+    }
+
+    const email = String(primaryEmail || ghUser.email || '').trim();
+    if (email) {
+      const byEmail = await this.findByEmail(email);
+      if (byEmail) {
+        if (byEmail.github_id != null && Number(byEmail.github_id) !== Number(githubId)) {
+          const err = new Error('Цей email уже прив’язаний до іншого GitHub-акаунта');
+          err.code = 'GITHUB_EMAIL_CONFLICT';
+          throw err;
+        }
+        return this.linkGithub(byEmail.id, { ghUser, accessToken, profile });
+      }
+    }
+
+    return this.createFromGithub({ ghUser, primaryEmail, accessToken, profile });
+  }
+
+  /**
    * Створити нового користувача з GitHub-OAuth (без пароля).
    */
   static async createFromGithub({ ghUser, primaryEmail, accessToken, profile }) {
@@ -334,6 +360,32 @@ export class User {
       candidate = `${base}_${i + 2}`;
     }
     return `${base}_${Date.now()}`;
+  }
+
+  /**
+   * Вхід через Google: існуючий google_id / email → лінкування, інакше — новий акаунт.
+   */
+  static async loginOrRegisterFromGoogle({ googleUser, profile }) {
+    const sub = String(googleUser.sub);
+    const byGoogle = await this.findByGoogleId(sub);
+    if (byGoogle) {
+      return this.linkGoogle(byGoogle.id, { googleUser, profile });
+    }
+
+    const email = String(googleUser.email || '').trim();
+    if (email) {
+      const byEmail = await this.findByEmail(email);
+      if (byEmail) {
+        if (byEmail.google_id && String(byEmail.google_id) !== sub) {
+          const err = new Error('Цей email уже прив’язаний до іншого Google-акаунта');
+          err.code = 'GOOGLE_EMAIL_CONFLICT';
+          throw err;
+        }
+        return this.linkGoogle(byEmail.id, { googleUser, profile });
+      }
+    }
+
+    return this.createFromGoogle({ googleUser, profile });
   }
 
   static async createFromGoogle({ googleUser, profile }) {
